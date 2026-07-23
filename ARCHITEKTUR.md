@@ -106,9 +106,11 @@ Distanz → teilt den Raum mit Terrain und Gebäuden.
 **2. Richtige Kamera (Ego-Perspektive).**
 MapLibre **v5 kennt kein `FreeCameraOptions` mehr**. Stattdessen
 **`map.calculateCameraOptionsFromTo(Auge, Augenhöhe, Ziel, Zielhöhe)`** → berechnet aus
-Beobachter-Augenpunkt und einem Zielpunkt entlang des Sonnen-Azimuts die Kamera und liefert so
-die First-Person-Sicht. Der Pitch bleibt auf ~85° begrenzt (die tief stehende Sonne erscheint
-dadurch im oberen Bilddrittel).
+Beobachter-Augenpunkt und einem Zielpunkt entlang des Sonnen-Azimuts die First-Person-Kamera.
+Das Ziel liegt auf einem **festen leichten Abwärtswinkel (~6°)**, *nicht* auf der Sonnenhöhe —
+sonst verlangt hohe Sonne einen Pitch > maxPitch, der Clamp erzeugt eine degenerierte Kamera und
+der Vordergrund flackert/verschwindet. Pitch bleibt so stabil bei ~84°; die tief stehende Sonne
+erscheint im oberen Bildbereich.
 
 **3. Plausible Verdeckung (rein visuell, keine textliche Aussage).**
 Gebäude (`fill-extrusion`) schreiben in den Tiefenpuffer → die WebGL-Sonne wird per Depth-Test
@@ -180,6 +182,9 @@ Sonnengröße/Fade kalibrieren).
   (`colorful({ baseUrl: 'https://tiles.versatiles.org' })`) — sonst 404 gegen `location.origin`.
 - **Fallstrick 2:** Custom-WebGL-Sonne wurde von der Far-Plane geclippt → im Vertex-Shader
   `clip.z = min(clip.z, clip.w*0.9999)`.
+- **Fallstrick 3:** Kamera auf Sonnenhöhe zielen → bei hoher Sonne Pitch-Clamp → Vordergrund
+  flackert/Gebäude verschwinden. Fix: fester Abwärts-Zielwinkel (Kamera zeitunabhängig stabil).
+- Labels sind in B3 standardmäßig aus (`style.layers.filter(l => l.type !== 'symbol')`).
 
 ## Validierte Referenzwerte (astronomy-engine, UTC)
 

@@ -83,6 +83,7 @@ const SUN_DIST = 30000;         // metres: far enough that buildings (<1 km) occ
 // baseUrl is required in the browser: colorful() otherwise resolves tile/sprite/glyph
 // URLs against location.origin (for self-hosting) → 404 on our dev server.
 const style = colorful({ baseUrl: 'https://tiles.versatiles.org' });
+style.layers = style.layers.filter(l => l.type !== 'symbol'); // labels off
 style.sources.dem = { type:'raster-dem', tiles:[ELEV], tileSize:256, maxzoom:12, encoding:'terrarium' };
 
 const map = new maplibregl.Map({
@@ -162,6 +163,7 @@ const sunLayer = {
     gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.depthMask(false);
     gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+    gl.depthMask(true); // restore state for MapLibre's next layer/frame
   },
 };
 
@@ -194,7 +196,7 @@ map.on('load', () => {
   slider.value = Math.round((peakT - tStart)/(tEnd - tStart)*N);
 
   const fmt = t => new Date(t).toISOString().slice(11,16);
-  const EYE = 1.7, CAM_TGT = 3000;
+  const EYE = 1.7, CAM_TGT = 3000, AIM_DOWN = 6; // aim 6° below horizontal → pitch ~84, no clamp, stable
 
   // max elevation angle of the terrain along an azimuth (incl. Earth-curvature dip)
   function terrainHorizonAlt(az, eyeAlt) {
@@ -236,9 +238,11 @@ map.on('load', () => {
     sun.opacity = Math.min(1, Math.max(0, (s.alt - horizon + 0.25) / 0.5));
     sun.visible = sun.opacity > 0.01;
 
-    // eye-level first-person camera: from the observer's eye toward the sun
+    // eye-level first-person camera looking toward the sun's azimuth at a FIXED slight
+    // downward angle (independent of sun altitude → pitch stays within maxPitch, no clamp
+    // degeneracy that would clip the foreground). The high/low sun rides up/down in frame.
     try {
-      const tgtAlt = eyeAlt + CAM_TGT*Math.tan(s.alt*D2R);
+      const tgtAlt = eyeAlt - CAM_TGT*Math.tan(AIM_DOWN*D2R);
       const [tlng, tlat] = destPoint(LAT, LON, s.az, CAM_TGT);
       map.jumpTo(map.calculateCameraOptionsFromTo([LON, LAT], eyeAlt, [tlng, tlat], tgtAlt));
     } catch (e) { map.setBearing(s.az); }
