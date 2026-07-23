@@ -45,9 +45,9 @@ Ein durchscrollbarer Screen. Reihenfolge und Inhalt der Blöcke:
 - **Header (überall):** ☀︎ Eclipse 2026 · 🌐 Sprache · ℹ Über.
 - **A1 — Countdown:** großer Live-Countdown „Noch 20 T : 04 : 12 bis zur totalen Finsternis",
   darunter der einordnende Satz „Die erste totale Sonnenfinsternis über Europa seit 1999."
-- **A2 — Schattenlauf:** Globus/Karte mit wanderndem Mondschatten (Sibirien → Island →
-  Spanien) und Partialitätsringen (90 / 50 / 0 %), darunter eine scrubbare Zeitleiste
-  (17:30 – 18:30 UTC).
+- **A2 — Schattenlauf:** Globus mit dem gesamten Schattenpfad als **gestrichelte Spur**
+  (Sibirien → Island → Spanien); der **aktuelle Schatten** läuft live über eine scrubbare
+  Zeitleiste (17:30 – 18:30 UTC) darüber, mit Partialitätsringen (90 / 50 / 0 %).
 - **A3 — Wie sieht das aus?:** drei Referenzorte nebeneinander mit gleicher Darstellung, aber
   drastisch anderem Erlebnis — Nordspanien (100 %, total) · Berlin (89 %) · Rom (40 %).
 - **A4 — Standort-Aufruf:** Überschrift „Was siehst du von dir aus?" (nicht „Standort
@@ -81,8 +81,9 @@ jede Phase antippbar mit „wonach schaue ich, wann darf die Brille ab?":
 Kopfzeile: „Beim Maximum: Sonne **8° hoch, Richtung 292° WNW** (≈ eine Faust überm Horizont)."
 Darunter eine **3D-Ansicht der Umgebung** des Standorts mit **Bergen und Gebäuden**, darüber
 die Sonnenbahn und die verfinsterte Sonne. Ein **Zeitschieber** (19:36 – 20:47) fährt durch
-den Verlauf; live dazu: ☀ Höhe · ◐ Bedeckung · Uhrzeit. Warnung, wenn die Sicht blockiert ist:
-„⚠ Ein Gebäude verdeckt die Sonne ab ca. 20:40 — freie Sicht Richtung WNW suchen."
+den Verlauf; live dazu: ☀ Höhe · ◐ Bedeckung · Uhrzeit. Ob Berge oder Gebäude die tief stehende
+Sonne verdecken, sieht man **direkt in der 3D-Szene** — die App macht dazu bewusst keine
+berechnete Aussage. Als harte Zeitangabe wird der **Sonnenuntergang** genannt.
 
 ### B6 — Checkliste & Countdown
 Countdown (gleicher wie A1) plus einfache Checkliste:
