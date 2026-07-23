@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A2 — Schattenlauf (Prototyp)</title>
+<link href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<script type="importmap">
+{ "imports": { "astronomy-engine": "https://esm.sh/astronomy-engine@2.1.19" } }
+</script>
+<style>
+  html, body { margin: 0; height: 100%; background: #05070d; color: #e9e6df;
+    font: 14px/1.5 system-ui, sans-serif; }
+  #map { position: absolute; inset: 0; }
+  .panel { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 5;
+    background: rgba(10,14,22,.82); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 12px 14px;
+    max-width: 620px; margin: 0 auto; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .clock { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.15rem; }
+  .clock small { font-weight: 400; opacity: .6; }
+  input[type=range] { flex: 1; accent-color: #e8a33d; }
+  .meta { font-variant-numeric: tabular-nums; opacity: .8; font-size: .82rem; margin-top: 6px; }
+  .title { position: absolute; top: 12px; left: 12px; z-index: 5; font-weight: 700;
+    text-shadow: 0 1px 4px #000; }
+  .title small { display:block; font-weight: 400; opacity: .7; }
+  .badge { color:#e8a33d; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="title">☀︎ Schattenlauf · 12. Aug 2026 <small>Prototyp A2 — gestrichelt = ganzer Pfad · gefüllt = Live-Schatten aus dem Schieber</small></div>
+<div class="panel">
+  <div class="row">
+    <div class="clock" id="clock">--:--<small> UTC</small></div>
+    <input type="range" id="slider" min="0" max="1" step="1" value="0">
+  </div>
+  <div class="meta" id="meta">…</div>
+</div>
+
+<script type="module">
+import { shadowCenter } from './eclipse.mjs';
+
+const SAT = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
+
+// --- Build the whole shadow path once (the "vorberechnet" dashed line) ---
+const t0 = Date.UTC(2026, 7, 12, 16, 30), t1 = Date.UTC(2026, 7, 12, 19, 0);
+const STEP = 30 * 1000; // 30 s
+const samples = [];      // {t, lat, lon} where the umbra touches Earth
+for (let t = t0; t <= t1; t += STEP) {
+  const p = shadowCenter(new Date(t));
+  if (p) samples.push({ t, lat: p.lat, lon: p.lon });
+}
+const pathCoords = samples.map(s => [s.lon, s.lat]);
+const tMin = samples[0].t, tMax = samples[samples.length - 1].t;
+
+// circle polygon (approx, on sphere) for the umbra footprint
+function circle(lat, lon, km, n = 48) {
+  const R = 6371, d = km / R, la = lat * Math.PI/180, lo = lon * Math.PI/180, ring = [];
+  for (let i = 0; i <= n; i++) {
+    const b = 2*Math.PI*i/n;
+    const la2 = Math.asin(Math.sin(la)*Math.cos(d) + Math.cos(la)*Math.sin(d)*Math.cos(b));
+    const lo2 = lo + Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la), Math.cos(d)-Math.sin(la)*Math.sin(la2));
+    ring.push([lo2*180/Math.PI, la2*180/Math.PI]);
+  }
+  return { type:'Feature', geometry:{ type:'Polygon', coordinates:[ring] } };
+}
+
+const map = new maplibregl.Map({
+  container: 'map',
+  center: [-18, 58], zoom: 2.2,
+  style: {
+    version: 8,
+    sources: { sat: { type:'raster', tiles:[SAT], tileSize:256, maxzoom:19,
+      attribution:'© VersaTiles / Mapterhorn' } },
+    layers: [
+      { id:'bg', type:'background', paint:{ 'background-color':'#05070d' } },
+      { id:'sat', type:'raster', source:'sat', paint:{ 'raster-brightness-max':.9 } },
+    ],
+  },
+});
+map.addControl(new maplibregl.NavigationControl({ visualizePitch:true }));
+
+map.on('load', () => {
+  map.setProjection({ type: 'globe' });
+
+  // whole path (dashed)
+  map.addSource('path', { type:'geojson', data:{ type:'Feature',
+    geometry:{ type:'LineString', coordinates: pathCoords } } });
+  map.addLayer({ id:'path', type:'line', source:'path',
+    paint:{ 'line-color':'#e8a33d', 'line-width':2, 'line-dasharray':[2,2], 'line-opacity':.9 } });
+
+  // live umbra (filled) + center dot
+  map.addSource('umbra', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
+  map.addLayer({ id:'umbra-fill', type:'fill', source:'umbra',
+    paint:{ 'fill-color':'#000', 'fill-opacity':.55 } });
+  map.addLayer({ id:'umbra-line', type:'line', source:'umbra',
+    paint:{ 'line-color':'#ffd27f', 'line-width':1.5 } });
+
+  const slider = document.getElementById('slider');
+  slider.min = 0; slider.max = samples.length - 1; slider.value = Math.floor(samples.length/2);
+
+  const fmt = (t) => new Date(t).toISOString().slice(11,16);
+  function update() {
+    const s = samples[+slider.value];
+    document.getElementById('clock').innerHTML = `${fmt(s.t)}<small> UTC</small>`;
+    // Recompute live (not read from samples) to prove real-time from the slider:
+    const p = shadowCenter(new Date(s.t));
+    const feat = circle(p.lat, p.lon, 60); // ~120 km umbra footprint (approx)
+    map.getSource('umbra').setData({ type:'FeatureCollection', features:[feat] });
+    document.getElementById('meta').textContent =
+      `Kernschatten @ ${p.lat.toFixed(2)}°, ${p.lon.toFixed(2)}°  ·  Pfad ${fmt(tMin)}–${fmt(tMax)} UTC (Umbra berührt die Erde)`;
+  }
+  slider.addEventListener('input', update);
+  update();
+});
+</script>
+</body>
+</html>

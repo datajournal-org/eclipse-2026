@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eclipse 2026 — Prototypen</title>
+<style>
+  body { margin:0; min-height:100vh; display:grid; place-items:center;
+    background:radial-gradient(1200px 600px at 50% -10%, #1a2233, #080b12);
+    color:#eae7df; font:16px/1.6 system-ui, sans-serif; }
+  .wrap { max-width:640px; padding:2rem; }
+  h1 { font-weight:800; letter-spacing:-.02em; }
+  .cards { display:grid; gap:1rem; grid-template-columns:1fr 1fr; margin-top:1.5rem; }
+  @media (max-width:560px){ .cards{ grid-template-columns:1fr; } }
+  a.card { display:block; padding:1.1rem 1.2rem; border:1px solid rgba(255,255,255,.14);
+    border-radius:14px; text-decoration:none; color:inherit; background:rgba(255,255,255,.04); }
+  a.card:hover { border-color:#e8a33d; }
+  a.card b { color:#e8a33d; }
+  .muted { opacity:.7; font-size:.9rem; }
+  code { background:rgba(255,255,255,.1); padding:.1rem .35rem; border-radius:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>☀︎ Sonnenfinsternis 2026 — technische Prototypen</h1>
+  <p class="muted">Durchstiche für die beiden anspruchsvollsten Screens. Astronomie über
+    <code>astronomy-engine</code> (gegen bekannte Werte validiert), Karten über MapLibre GL +
+    VersaTiles.</p>
+  <div class="cards">
+    <a class="card" href="./a2.html"><b>A2 — Schattenlauf</b><br>
+      <span class="muted">Globus, gestrichelter Gesamtpfad, Live-Kernschatten aus dem Schieber.</span></a>
+    <a class="card" href="./b3.html"><b>B3 — 3D-Horizont</b><br>
+      <span class="muted">Ego-Blick nach Westen, Terrain + Gebäude, Sonne mit Sichel.
+      Ort via <code>?lat=&amp;lon=</code>.</span></a>
+  </div>
+  <p class="muted" style="margin-top:1.5rem">Beispiele B3:
+    <a href="./b3.html?lat=52.52&lon=13.405" style="color:#e8a33d">Berlin</a> ·
+    <a href="./b3.html?lat=47.16&lon=11.40" style="color:#e8a33d">Innsbruck (Berge)</a> ·
+    <a href="./b3.html?lat=43.362&lon=-5.849" style="color:#e8a33d">Oviedo (Totalität)</a></p>
+</div>
+</body>
+</html>
