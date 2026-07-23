@@ -1,0 +1,353 @@
+<title>Eclipse 2026 — Wireframes</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    /* page chrome — warm neutral with a faint corona-gold bias */
+    --bg:        #f3efe7;
+    --bg-2:      #e9e3d6;
+    --ink:       #24211b;
+    --ink-soft:  #6b6559;
+    --hair:      #d8d1c2;
+    --accent:    #c9852a;   /* solar amber — interactive only */
+    --accent-ink:#7a4e12;
+    --warn:      #c14a3d;   /* eye-safety only */
+    /* low-fi wireframe tokens (greyscale so structure reads, not styling) */
+    --wf-frame:  #2a2823;
+    --wf-screen: #ffffff;
+    --wf-line:   #b7b0a2;
+    --wf-fill:   #ece7dc;
+    --wf-fill-2: #e0dacc;
+    --wf-ink:    #3a362e;
+    --wf-mut:    #8f897b;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  :root[data-theme="light"] { color-scheme: light; }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#16150f; --bg-2:#1e1c15; --ink:#ece7da; --ink-soft:#9a9384; --hair:#302d24;
+      --accent:#e8a33d; --accent-ink:#f0be6f; --warn:#e0705f;
+      --wf-frame:#0c0b08; --wf-screen:#f4f0e6; --wf-line:#b7b0a2;
+      --wf-fill:#e6e0d3; --wf-fill-2:#d9d2c2; --wf-ink:#332f27; --wf-mut:#8a8474;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg:#16150f; --bg-2:#1e1c15; --ink:#ece7da; --ink-soft:#9a9384; --hair:#302d24;
+    --accent:#e8a33d; --accent-ink:#f0be6f; --warn:#e0705f;
+    --wf-frame:#0c0b08; --wf-screen:#f4f0e6; --wf-line:#b7b0a2;
+    --wf-fill:#e6e0d3; --wf-fill-2:#d9d2c2; --wf-ink:#332f27; --wf-mut:#8a8474;
+  }
+  :root[data-theme="light"] {
+    --bg:#f3efe7; --bg-2:#e9e3d6; --ink:#24211b; --ink-soft:#6b6559; --hair:#d8d1c2;
+    --accent:#c9852a; --accent-ink:#7a4e12; --warn:#c14a3d;
+    --wf-frame:#2a2823; --wf-screen:#ffffff; --wf-line:#b7b0a2;
+    --wf-fill:#ece7dc; --wf-fill-2:#e0dacc; --wf-ink:#3a362e; --wf-mut:#8f897b;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: clamp(1.5rem, 4vw, 3.5rem) 1.25rem 5rem; }
+
+  header.masthead { display:flex; align-items:flex-end; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+    border-bottom: 1px solid var(--hair); padding-bottom: 1.4rem; margin-bottom: 2.4rem; }
+  .eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent-ink); margin: 0 0 .55rem; }
+  h1 { font-size: clamp(1.7rem, 4.2vw, 2.7rem); line-height:1.08; margin:0; letter-spacing:-.02em; text-wrap: balance; }
+  .lede { color: var(--ink-soft); max-width: 60ch; margin: .7rem 0 0; }
+  .legend { display:flex; gap:1.1rem; flex-wrap:wrap; font-family:var(--mono); font-size:.72rem; color:var(--ink-soft); }
+  .legend span { display:inline-flex; align-items:center; gap:.4rem; }
+  .dot { width:.7rem; height:.7rem; border-radius:2px; display:inline-block; }
+  .dot.a { background: var(--accent); }
+  .dot.w { background: var(--warn); }
+  .dot.g { background: var(--wf-line); }
+
+  .statebar { font-family:var(--mono); font-size:.74rem; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-soft); display:flex; align-items:center; gap:.7rem; margin: 2.6rem 0 1.1rem; }
+  .statebar::after { content:""; flex:1; height:1px; background:var(--hair); }
+  .statebar b { color: var(--ink); font-weight:600; }
+
+  .gallery { display:grid; gap: 1.6rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); align-items:start; }
+
+  figure.frame { margin:0; }
+  .caption { display:flex; align-items:baseline; gap:.5rem; margin: .85rem .15rem 0; }
+  .caption .tag { font-family:var(--mono); font-size:.7rem; font-weight:700; color: var(--accent-ink);
+    background: color-mix(in srgb, var(--accent) 16%, transparent); padding:.12rem .4rem; border-radius:3px; }
+  .caption .name { font-weight:600; font-size:.92rem; }
+  .caption .note { color: var(--ink-soft); font-size:.82rem; }
+  figcaption.desc { color: var(--ink-soft); font-size:.83rem; margin:.4rem .15rem 0; }
+
+  /* --- phone --- */
+  .phone { background: var(--wf-frame); border-radius: 26px; padding: 9px; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  .screen { background: var(--wf-screen); border-radius: 18px; overflow:hidden; color: var(--wf-ink);
+    display:flex; flex-direction:column; min-height: 500px; }
+  .sbar { display:flex; align-items:center; justify-content:space-between; padding:.5rem .8rem .3rem;
+    font-family:var(--mono); font-size:.6rem; color: var(--wf-mut); }
+  .sbar .dots { display:flex; gap:3px; }
+  .sbar .dots i { width:5px; height:5px; border-radius:50%; background: var(--wf-line); display:block; }
+  .apphead { display:flex; align-items:center; justify-content:space-between; padding:.35rem .8rem .6rem;
+    border-bottom:1px solid var(--wf-fill-2); }
+  .apphead .brand { font-weight:700; font-size:.8rem; letter-spacing:-.01em; }
+  .apphead .brand::before { content:"\2600\FE0E"; margin-right:.3rem; }
+  .apphead .ctrls { font-family:var(--mono); font-size:.62rem; color:var(--wf-mut); display:flex; gap:.5rem; }
+  .body { padding: .8rem; display:flex; flex-direction:column; gap:.7rem; flex:1; }
+
+  /* wireframe primitives */
+  .block { border:1px solid var(--wf-line); border-radius:8px; padding:.6rem .65rem; background: color-mix(in srgb, var(--wf-fill) 55%, transparent); position:relative; }
+  .block > .rtag { position:absolute; top:-.55rem; left:.55rem; font-family:var(--mono); font-size:.56rem; font-weight:700;
+    background: var(--wf-screen); color: var(--wf-mut); padding:0 .3rem; letter-spacing:.05em; }
+  .lbl { font-family:var(--mono); font-size:.6rem; letter-spacing:.1em; text-transform:uppercase; color:var(--wf-mut); margin:0 0 .35rem; }
+  .h-xl { font-weight:800; font-size:1.5rem; letter-spacing:-.02em; line-height:1; }
+  .h-lg { font-weight:700; font-size:1.05rem; letter-spacing:-.01em; }
+  .txt { font-size:.72rem; color: var(--wf-ink); }
+  .mut { color: var(--wf-mut); }
+  .rows { display:flex; flex-direction:column; gap:.28rem; font-size:.68rem; }
+  .row { display:flex; justify-content:space-between; gap:.6rem; }
+  .row b { font-variant-numeric: tabular-nums; }
+  .barline { width:100%; height:6px; background: var(--wf-fill-2); border-radius:4px; }
+  .skel { height:.55rem; background: var(--wf-fill-2); border-radius:3px; }
+  .skel.s { width:55%; } .skel.m { width:75%; } .skel.l { width:92%; }
+  .btn { border:1px solid var(--wf-line); border-radius:7px; padding:.42rem .5rem; font-size:.7rem; text-align:center; background: var(--wf-fill); }
+  .btn.accent { border-color: var(--accent); color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 12%, var(--wf-screen)); font-weight:600; }
+  .btnstack { display:flex; flex-direction:column; gap:.4rem; }
+  .warn { border-left:3px solid var(--warn); background: color-mix(in srgb, var(--warn) 9%, var(--wf-screen));
+    padding:.4rem .55rem; border-radius:4px; font-size:.66rem; color: var(--wf-ink); }
+  .warn b { color: var(--warn); }
+  .chips { display:flex; gap:.4rem; }
+  .chip { flex:1; border:1px solid var(--wf-line); border-radius:7px; padding:.45rem .3rem; text-align:center; }
+  .chip .big { font-weight:800; font-size:1rem; }
+  .chip .sm { font-family:var(--mono); font-size:.56rem; color:var(--wf-mut); text-transform:uppercase; letter-spacing:.06em; }
+  .disc { width:34px; height:34px; border-radius:50%; margin:.1rem auto .25rem; position:relative; background: var(--wf-fill-2); overflow:hidden; border:1px solid var(--wf-line); }
+  .disc::after { content:""; position:absolute; inset:0; border-radius:50%; background: var(--wf-mut); }
+  .disc.p20::after { clip-path: inset(0 0 0 80%); }
+  .disc.p60::after { clip-path: inset(0 0 0 40%); }
+  .disc.p87::after { clip-path: inset(0 0 0 13%); }
+  .disc.full::after { background: var(--wf-frame); }
+  .check { display:flex; align-items:flex-start; gap:.45rem; font-size:.7rem; }
+  .check .box { flex:none; width:.85rem; height:.85rem; border:1.5px solid var(--wf-line); border-radius:3px; margin-top:.06rem; }
+  .checkwrap { display:flex; flex-direction:column; gap:.42rem; }
+  .timeline { display:flex; align-items:center; gap:.25rem; margin:.2rem 0; }
+  .timeline .node { width:8px; height:8px; border-radius:50%; background:var(--wf-mut); flex:none; }
+  .timeline .seg { height:2px; flex:1; background: var(--wf-line); }
+  .slider { display:flex; align-items:center; gap:.35rem; }
+  .slider .track { flex:1; height:4px; border-radius:3px; background: var(--wf-fill-2); position:relative; }
+  .slider .track::after { content:""; position:absolute; left:52%; top:50%; transform:translate(-50%,-50%);
+    width:12px; height:12px; border-radius:50%; background: var(--accent); border:2px solid var(--wf-screen); }
+  .slider .cap { font-family:var(--mono); font-size:.56rem; color:var(--wf-mut); }
+
+  /* the 3D horizon sketch */
+  .horizon { border:1px solid var(--wf-line); border-radius:8px; overflow:hidden; background: linear-gradient(#f4ead6, #e8d3ba); }
+  @media (prefers-color-scheme: dark){ .horizon{ background: linear-gradient(#efe2cc, #e2cbb0);} }
+  .horizon svg { display:block; width:100%; height:auto; }
+
+  .ref { display:flex; gap:.4rem; }
+  .refcard { flex:1; border:1px solid var(--wf-line); border-radius:7px; padding:.4rem .25rem; text-align:center; }
+
+  footer { margin-top:3.5rem; border-top:1px solid var(--hair); padding-top:1.2rem;
+    font-size:.8rem; color:var(--ink-soft); }
+  footer code { font-family:var(--mono); font-size:.78rem; background: var(--bg-2); padding:.05rem .35rem; border-radius:3px; }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">Sonnenfinsternis · 12. Aug 2026 · Low-Fi Wireframes</p>
+      <h1>Eclipse 2026 — Screen-Flow</h1>
+      <p class="lede">Zwei Zustände, ein Screen. Ohne Standort zeigt die App den allgemeinen Verlauf;
+        mit Standort wird daraus ein persönliches Briefing. Graustufen = Struktur, nicht finales Design.</p>
+    </div>
+    <div class="legend">
+      <span><i class="dot g"></i> Layout / Platzhalter</span>
+      <span><i class="dot a"></i> Interaktiv / CTA</span>
+      <span><i class="dot w"></i> Augenschutz</span>
+    </div>
+  </header>
+
+  <!-- ============ ZUSTAND A ============ -->
+  <div class="statebar"><b>Zustand&nbsp;A</b> — ohne Standort · „Die Weltbühne“</div>
+  <div class="gallery">
+
+    <!-- A full -->
+    <figure class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sbar"><span>20:31</span><span class="dots"><i></i><i></i><i></i></span></div>
+        <div class="apphead"><span class="brand">Eclipse 2026</span><span class="ctrls">🌐 DE · ℹ</span></div>
+        <div class="body">
+          <div class="block"><span class="rtag">A1</span>
+            <p class="lbl">Countdown</p>
+            <div class="h-xl">20 T : 04 : 12</div>
+            <p class="txt mut">bis zur totalen Finsternis — die erste über Europa seit 1999.</p>
+          </div>
+          <div class="block"><span class="rtag">A2</span>
+            <p class="lbl">Schattenlauf</p>
+            <div class="horizon" style="border:none">
+              <svg viewBox="0 0 260 90" role="img" aria-label="Weltkarte mit Schattenpfad">
+                <rect width="260" height="90" fill="var(--wf-fill)"/>
+                <path d="M20 62 Q70 20 130 34 T250 26" fill="none" stroke="var(--wf-mut)" stroke-width="10" stroke-linecap="round" opacity=".35"/>
+                <path d="M20 62 Q70 20 130 34 T250 26" fill="none" stroke="var(--wf-line)" stroke-width="2" stroke-dasharray="4 4"/>
+                <circle cx="150" cy="33" r="7" fill="var(--wf-frame)"/>
+                <text x="30" y="80" font-family="monospace" font-size="7" fill="var(--wf-mut)">Sibirien → Island → Spanien</text>
+              </svg>
+            </div>
+            <div class="slider" style="margin-top:.4rem"><span class="cap">17:30</span><div class="track"></div><span class="cap">18:30</span></div>
+          </div>
+          <div class="block"><span class="rtag">A3</span>
+            <p class="lbl">Wie sieht das aus?</p>
+            <div class="ref">
+              <div class="refcard"><div class="disc full"></div><div class="txt"><b>100%</b><br><span class="mut">Nordsp.</span></div></div>
+              <div class="refcard"><div class="disc p87"></div><div class="txt"><b>89%</b><br><span class="mut">Berlin</span></div></div>
+              <div class="refcard"><div class="disc p60"></div><div class="txt"><b>40%</b><br><span class="mut">Rom</span></div></div>
+            </div>
+          </div>
+          <div class="block" style="border-color:var(--accent)"><span class="rtag" style="color:var(--accent-ink)">A4</span>
+            <p class="lbl">Was siehst du von dir aus?</p>
+            <div class="btnstack">
+              <div class="btn accent">📍 Standort verwenden</div>
+              <div class="btn">🔍 Ort suchen …</div>
+              <div class="btn">🗺 Auf Karte tippen</div>
+            </div>
+          </div>
+          <div class="warn"><b>⚠</b> Nie ohne geprüfte Finsternisbrille in die Sonne schauen.</div>
+        </div>
+      </div></div>
+      <div class="caption"><span class="tag">A</span><span class="name">Startseite ohne Standort</span></div>
+      <figcaption class="desc">Faszination zuerst, Standort-Frage danach — kein Permission-Dialog beim ersten Frame.</figcaption>
+    </figure>
+
+  </div>
+
+  <!-- ============ ZUSTAND B ============ -->
+  <div class="statebar"><b>Zustand&nbsp;B</b> — mit Standort · „Dein Himmel“</div>
+  <div class="gallery">
+
+    <!-- B1 -->
+    <figure class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sbar"><span>20:31</span><span class="dots"><i></i><i></i><i></i></span></div>
+        <div class="apphead"><span class="brand">Eclipse 2026</span><span class="ctrls">🌐 DE · ℹ</span></div>
+        <div class="body">
+          <div class="block" style="padding:.4rem .55rem"><span class="txt">📍 <b>Berlin, Deutschland</b> <span class="mut">· ändern</span></span></div>
+          <div class="block"><span class="rtag">B1</span>
+            <p class="lbl">Bei dir</p>
+            <div style="display:flex; align-items:center; gap:.7rem">
+              <div class="disc p87" style="width:52px;height:52px"></div>
+              <div><div class="h-xl">87 %</div><div class="txt mut">Bedeckung</div></div>
+            </div>
+            <p class="txt" style="margin:.5rem 0 0">Die Sonne geht <b>halb verfinstert</b> unter.</p>
+            <div class="rows" style="margin-top:.5rem">
+              <div class="row"><span class="mut">Beginn</span><b>19:36</b></div>
+              <div class="row"><span class="mut">Maximum</span><b>20:31</b></div>
+              <div class="row"><span class="mut">Sonnenuntergang</span><b>20:47</b></div>
+            </div>
+            <div class="warn" style="margin-top:.5rem"><b>⚠ vor Ende der Finsternis.</b> Partiell — Brille die <b>ganze Zeit</b> auflassen.</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="caption"><span class="tag">B1</span><span class="name">Verdikt-Karte</span></div>
+      <figcaption class="desc">Eine Aussage, ein Blick. „SU vor Ende“ ist die kritische ortsabhängige Info.</figcaption>
+    </figure>
+
+    <!-- B3 -->
+    <figure class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sbar"><span>20:31</span><span class="dots"><i></i><i></i><i></i></span></div>
+        <div class="apphead"><span class="brand">Eclipse 2026</span><span class="ctrls">🌐 DE · ℹ</span></div>
+        <div class="body">
+          <div class="block"><span class="rtag">B3</span>
+            <p class="lbl">Deine Sicht nach Westen</p>
+            <p class="txt" style="margin:0 0 .45rem">Beim Maximum: Sonne <b>8° hoch</b>, Richtung <b>292° WNW</b> <span class="mut">(≈ eine Faust überm Horizont)</span></p>
+            <div class="horizon">
+              <svg viewBox="0 0 260 130" role="img" aria-label="3D-Umgebung mit Sonnenbahn">
+                <!-- sun path -->
+                <path d="M40 20 Q150 55 240 108" fill="none" stroke="var(--wf-mut)" stroke-width="1.5" stroke-dasharray="3 3"/>
+                <circle cx="176" cy="70" r="9" fill="#e6a63b"/>
+                <path d="M176 70 m-9 0 a9 9 0 0 1 12 -8 a11 11 0 0 0 -12 8" fill="var(--wf-frame)" opacity=".55"/>
+                <!-- mountains -->
+                <path d="M0 118 L45 78 L80 100 L110 82 L140 108 L0 130 Z" fill="var(--wf-mut)" opacity=".55"/>
+                <!-- buildings blocking west -->
+                <rect x="196" y="86" width="20" height="34" fill="var(--wf-frame)" opacity=".8"/>
+                <rect x="216" y="76" width="26" height="44" fill="var(--wf-frame)" opacity=".85"/>
+                <rect x="150" y="98" width="14" height="22" fill="var(--wf-frame)" opacity=".7"/>
+                <!-- horizon + compass -->
+                <line x1="0" y1="120" x2="260" y2="120" stroke="var(--wf-frame)" stroke-width="1.5"/>
+                <text x="8"  y="128" font-family="monospace" font-size="7" fill="var(--wf-frame)">W</text>
+                <text x="120" y="128" font-family="monospace" font-size="7" fill="var(--wf-frame)">WNW ↑292°</text>
+                <text x="244" y="128" font-family="monospace" font-size="7" fill="var(--wf-frame)">N</text>
+              </svg>
+            </div>
+            <div class="slider" style="margin-top:.5rem"><span class="cap">19:36</span><div class="track"></div><span class="cap">20:47</span></div>
+            <div class="chips" style="margin-top:.5rem">
+              <div class="chip"><div class="big">8°</div><div class="sm">☀ Höhe</div></div>
+              <div class="chip"><div class="big">84 %</div><div class="sm">◐ Bedeckung</div></div>
+              <div class="chip"><div class="big">20:24</div><div class="sm">Zeit</div></div>
+            </div>
+            <div class="warn" style="margin-top:.5rem"><b>⚠</b> Ein Gebäude verdeckt die Sonne ab ca. 20:40 — freie Sicht Richtung WNW suchen.</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="caption"><span class="tag">B3</span><span class="name">3D-Horizont + Zeitschieber</span><span class="note">Kern-Feature</span></div>
+      <figcaption class="desc">3D-Umgebung mit Bergen & Gebäuden. Schieber zeigt Sonnenstand, Bedeckung und ob die Sicht blockiert ist.</figcaption>
+    </figure>
+
+    <!-- B2 -->
+    <figure class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sbar"><span>20:31</span><span class="dots"><i></i><i></i><i></i></span></div>
+        <div class="apphead"><span class="brand">Eclipse 2026</span><span class="ctrls">🌐 DE · ℹ</span></div>
+        <div class="body">
+          <div class="block"><span class="rtag">B2</span>
+            <p class="lbl">Verlauf bei dir</p>
+            <div class="timeline"><span class="node"></span><span class="seg"></span><span class="node"></span><span class="seg"></span><span class="node"></span></div>
+            <div class="row txt mut"><span>19:36</span><span>20:31</span><span>20:47</span></div>
+            <div class="rows" style="margin-top:.55rem; gap:.5rem">
+              <div><div class="txt"><b>▸ 19:36 · 1. Kontakt</b></div><div class="txt mut">Der Mond berührt die Sonne.</div></div>
+              <div><div class="txt"><b>▸ 20:31 · Maximum (87 %)</b></div><div class="txt mut">Größte Bedeckung — sichelförmig.</div></div>
+              <div><div class="txt"><b>▸ 20:47 · Sonnenuntergang</b></div><div class="txt mut">Sonne verschwindet, noch verfinstert.</div></div>
+            </div>
+            <div class="block" style="margin-top:.55rem; background:var(--wf-fill-2)">
+              <div class="txt mut">In der Totalitätszone zusätzlich: 2./3. Kontakt, Dauer auf die Sekunde, Diamantring · Baily's Beads · Korona.</div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <div class="caption"><span class="tag">B2</span><span class="name">Persönliche Zeitleiste</span></div>
+      <figcaption class="desc">Echte lokale Phasen, jede antippbar: „wonach schaue ich, wann darf die Brille ab?“</figcaption>
+    </figure>
+
+    <!-- B6 -->
+    <figure class="frame">
+      <div class="phone"><div class="screen">
+        <div class="sbar"><span>20:31</span><span class="dots"><i></i><i></i><i></i></span></div>
+        <div class="apphead"><span class="brand">Eclipse 2026</span><span class="ctrls">🌐 DE · ℹ</span></div>
+        <div class="body">
+          <div class="block"><span class="rtag">B6</span>
+            <p class="lbl">Vorbereitung</p>
+            <div class="h-lg" style="text-align:center; margin:.1rem 0 .2rem">Noch 20 T : 04 : 12</div>
+            <p class="lbl" style="margin-top:.4rem">Checkliste</p>
+            <div class="checkwrap">
+              <div class="check"><span class="box"></span><span>Finsternisbrille (ISO 12312-2) besorgen + auf Kratzer prüfen</span></div>
+              <div class="check"><span class="box"></span><span>Wettervorhersage checken</span></div>
+              <div class="check"><span class="box"></span><span>Platz mit freier Westsicht suchen</span></div>
+              <div class="check"><span class="box"></span><span>Termin in den Kalender eintragen</span></div>
+              <div class="check"><span class="box"></span><span>Ggf. Reise in die Totalitätszone planen</span></div>
+            </div>
+            <div class="btn accent" style="margin-top:.6rem">📅 In Kalender exportieren</div>
+          </div>
+        </div>
+      </div></div>
+      <div class="caption"><span class="tag">B6</span><span class="name">Checkliste & Countdown</span></div>
+      <figcaption class="desc">„Wetter checken“ ist ein Punkt auf der Liste — keine Prognose in der App.</figcaption>
+    </figure>
+
+  </div>
+
+  <footer>
+    Reihenfolge in Zustand B: <b>B1 → B3 → B2 → B6</b> — „Sehe ich es überhaupt?“ (B3) steht bewusst vor „Wann genau?“ (B2).
+    Querschnitt überall: <code>⚠ Augenschutz · 🌐 Sprache (DE/EN/ES) · ℹ Über</code>.
+    Alle Zahlen sind Platzhalter und vor dem Bau aus einer Primärquelle nachzurechnen.
+  </footer>
+</div>
