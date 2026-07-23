@@ -74,9 +74,11 @@ So bleibt der Verlauf jederzeit als gestrichelte Spur sichtbar, während der Sch
 Schatten flüssig darüberführt — kein Interpolieren aus vorgerechneten Stützstellen.
 
 ### 4. 3D-Horizont + Zeitschieber (B3) — Kern-Feature
-MapLibre-3D-Szene aus **Terrain (Elevation, Fernfeld)** + **`fill-extrusion` Gebäude
-(OSM, Nahfeld)**. Zeitschieber = reine UI, teilt die Astronomie-Engine.
-Details zur Sonne siehe eigener Abschnitt unten.
+MapLibre-3D-Szene auf **stilisiertem OSM-Vektor-Grund** (`@versatiles/style`, Theme
+`colorful`) + **Terrain/Hillshade (Elevation, Fernfeld)** + **`fill-extrusion` 3D-Gebäude
+(OSM, Nahfeld, `height`)**. Die flachen Gebäude-Layer des Themes werden durch Extrusionen
+ersetzt. Zeitschieber = reine UI, teilt die Astronomie-Engine. Details zur Sonne unten.
+*(Satellitenkacheln bleiben dem A2-Globus vorbehalten.)*
 
 ### 6. Checkliste (B6)
 **Nicht interaktiv** — schlichte Textaufzählung. `.ics`-Kalender-Export clientseitig.
@@ -102,14 +104,18 @@ Projektionsmatrix mitbenutzt. Position = Beobachter + Richtungsvektor (az, alt) 
 Distanz → teilt den Raum mit Terrain und Gebäuden.
 
 **2. Richtige Kamera (Ego-Perspektive).**
-MapLibres Standardkamera blickt herab und ist auf ~85° Pitch begrenzt — untauglich für eine
-8°-Sonne. **`map.setFreeCameraOptions()`** setzt die Kamera exakt an die Augenhöhe am
-Beobachterort mit frei gewählter, nahezu horizontaler Blickrichtung → umgeht die Pitch-Grenze
-und liefert echte First-Person-Sicht.
+MapLibre **v5 kennt kein `FreeCameraOptions` mehr**. Stattdessen
+**`map.calculateCameraOptionsFromTo(Auge, Augenhöhe, Ziel, Zielhöhe)`** → berechnet aus
+Beobachter-Augenpunkt und einem Zielpunkt entlang des Sonnen-Azimuts die Kamera und liefert so
+die First-Person-Sicht. Der Pitch bleibt auf ~85° begrenzt (die tief stehende Sonne erscheint
+dadurch im oberen Bilddrittel).
 
 **3. Plausible Verdeckung (rein visuell, keine textliche Aussage).**
 Gebäude (`fill-extrusion`) schreiben in den Tiefenpuffer → die WebGL-Sonne wird per Depth-Test
-korrekt hinter Häusern verdeckt; Terrain verdeckt die Sonne best effort. Der Nutzer sieht in
+korrekt hinter Häusern verdeckt. Für **Terrain** (dessen Tiefenpuffer MapLibre nicht zuverlässig
+für Custom-Layer bereitstellt) wird der **Gelände-Horizont entlang des Sonnen-Azimuts abgetastet**
+(`queryTerrainElevation`, inkl. Erdkrümmungs-Dip); die Sonne wird ausgeblendet/gefadet, sobald sie
+darunter steht — so verschwindet sie hinter Bergen und am Sonnenuntergang. Der Nutzer sieht in
 der 3D-Szene selbst, ob etwas im Weg ist. **Bewusst keine berechnete Aussage** wie „Sonne ab
 20:40 verdeckt" — eine verlässliche Strahlen-Abtastung von Terrain und Gebäuden ist im Frontend
 nicht leistbar (Elevation nur z12, Gebäude nur Nahfeld, teures Tile-Sampling). Die einzige harte
@@ -132,9 +138,10 @@ gegenprüfen; Zahlen sichtbar im UI → Realismus ist prüfbar, nicht behauptet.
 
 - **Elevation z12** im Nahbereich grob — prüfen, ob Berge am Horizont visuell überzeugend
   wirken; Nahfeld tragen die Gebäude.
-- **`setFreeCameraOptions` + Terrain:** bekannte Kamera-Clipping-Eigenheiten testen.
-- **Terrain-Verdeckung der Sonne:** MapLibre-Tiefenpuffer fürs Terrain ist unzuverlässig →
-  Sonne hinter Bergen nur best effort, rein visuell, keine textliche Aussage.
+- **Ego-Kamera + Terrain:** `calculateCameraOptionsFromTo` an Augenhöhe; Kamera-Clipping ins
+  Gelände im Blick behalten (bei sehr steilem Gelände direkt am Standort).
+- **Terrain-Verdeckung der Sonne:** per Horizont-Abtastung gelöst (Fade unter Gelände-Horizont).
+  Grenze: binär/gefadet für die ganze Scheibe, kein teilweises Anschneiden durch einen Grat.
 - **Live-Schatten (A2):** Umbra-Ellipse zur Schieber-Zeit aus Besselschen Elementen /
   `astronomy-engine` in Echtzeit rechnen — Performance beim Scrubben prüfen.
 - **Sonnengröße:** Vergrößerungsfaktor (2–4×) ist eine UX-Entscheidung — mit echten Renders
@@ -142,3 +149,48 @@ gegenprüfen; Zahlen sichtbar im UI → Realismus ist prüfbar, nicht behauptet.
 - **Sichel-Orientierung:** Positionswinkel der Sichel korrekt aus der Geometrie ableiten
   (nicht raten), sonst „falsch herum".
 - **Geocoder-Limits/Attribution** von VersaTiles prüfen.
+
+---
+
+## Prototypen (Durchstich A2 + B3)
+
+Im Ordner [`prototype/`](./prototype/) — lauffähig via `npx serve .` oder
+`python3 -m http.server`, dann `index.html`.
+
+- `eclipse.mjs` — geteilte Finsternis-Mathematik, läuft in Node **und** Browser
+  (Import-Map löst `astronomy-engine` per esm.sh auf).
+- `a2.html` — Globus, ganzer Pfad **gestrichelt** (vorberechnet), **Live-Kernschatten** in
+  Echtzeit aus dem Schieber (`shadowCenter()` pro Frame).
+- `b3.html` — Ego-3D nach Westen, VersaTiles Terrain + Gebäude, **Sonne als Custom-WebGL-Layer**
+  mit geometrisch orientierter Sichel; Kamera derzeit hoher Pitch statt FreeCamera.
+- `validate.mjs` — `node validate.mjs` prüft die Mathematik gegen bekannte Werte.
+
+**Gelöst / verifiziert:**
+- Schattenzentrum stimmt **auf 0,0 km** mit `SearchGlobalSolarEclipse` überein — Schlüssel:
+  Sonnenvektor **mit Aberration** (`GeoVector(Sun, t, true)`).
+- Sichel-Geometrie (eigene Disk-Overlap-Formel) trifft astronomy-engines Bedeckung auf ~1 %.
+
+**Noch offen:** A2-Partialitätsringe; Feinschliff (Sichel-Orientierung an Referenz prüfen,
+Sonnengröße/Fade kalibrieren).
+
+**Per Playwright-Screenshots verifiziert & behoben:**
+- B3 rendert Vektor-Grund (colorful), 3D-Gebäude, Ego-Kamera, Sichel; Terrain verdeckt die
+  Sonne (Innsbruck: 6°-Berghorizont blendet die 1,7°-Sonne aus).
+- **Fallstrick 1:** `@versatiles/style` braucht im Browser explizites `baseUrl`
+  (`colorful({ baseUrl: 'https://tiles.versatiles.org' })`) — sonst 404 gegen `location.origin`.
+- **Fallstrick 2:** Custom-WebGL-Sonne wurde von der Far-Plane geclippt → im Vertex-Shader
+  `clip.z = min(clip.z, clip.w*0.9999)`.
+
+## Validierte Referenzwerte (astronomy-engine, UTC)
+
+| Ort | Art | Bedeckung | Maximum | Sonnenhöhe | Azimut |
+|---|---|---|---|---|---|
+| Größte Finsternis (bei Island) | total | 100 % | 17:45:46 | — | — |
+| Reykjavík | total | 100 % | 17:48 | 24,6° | — |
+| Oviedo (N-Spanien) | total | 100 % | 18:27 | 10,3° | — |
+| Palma | total | 100 % | 18:31 | 2,6° | — |
+| Berlin | partiell | **84,8 %** | 18:08 | 3,5° | 290° WNW |
+| München | partiell | **88,7 %** | 18:15 | 2,1° | — |
+
+„München > Berlin" bestätigt: München liegt südlicher, näher am Pfad. Ortszeit = UTC + 2 (MESZ),
+d. h. Maximum Berlin ≈ **20:08 Uhr** MESZ.
