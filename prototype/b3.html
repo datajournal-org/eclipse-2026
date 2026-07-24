@@ -84,7 +84,7 @@ const SUN_DIST = 30000;         // metres: far enough that buildings (<1 km) occ
 // URLs against location.origin (for self-hosting) → 404 on our dev server.
 const style = colorful({ baseUrl: 'https://tiles.versatiles.org' });
 style.layers = style.layers.filter(l => l.type !== 'symbol'); // labels off
-style.sources.dem = { type:'raster-dem', tiles:[ELEV], tileSize:256, maxzoom:12, encoding:'terrarium' };
+style.sources.dem = { type:'raster-dem', tiles:[ELEV], tileSize:512, encoding:'terrarium' };
 
 const map = new maplibregl.Map({
   container:'map', center:[LON,LAT], zoom:16, pitch:85, bearing:290, maxPitch:85,
