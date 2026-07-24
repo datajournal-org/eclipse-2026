@@ -17,6 +17,12 @@
 	import { computeShadowModel, radiusForCoverage } from '$lib/shadow-globe/shadowProfile';
 	import { isoRing, terminatorLine, EMPTY_LINES } from '$lib/shadow-globe/isoRing';
 	import { createMoonShadowLayer, type ShadowState } from '$lib/shadow-globe/moonShadowLayer';
+	import {
+		createIsoLinesLayer,
+		linePrimitiveFromSegments,
+		type IsoLinesState,
+		type LinePrimitive
+	} from '$lib/shadow-globe/isoLinesLayer';
 
 	type Brand = { bg: string; path: string; ring: string };
 
@@ -43,6 +49,10 @@
 		ready: false
 	};
 
+	// Iso rings render through a custom layer (projectTile) so they stay correct over the poles.
+	const isoLinesState: IsoLinesState = { lines: [], version: 0, ready: false };
+	let ringRgb: [number, number, number] = [1, 0.82, 0.5]; // --accent-2; set from tokens on mount
+
 	// ---- reactive UI state ----
 	const START_INDEX = Math.floor(shadowFrames.length / 2);
 	let mapContainer: HTMLDivElement;
@@ -63,11 +73,12 @@
 			if (disposed) return;
 
 			const brand = readBrandColors();
+			ringRgb = hexToRgb(brand.ring);
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				...INITIAL_VIEW,
 				scrollZoom: true, // wheel zoom (over the map it takes the scroll; use fullscreen for full control)
-				attributionControl: { compact: true },
+				attributionControl: { compact: false },
 				style: {
 					version: 8,
 					sources: {
@@ -76,7 +87,7 @@
 							tiles: [SATELLITE_TILES],
 							tileSize: 512,
 							maxzoom: 19,
-							attribution: '© VersaTiles'
+							attribution: '© <a href="https://versatiles.org">VersaTiles sources</a>'
 						}
 					},
 					layers: [
@@ -86,6 +97,7 @@
 				}
 			});
 			map = m;
+			if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { __map: m });
 			m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 			m.addControl(new maplibregl.FullscreenControl({ container: stage }), 'top-right');
 
@@ -93,6 +105,7 @@
 				m.setProjection({ type: 'globe' });
 				m.addLayer(createMoonShadowLayer(shadowState)); // darkening, under the reference lines
 				addPathAndRings(m, brand);
+				m.addLayer(createIsoLinesLayer(isoLinesState)); // iso rings via projectTile — pole-correct
 				showFrame = (index) => renderFrame(m, index);
 				showFrame(frameIndex);
 				mapReady = true;
@@ -119,6 +132,14 @@
 		};
 	}
 
+	/** '#rrggbb' → [r, g, b] in 0..1, for the WebGL line colour. */
+	function hexToRgb(hex: string): [number, number, number] {
+		const h = hex.replace('#', '');
+		const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h;
+		const n = parseInt(full, 16);
+		return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+	}
+
 	/** Faint dashed whole-path line, then the three (initially empty) live ring layers on top. */
 	function addPathAndRings(map: MlMap, brand: Brand) {
 		map.addSource('path', { type: 'geojson', data: shadowPathLine });
@@ -128,16 +149,7 @@
 			source: 'path',
 			paint: { 'line-color': brand.path, 'line-width': 1, 'line-opacity': 0.45 }
 		});
-		for (const ring of ISO_RINGS) {
-			const id = `iso${ring.percent}`;
-			map.addSource(id, { type: 'geojson', data: EMPTY_LINES });
-			map.addLayer({
-				id: id,
-				type: 'line',
-				source: id,
-				paint: { 'line-color': brand.ring, 'line-width': 1, 'line-opacity': ring.opacity }
-			});
-		}
+		// (iso rings are drawn by the custom iso-lines layer, not GeoJSON — see createIsoLinesLayer)
 		map.addSource('terminator', { type: 'geojson', data: EMPTY_LINES });
 		map.addLayer({
 			id: 'terminator',
@@ -164,13 +176,16 @@
 		shadowState.ready = true;
 		map.triggerRepaint();
 
-		// analytic iso-rings: cylinder (radius for the coverage level) ∩ sphere
+		// analytic iso-rings → LinePrimitives for the pole-correct custom layer (projectTile)
+		const lines: LinePrimitive[] = [];
 		for (const ring of ISO_RINGS) {
 			const radius = radiusForCoverage(model, ring.level);
-			(map.getSource(`iso${ring.percent}`) as GeoJSONSource).setData(
-				radius == null ? EMPTY_LINES : isoRing(model, radius)
-			);
+			if (radius == null) continue;
+			lines.push(linePrimitiveFromSegments(isoRing(model, radius).geometry.coordinates, ringRgb, ring.opacity));
 		}
+		isoLinesState.lines = lines;
+		isoLinesState.version++;
+		isoLinesState.ready = true;
 
 		// day/night great circle
 		(map.getSource('terminator') as GeoJSONSource | undefined)?.setData(terminatorLine(model.sunDir));
