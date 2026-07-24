@@ -1,1 +1,12 @@
+node_modules/
 prototype/node_modules/
+
+# SvelteKit
+/.svelte-kit/
+/build/
+/.vercel/
+/.output/
+
+# misc
+.DS_Store
+*.log
