@@ -9,7 +9,7 @@ Web-App zur Vorbereitung auf die totale Sonnenfinsternis am **12. August 2026**.
 Die App beantwortet in dieser Reihenfolge vier Fragen:
 
 1. **Was passiert überhaupt?** (Neugier)
-2. **Was sehe *ich*, von *hier* aus?** (Personalisierung)
+2. **Was sehe _ich_, von _hier_ aus?** (Personalisierung)
 3. **Wie sehe ich es wirklich — ohne dass es schiefgeht?** (Horizont, Augenschutz)
 4. **Soll ich dafür verreisen?** (die Reise-Entscheidung — als Info, nicht als Rechner)
 
@@ -18,7 +18,7 @@ Aus einer abstrakten Astronomie-Meldung wird „um 20:31 Uhr, über deinem Dach,
 
 **Wichtigster Fakt fürs ganze Produkt:** Diese Finsternis ist keine Mittagsfinsternis wie
 1999, sondern ein **Horizont-Ereignis am Abend**. In Mitteleuropa nur partiell (~85–92 %),
-und die Sonne geht vielerorts *angebissen* unter. Darum ist „freie Sicht nach Westen"
+und die Sonne geht vielerorts _angebissen_ unter. Darum ist „freie Sicht nach Westen"
 wichtiger als alles andere.
 
 > **Faktenbasis prüfen:** Die Bedeckungswerte einzelner Städte müssen vor dem Bau aus einer
@@ -61,39 +61,41 @@ Kein Permission-Dialog beim ersten Frame.
 
 ## Zustand B — Mit Standort („Dein Himmel")
 
-Ein persönliches Briefing — alles in *deiner* Ortszeit, in *deiner* Himmelsrichtung.
+Ein persönliches Briefing — alles in _deiner_ Ortszeit, in _deiner_ Himmelsrichtung.
 
 - **B1 — Verdikt-Karte (ganz oben, ein Blick):** eine einzige große Aussage:
-  > „Bei dir: 87 % Bedeckung — die Sonne geht halb verfinstert unter."
-  > Beginn 19:36 · Maximum 20:31 · Sonnenuntergang 20:47 (vor Ende der Finsternis)
 
-  Das „vor Ende der Finsternis" ist die kritische, standortabhängige Information.
+   > „Bei dir: 87 % Bedeckung — die Sonne geht halb verfinstert unter."
+   > Beginn 19:36 · Maximum 20:31 · Sonnenuntergang 20:47 (vor Ende der Finsternis)
+
+   Das „vor Ende der Finsternis" ist die kritische, standortabhängige Information.
+
 - **B2 — Persönliche Zeitleiste:** echte Phasen: 1. Kontakt → Maximum → Sonnenuntergang →
   (ggf. 4. Kontakt, unsichtbar). In der Totalitätszone zusätzlich 2./3. Kontakt, Dauer auf die
   Sekunde, plus die „Perlen": Diamantring, Baily's Beads, Schattenbänder, Korona. Jede Phase
   antippbar → „Was passiert hier, wonach schaue ich, wann darf ich die Brille abnehmen?"
-- **B3 — Horizont-Check** ← *Alleinstellungsmerkmal dieser Finsternis.*
+- **B3 — Horizont-Check** ← _Alleinstellungsmerkmal dieser Finsternis._
   Weil die Sonne so tief steht, ist freie Westsicht entscheidend.
-  - Kompass-Ansicht: „Beim Maximum steht die Sonne 8° hoch, Richtung 292° (WNW)."
-  - Anschaulicher Anker statt Grad: „8° ≈ eine ausgestreckte Faust über dem Horizont."
-  - **3D-Umgebungssimulation:** eine 3D-Ansicht der Umgebung des Standorts mit **Gebäuden und
-    Gebirgen** (aus Höhen-/Gebäudedaten). Darüber die Sonnenbahn und die verfinsterte Sonne.
-    Ein **Zeitschieber** simuliert den Verlauf: Man zieht durch die Zeit und sieht, wie die
-    Sonne sinkt, sich der Bedeckungsgrad ändert — und ob Häuser oder Berge im Westen die Sonne
-    verdecken, *bevor* die Finsternis endet. So erkennt man sofort, ob der eigene Standort
-    freie Sicht hat.
-  - Optional (später): Vorschläge für nahe Beobachtungsplätze mit freier Westsicht.
+   - Kompass-Ansicht: „Beim Maximum steht die Sonne 8° hoch, Richtung 292° (WNW)."
+   - Anschaulicher Anker statt Grad: „8° ≈ eine ausgestreckte Faust über dem Horizont."
+   - **3D-Umgebungssimulation:** eine 3D-Ansicht der Umgebung des Standorts mit **Gebäuden und
+     Gebirgen** (aus Höhen-/Gebäudedaten). Darüber die Sonnenbahn und die verfinsterte Sonne.
+     Ein **Zeitschieber** simuliert den Verlauf: Man zieht durch die Zeit und sieht, wie die
+     Sonne sinkt, sich der Bedeckungsgrad ändert — und ob Häuser oder Berge im Westen die Sonne
+     verdecken, _bevor_ die Finsternis endet. So erkennt man sofort, ob der eigene Standort
+     freie Sicht hat.
+   - Optional (später): Vorschläge für nahe Beobachtungsplätze mit freier Westsicht.
 - **B6 — Checkliste & Countdown:** eine **einfache Checkliste** zur Vorbereitung, u. a.:
-  - [ ] Finsternisbrille besorgen (ISO 12312-2) und auf Kratzer prüfen
-  - [ ] **Wettervorhersage checken** (in den Tagen davor)
-  - [ ] Beobachtungsplatz mit freier Sicht nach Westen suchen
-  - [ ] Termin in den Kalender eintragen
-  - [ ] Ggf. Anreise/Reise in die Totalitätszone planen
+   - [ ] Finsternisbrille besorgen (ISO 12312-2) und auf Kratzer prüfen
+   - [ ] **Wettervorhersage checken** (in den Tagen davor)
+   - [ ] Beobachtungsplatz mit freier Sicht nach Westen suchen
+   - [ ] Termin in den Kalender eintragen
+   - [ ] Ggf. Anreise/Reise in die Totalitätszone planen
 
-  Dazu Kalender-Export mit den korrekten lokalen Phasenzeiten und ein Countdown.
+   Dazu Kalender-Export mit den korrekten lokalen Phasenzeiten und ein Countdown.
 
-*(Bewusst nicht enthalten: Live-Wettervorhersage, Reise-Rechner, separater Live-Modus am
-Ereignistag.)*
+_(Bewusst nicht enthalten: Live-Wettervorhersage, Reise-Rechner, separater Live-Modus am
+Ereignistag.)_
 
 ---
 
@@ -101,7 +103,7 @@ Ereignistag.)*
 
 - **Augenschutz — nicht als Fußnote.** Bei 87 % ist die Sonne noch blendend hell und
   schädigt die Netzhaut schmerzfrei. Prominent und wiederholt: Warnung, Norm ISO 12312-2,
-  Bezugsquellen, Kratzer-Check. Regel: Brille nur *innerhalb* der Totalität abnehmen — sonst
+  Bezugsquellen, Kratzer-Check. Regel: Brille nur _innerhalb_ der Totalität abnehmen — sonst
   nie. Für Partial-Standorte: **Brille bleibt die ganze Zeit auf.**
 - **Ehrlichkeit über 90 %.** „90 % sind fast total" ist falsch — es bleibt taghell. Die App
   erklärt das aktiv (Helligkeitsvergleich), statt Erwartungen aufzublasen.
@@ -116,7 +118,7 @@ Ereignistag.)*
 
 ---
 
-## Was die App bewusst *nicht* tut
+## Was die App bewusst _nicht_ tut
 
 - Kein Social-Feed, kein Login, keine Gamification.
 - Keine Wettervorhersage in der App (nur „Wetter checken" auf der Checkliste).

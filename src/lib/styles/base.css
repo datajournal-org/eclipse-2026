@@ -1,65 +1,127 @@
 /* Base element + layout styles. Reads only tier-2 semantic tokens from tokens.css. */
 
-* { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  min-height: 100%;
-  background:
-    radial-gradient(1200px 620px at 50% -8%, var(--glow) 0%, transparent 60%),
-    var(--bg);
-  background-attachment: fixed;
-  color: var(--text);
-  font-family: var(--font);
-  font-size: var(--text-body);
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+* {
+	box-sizing: border-box;
 }
 
-h1, h2, h3 { line-height: 1.15; letter-spacing: -0.02em; text-wrap: balance; margin: 0; }
-h1 { font-size: var(--text-h1); font-weight: 800; }
-h2 { font-size: var(--text-h2); font-weight: 700; }
-h3 { font-size: var(--text-h3); font-weight: 700; }
-p { margin: 0; }
+html,
+body {
+	margin: 0;
+	min-height: 100%;
+	background: radial-gradient(1200px 620px at 50% -8%, var(--glow) 0%, transparent 60%), var(--bg);
+	background-attachment: fixed;
+	color: var(--text);
+	font-family: var(--font);
+	font-size: var(--text-body);
+	line-height: 1.55;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
 
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
+h1,
+h2,
+h3 {
+	line-height: 1.15;
+	letter-spacing: -0.02em;
+	text-wrap: balance;
+	margin: 0;
+}
+h1 {
+	font-size: var(--text-h1);
+	font-weight: 800;
+}
+h2 {
+	font-size: var(--text-h2);
+	font-weight: 700;
+}
+h3 {
+	font-size: var(--text-h3);
+	font-weight: 700;
+}
+p {
+	margin: 0;
+}
+
+a {
+	color: var(--accent);
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
 
 button {
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: var(--radius-sm);
-  padding: var(--space-2xs) var(--space-xs);
-  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	border-radius: var(--radius-sm);
+	padding: var(--space-2xs) var(--space-xs);
+	transition:
+		border-color var(--dur) var(--ease),
+		background var(--dur) var(--ease);
 }
-button:hover { border-color: var(--border-2); background: var(--surface-2); }
-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:hover {
+	border-color: var(--border-2);
+	background: var(--surface-2);
+}
+button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
 
-.tnum { font-variant-numeric: tabular-nums; font-family: var(--font-num); }
+.tnum {
+	font-variant-numeric: tabular-nums;
+	font-family: var(--font-num);
+}
 
 /* ---------- layout ---------- */
-.app { min-height: 100dvh; display: flex; flex-direction: column; }
+.app {
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+}
 
 .content {
-  flex: 1; width: 100%; max-width: var(--maxw); margin: 0 auto;
-  padding: var(--space-2xs) 0 var(--space-lg);
-  display: flex; flex-direction: column; gap: var(--space-lg);
+	flex: 1;
+	width: 100%;
+	max-width: var(--maxw);
+	margin: 0 auto;
+	padding: var(--space-2xs) 0 var(--space-lg);
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-lg);
 }
 
 /* Flat content section — no card chrome. Inline padding keeps text off the edge;
    vertical rhythm comes from the .content gap. */
-.block { padding-inline: var(--edge); }
-.block > .block-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2xs); margin-bottom: var(--space-2xs); }
-.block .eyebrow { font-size: var(--text-caption); letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
+.block {
+	padding-inline: var(--edge);
+}
+.block > .block-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-2xs);
+	margin-bottom: var(--space-2xs);
+}
+.block .eyebrow {
+	font-size: var(--text-caption);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--faint);
+}
 
 /* Full-bleed: cancel .block inline padding so a graphic reaches the section edges
    (= the viewport edges on mobile). */
-.bleed { margin-inline: calc(-1 * var(--edge)); }
+.bleed {
+	margin-inline: calc(-1 * var(--edge));
+}
 
 @media (prefers-reduced-motion: reduce) {
-  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+	* {
+		animation-duration: 0.001ms !important;
+		transition-duration: 0.001ms !important;
+	}
 }

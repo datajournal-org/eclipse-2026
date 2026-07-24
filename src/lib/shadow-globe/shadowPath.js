@@ -14,12 +14,12 @@ const FRAME_STEP_MS = 30 * 1000;
 
 /** @returns {ShadowFrame[]} one frame per 30 s where the umbra actually reaches Earth */
 function computeFrames() {
-  const frames = [];
-  for (let time = TIMELINE_START_UTC; time <= TIMELINE_END_UTC; time += FRAME_STEP_MS) {
-    const center = shadowCenter(new Date(time));
-    if (center) frames.push({ time, lat: center.lat, lon: center.lon });
-  }
-  return frames;
+	const frames = [];
+	for (let time = TIMELINE_START_UTC; time <= TIMELINE_END_UTC; time += FRAME_STEP_MS) {
+		const center = shadowCenter(new Date(time));
+		if (center) frames.push({ time, lat: center.lat, lon: center.lon });
+	}
+	return frames;
 }
 
 /** Timeline frames: timestamp + umbra ground position, one per slider step. */
@@ -27,8 +27,8 @@ export const shadowFrames = computeFrames();
 
 /** GeoJSON of the whole central path — drawn as the faint dashed "Pfad" reference line. */
 export const shadowPathLine = {
-  type: 'Feature',
-  geometry: { type: 'LineString', coordinates: shadowFrames.map((f) => [f.lon, f.lat]) }
+	type: 'Feature',
+	geometry: { type: 'LineString', coordinates: shadowFrames.map((f) => [f.lon, f.lat]) }
 };
 
 export const timelineStart = shadowFrames[0].time;

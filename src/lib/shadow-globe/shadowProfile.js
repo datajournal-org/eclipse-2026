@@ -19,28 +19,42 @@ export const PROFILE_SIZE = 256;
  * @param {number} separation  angular distance between the disc centres (rad)
  */
 export function discOverlapFraction(sunRadius, moonRadius, separation) {
-  if (separation >= sunRadius + moonRadius) return 0;
-  if (separation <= Math.abs(moonRadius - sunRadius)) {
-    return moonRadius >= sunRadius ? 1 : (moonRadius * moonRadius) / (sunRadius * sunRadius);
-  }
-  const cosAtSun = clamp((separation * separation + sunRadius * sunRadius - moonRadius * moonRadius) / (2 * separation * sunRadius), -1, 1);
-  const cosAtMoon = clamp((separation * separation + moonRadius * moonRadius - sunRadius * sunRadius) / (2 * separation * moonRadius), -1, 1);
-  const lensArea =
-    sunRadius * sunRadius * Math.acos(cosAtSun) +
-    moonRadius * moonRadius * Math.acos(cosAtMoon) -
-    0.5 * Math.sqrt(Math.max(0,
-      (-separation + sunRadius + moonRadius) *
-      (separation + sunRadius - moonRadius) *
-      (separation - sunRadius + moonRadius) *
-      (separation + sunRadius + moonRadius)));
-  return lensArea / (Math.PI * sunRadius * sunRadius);
+	if (separation >= sunRadius + moonRadius) return 0;
+	if (separation <= Math.abs(moonRadius - sunRadius)) {
+		return moonRadius >= sunRadius ? 1 : (moonRadius * moonRadius) / (sunRadius * sunRadius);
+	}
+	const cosAtSun = clamp(
+		(separation * separation + sunRadius * sunRadius - moonRadius * moonRadius) / (2 * separation * sunRadius),
+		-1,
+		1
+	);
+	const cosAtMoon = clamp(
+		(separation * separation + moonRadius * moonRadius - sunRadius * sunRadius) / (2 * separation * moonRadius),
+		-1,
+		1
+	);
+	const lensArea =
+		sunRadius * sunRadius * Math.acos(cosAtSun) +
+		moonRadius * moonRadius * Math.acos(cosAtMoon) -
+		0.5 *
+			Math.sqrt(
+				Math.max(
+					0,
+					(-separation + sunRadius + moonRadius) *
+						(separation + sunRadius - moonRadius) *
+						(separation - sunRadius + moonRadius) *
+						(separation + sunRadius + moonRadius)
+				)
+			);
+	return lensArea / (Math.PI * sunRadius * sunRadius);
 }
 
 /** Geodetic lat/lon (deg) → unit vector in the Earth-fixed frame used by the shader. */
 export function latLonToUnitVector(latDeg, lonDeg) {
-  const lat = latDeg * (Math.PI / 180), lon = lonDeg * (Math.PI / 180);
-  const cosLat = Math.cos(lat);
-  return [cosLat * Math.cos(lon), cosLat * Math.sin(lon), Math.sin(lat)];
+	const lat = latDeg * (Math.PI / 180),
+		lon = lonDeg * (Math.PI / 180);
+	const cosLat = Math.cos(lat);
+	return [cosLat * Math.cos(lon), cosLat * Math.sin(lon), Math.sin(lat)];
 }
 
 /**
@@ -60,26 +74,28 @@ export function latLonToUnitVector(latDeg, lonDeg) {
  * @returns {ShadowModel}
  */
 export function computeShadowModel(center, sunMoon) {
-  const C = latLonToUnitVector(center.lat, center.lon);
-  const [mx, my, mz] = sunMoon.moon;
-  const axisX = mx - C[0], axisY = my - C[1], axisZ = mz - C[2];
-  const distToMoon = Math.hypot(axisX, axisY, axisZ);
-  const axis = [axisX / distToMoon, axisY / distToMoon, axisZ / distToMoon];
+	const C = latLonToUnitVector(center.lat, center.lon);
+	const [mx, my, mz] = sunMoon.moon;
+	const axisX = mx - C[0],
+		axisY = my - C[1],
+		axisZ = mz - C[2];
+	const distToMoon = Math.hypot(axisX, axisY, axisZ);
+	const axis = [axisX / distToMoon, axisY / distToMoon, axisZ / distToMoon];
 
-  const sunAngR = sunMoon.sunAngR;
-  const moonAngR = MOON_RADIUS_IN_EARTH_RADII / distToMoon;
-  const rMax = distToMoon * (sunAngR + moonAngR); // off-axis distance where the penumbra ends
+	const sunAngR = sunMoon.sunAngR;
+	const moonAngR = MOON_RADIUS_IN_EARTH_RADII / distToMoon;
+	const rMax = distToMoon * (sunAngR + moonAngR); // off-axis distance where the penumbra ends
 
-  const coverage = new Float32Array(PROFILE_SIZE);
-  const profileBytes = new Uint8Array(PROFILE_SIZE);
-  for (let i = 0; i < PROFILE_SIZE; i++) {
-    const r = (i / (PROFILE_SIZE - 1)) * rMax;
-    const cov = discOverlapFraction(sunAngR, moonAngR, r / distToMoon);
-    coverage[i] = cov;
-    profileBytes[i] = Math.round(cov * 255);
-  }
+	const coverage = new Float32Array(PROFILE_SIZE);
+	const profileBytes = new Uint8Array(PROFILE_SIZE);
+	for (let i = 0; i < PROFILE_SIZE; i++) {
+		const r = (i / (PROFILE_SIZE - 1)) * rMax;
+		const cov = discOverlapFraction(sunAngR, moonAngR, r / distToMoon);
+		coverage[i] = cov;
+		profileBytes[i] = Math.round(cov * 255);
+	}
 
-  return { center: C, axis, sunDir: sunMoon.sun, rMax, coverage, profileBytes };
+	return { center: C, axis, sunDir: sunMoon.sun, rMax, coverage, profileBytes };
 }
 
 /**
@@ -88,17 +104,20 @@ export function computeShadowModel(center, sunMoon) {
  * decreases monotonically with r, so a single linear scan suffices.
  */
 export function radiusForCoverage(model, level) {
-  const { coverage, rMax } = model;
-  const n = coverage.length;
-  if (coverage[0] < level) return null;
-  for (let i = 1; i < n; i++) {
-    if (coverage[i] <= level) {
-      const high = coverage[i - 1], low = coverage[i];
-      const t = high === low ? 0 : (high - level) / (high - low);
-      return ((i - 1 + t) / (n - 1)) * rMax;
-    }
-  }
-  return rMax;
+	const { coverage, rMax } = model;
+	const n = coverage.length;
+	if (coverage[0] < level) return null;
+	for (let i = 1; i < n; i++) {
+		if (coverage[i] <= level) {
+			const high = coverage[i - 1],
+				low = coverage[i];
+			const t = high === low ? 0 : (high - level) / (high - low);
+			return ((i - 1 + t) / (n - 1)) * rMax;
+		}
+	}
+	return rMax;
 }
 
-function clamp(x, lo, hi) { return x < lo ? lo : x > hi ? hi : x; }
+function clamp(x, lo, hi) {
+	return x < lo ? lo : x > hi ? hi : x;
+}

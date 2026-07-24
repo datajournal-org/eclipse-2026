@@ -49,7 +49,7 @@ void main() {
 
 // Vertex shader is assembled per projection variant so it can call MapLibre's own `projectTile`.
 function vertexShaderSource(shaderData) {
-  return `#version 300 es
+	return `#version 300 es
 ${shaderData.vertexShaderPrelude}
 ${shaderData.define}
 in vec2 a_tilePos;      // position in web-mercator tile space, 0..1
@@ -72,60 +72,70 @@ void main() {
 }
 
 function compileProgram(gl, vertexSrc, fragmentSrc) {
-  const compileShader = (type, src) => {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, src);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
-    return shader;
-  };
-  const program = gl.createProgram();
-  gl.attachShader(program, compileShader(gl.VERTEX_SHADER, vertexSrc));
-  gl.attachShader(program, compileShader(gl.FRAGMENT_SHADER, fragmentSrc));
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
-  return program;
+	const compileShader = (type, src) => {
+		const shader = gl.createShader(type);
+		gl.shaderSource(shader, src);
+		gl.compileShader(shader);
+		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
+		return shader;
+	};
+	const program = gl.createProgram();
+	gl.attachShader(program, compileShader(gl.VERTEX_SHADER, vertexSrc));
+	gl.attachShader(program, compileShader(gl.FRAGMENT_SHADER, fragmentSrc));
+	gl.linkProgram(program);
+	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+	return program;
 }
 
 // A grid covering the whole globe, plus one extra vertex on each pole. The mercator grid only
 // reaches ±85°, so the top/bottom rows are fanned to a pole vertex whose sentinel poleFlag makes
 // `projectTile` place it exactly on the pole.
 function buildGlobeMesh() {
-  const N = GRID_RESOLUTION, VERTS_PER_ROW = N + 1;
-  const tilePositions = [], poleFlags = [], indices = [];
+	const N = GRID_RESOLUTION,
+		VERTS_PER_ROW = N + 1;
+	const tilePositions = [],
+		poleFlags = [],
+		indices = [];
 
-  for (let iy = 0; iy <= N; iy++)
-    for (let ix = 0; ix <= N; ix++) { tilePositions.push(ix / N, iy / N); poleFlags.push(0, 0); }
+	for (let iy = 0; iy <= N; iy++)
+		for (let ix = 0; ix <= N; ix++) {
+			tilePositions.push(ix / N, iy / N);
+			poleFlags.push(0, 0);
+		}
 
-  for (let iy = 0; iy < N; iy++)
-    for (let ix = 0; ix < N; ix++) {
-      const topLeft = iy * VERTS_PER_ROW + ix;
-      const topRight = topLeft + 1;
-      const bottomLeft = topLeft + VERTS_PER_ROW;
-      const bottomRight = bottomLeft + 1;
-      indices.push(topLeft, bottomLeft, topRight, topRight, bottomLeft, bottomRight);
-    }
+	for (let iy = 0; iy < N; iy++)
+		for (let ix = 0; ix < N; ix++) {
+			const topLeft = iy * VERTS_PER_ROW + ix;
+			const topRight = topLeft + 1;
+			const bottomLeft = topLeft + VERTS_PER_ROW;
+			const bottomRight = bottomLeft + 1;
+			indices.push(topLeft, bottomLeft, topRight, topRight, bottomLeft, bottomRight);
+		}
 
-  const northPole = tilePositions.length / 2; tilePositions.push(0.5, 0.0); poleFlags.push(0, -40000);
-  const southPole = tilePositions.length / 2; tilePositions.push(0.5, 1.0); poleFlags.push(0, 40000);
-  const bottomRowStart = N * VERTS_PER_ROW;
-  for (let ix = 0; ix < N; ix++) indices.push(northPole, ix, ix + 1);                                    // north cap fan
-  for (let ix = 0; ix < N; ix++) indices.push(bottomRowStart + ix, southPole, bottomRowStart + ix + 1);  // south cap fan
+	const northPole = tilePositions.length / 2;
+	tilePositions.push(0.5, 0.0);
+	poleFlags.push(0, -40000);
+	const southPole = tilePositions.length / 2;
+	tilePositions.push(0.5, 1.0);
+	poleFlags.push(0, 40000);
+	const bottomRowStart = N * VERTS_PER_ROW;
+	for (let ix = 0; ix < N; ix++) indices.push(northPole, ix, ix + 1); // north cap fan
+	for (let ix = 0; ix < N; ix++) indices.push(bottomRowStart + ix, southPole, bottomRowStart + ix + 1); // south cap fan
 
-  return { tilePositions, poleFlags, indices };
+	return { tilePositions, poleFlags, indices };
 }
 
 function createBuffer(gl, target, data) {
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(target, buffer);
-  gl.bufferData(target, data, gl.STATIC_DRAW);
-  return buffer;
+	const buffer = gl.createBuffer();
+	gl.bindBuffer(target, buffer);
+	gl.bufferData(target, data, gl.STATIC_DRAW);
+	return buffer;
 }
 
 function bindVec2Attribute(gl, buffer, location) {
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.enableVertexAttribArray(location);
-  gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
+	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+	gl.enableVertexAttribArray(location);
+	gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
 }
 
 /**
@@ -136,98 +146,112 @@ function bindVec2Attribute(gl, buffer, location) {
  *   bumps whenever `profile` (the coverage LUT) changes so the texture is re-uploaded.
  */
 export function createMoonShadowLayer(shadowState) {
-  const programByVariant = {}; // projectTile differs per projection variant (globe/mercator/transition)
+	const programByVariant = {}; // projectTile differs per projection variant (globe/mercator/transition)
 
-  return {
-    id: 'moon-shadow',
-    type: 'custom',
-    renderingMode: '2d',
+	return {
+		id: 'moon-shadow',
+		type: 'custom',
+		renderingMode: '2d',
 
-    onAdd(_map, gl) {
-      const mesh = buildGlobeMesh();
-      this.indexCount = mesh.indices.length;
-      this.positionBuffer = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(mesh.tilePositions));
-      this.poleFlagBuffer = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(mesh.poleFlags));
-      this.indexBuffer = createBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(mesh.indices));
+		onAdd(_map, gl) {
+			const mesh = buildGlobeMesh();
+			this.indexCount = mesh.indices.length;
+			this.positionBuffer = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(mesh.tilePositions));
+			this.poleFlagBuffer = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(mesh.poleFlags));
+			this.indexBuffer = createBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(mesh.indices));
 
-      // 1D coverage LUT as an N×1 R8 texture (linear-filterable → smooth penumbra).
-      this.profileTexture = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, this.profileTexture);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      this.uploadedProfileVersion = -1;
-    },
+			// 1D coverage LUT as an N×1 R8 texture (linear-filterable → smooth penumbra).
+			this.profileTexture = gl.createTexture();
+			gl.bindTexture(gl.TEXTURE_2D, this.profileTexture);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+			this.uploadedProfileVersion = -1;
+		},
 
-    _programFor(gl, shaderData) {
-      const cached = programByVariant[shaderData.variantName];
-      if (cached) return cached;
-      const program = compileProgram(gl, vertexShaderSource(shaderData), FRAGMENT_SHADER);
-      const uniform = (name) => gl.getUniformLocation(program, name);
-      const built = {
-        program,
-        attribs: {
-          tilePos: gl.getAttribLocation(program, 'a_tilePos'),
-          poleFlag: gl.getAttribLocation(program, 'a_poleFlag')
-        },
-        uniforms: {
-          projMatrix: uniform('u_projection_matrix'),
-          tileMercatorCoords: uniform('u_projection_tile_mercator_coords'),
-          clippingPlane: uniform('u_projection_clipping_plane'),
-          transition: uniform('u_projection_transition'),
-          fallbackMatrix: uniform('u_projection_fallback_matrix'),
-          sunDir: uniform('u_sunDir'),
-          center: uniform('u_center'),
-          axis: uniform('u_axis'),
-          rMax: uniform('u_rMax'),
-          profile: uniform('u_profile')
-        }
-      };
-      programByVariant[shaderData.variantName] = built;
-      return built;
-    },
+		_programFor(gl, shaderData) {
+			const cached = programByVariant[shaderData.variantName];
+			if (cached) return cached;
+			const program = compileProgram(gl, vertexShaderSource(shaderData), FRAGMENT_SHADER);
+			const uniform = (name) => gl.getUniformLocation(program, name);
+			const built = {
+				program,
+				attribs: {
+					tilePos: gl.getAttribLocation(program, 'a_tilePos'),
+					poleFlag: gl.getAttribLocation(program, 'a_poleFlag')
+				},
+				uniforms: {
+					projMatrix: uniform('u_projection_matrix'),
+					tileMercatorCoords: uniform('u_projection_tile_mercator_coords'),
+					clippingPlane: uniform('u_projection_clipping_plane'),
+					transition: uniform('u_projection_transition'),
+					fallbackMatrix: uniform('u_projection_fallback_matrix'),
+					sunDir: uniform('u_sunDir'),
+					center: uniform('u_center'),
+					axis: uniform('u_axis'),
+					rMax: uniform('u_rMax'),
+					profile: uniform('u_profile')
+				}
+			};
+			programByVariant[shaderData.variantName] = built;
+			return built;
+		},
 
-    render(gl, options) {
-      if (!shadowState.ready) return;
-      const { program, attribs, uniforms } = this._programFor(gl, options.shaderData);
-      const projection = options.defaultProjectionData;
-      gl.useProgram(program);
+		render(gl, options) {
+			if (!shadowState.ready) return;
+			const { program, attribs, uniforms } = this._programFor(gl, options.shaderData);
+			const projection = options.defaultProjectionData;
+			gl.useProgram(program);
 
-      // MapLibre's projection uniforms (supplied via the shader prelude).
-      if (uniforms.projMatrix) gl.uniformMatrix4fv(uniforms.projMatrix, false, projection.mainMatrix);
-      if (uniforms.tileMercatorCoords && projection.tileMercatorCoords) gl.uniform4fv(uniforms.tileMercatorCoords, projection.tileMercatorCoords);
-      if (uniforms.clippingPlane && projection.clippingPlane) gl.uniform4fv(uniforms.clippingPlane, projection.clippingPlane);
-      if (uniforms.transition != null && projection.projectionTransition != null) gl.uniform1f(uniforms.transition, projection.projectionTransition);
-      if (uniforms.fallbackMatrix && projection.fallbackMatrix) gl.uniformMatrix4fv(uniforms.fallbackMatrix, false, projection.fallbackMatrix);
+			// MapLibre's projection uniforms (supplied via the shader prelude).
+			if (uniforms.projMatrix) gl.uniformMatrix4fv(uniforms.projMatrix, false, projection.mainMatrix);
+			if (uniforms.tileMercatorCoords && projection.tileMercatorCoords)
+				gl.uniform4fv(uniforms.tileMercatorCoords, projection.tileMercatorCoords);
+			if (uniforms.clippingPlane && projection.clippingPlane)
+				gl.uniform4fv(uniforms.clippingPlane, projection.clippingPlane);
+			if (uniforms.transition != null && projection.projectionTransition != null)
+				gl.uniform1f(uniforms.transition, projection.projectionTransition);
+			if (uniforms.fallbackMatrix && projection.fallbackMatrix)
+				gl.uniformMatrix4fv(uniforms.fallbackMatrix, false, projection.fallbackMatrix);
 
-      // Shadow axis + profile.
-      gl.uniform3fv(uniforms.sunDir, shadowState.sunDir);
-      gl.uniform3fv(uniforms.center, shadowState.center);
-      gl.uniform3fv(uniforms.axis, shadowState.axis);
-      gl.uniform1f(uniforms.rMax, shadowState.rMax);
+			// Shadow axis + profile.
+			gl.uniform3fv(uniforms.sunDir, shadowState.sunDir);
+			gl.uniform3fv(uniforms.center, shadowState.center);
+			gl.uniform3fv(uniforms.axis, shadowState.axis);
+			gl.uniform1f(uniforms.rMax, shadowState.rMax);
 
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, this.profileTexture);
-      if (shadowState.profile && shadowState.profileVersion !== this.uploadedProfileVersion) {
-        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, shadowState.profile.length, 1, 0, gl.RED, gl.UNSIGNED_BYTE, shadowState.profile);
-        this.uploadedProfileVersion = shadowState.profileVersion;
-      }
-      gl.uniform1i(uniforms.profile, 0);
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, this.profileTexture);
+			if (shadowState.profile && shadowState.profileVersion !== this.uploadedProfileVersion) {
+				gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+				gl.texImage2D(
+					gl.TEXTURE_2D,
+					0,
+					gl.R8,
+					shadowState.profile.length,
+					1,
+					0,
+					gl.RED,
+					gl.UNSIGNED_BYTE,
+					shadowState.profile
+				);
+				this.uploadedProfileVersion = shadowState.profileVersion;
+			}
+			gl.uniform1i(uniforms.profile, 0);
 
-      bindVec2Attribute(gl, this.positionBuffer, attribs.tilePos);
-      bindVec2Attribute(gl, this.poleFlagBuffer, attribs.poleFlag);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+			bindVec2Attribute(gl, this.positionBuffer, attribs.tilePos);
+			bindVec2Attribute(gl, this.poleFlagBuffer, attribs.poleFlag);
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
-      // Blend the darkening over the tiles; cull the far hemisphere; ignore depth.
-      gl.enable(gl.BLEND);
-      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      gl.enable(gl.CULL_FACE);
-      gl.cullFace(gl.BACK);
-      gl.disable(gl.DEPTH_TEST);
-      gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_INT, 0);
-      gl.disable(gl.CULL_FACE);
-    }
-  };
+			// Blend the darkening over the tiles; cull the far hemisphere; ignore depth.
+			gl.enable(gl.BLEND);
+			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+			gl.enable(gl.CULL_FACE);
+			gl.cullFace(gl.BACK);
+			gl.disable(gl.DEPTH_TEST);
+			gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_INT, 0);
+			gl.disable(gl.CULL_FACE);
+		}
+	};
 }

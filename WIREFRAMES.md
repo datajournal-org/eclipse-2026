@@ -63,21 +63,25 @@ Kopf: **📍 gesetzter Ort** (z. B. „Berlin, Deutschland") mit „ändern". Re
 **B1 → B3 → B2 → B6** — „Sehe ich es überhaupt?" (B3) steht bewusst vor „Wann genau?" (B2).
 
 ### B1 — Verdikt-Karte
+
 Eine einzige große Aussage, ein Blick: verfinsterte Sonnenscheibe + **„87 % Bedeckung"**,
 Satz „Die Sonne geht halb verfinstert unter." Darunter die Kennzahlen — Beginn 19:36 ·
 Maximum 20:31 · **Sonnenuntergang 20:47 (⚠ vor Ende der Finsternis)**. Augenschutz-Verdikt:
 „Partiell — Brille die **ganze Zeit** auflassen, nie absetzen."
 
 ### B2 — Persönliche Zeitleiste (Phasen)
+
 Horizontale Timeline mit den echten lokalen Phasen (1. Kontakt → Maximum → Sonnenuntergang),
 jede Phase antippbar mit „wonach schaue ich, wann darf die Brille ab?":
+
 - **19:36 · 1. Kontakt** — der Mond berührt die Sonne.
 - **20:31 · Maximum (87 %)** — größte Bedeckung, sichelförmig.
 - **20:47 · Sonnenuntergang** — Sonne verschwindet, noch verfinstert.
 - In der Totalitätszone zusätzlich: 2./3. Kontakt, Dauer auf die Sekunde, Diamantring ·
   Baily's Beads · Korona · Schattenbänder.
 
-### B3 — 3D-Horizont + Zeitschieber *(Kern-Feature)*
+### B3 — 3D-Horizont + Zeitschieber _(Kern-Feature)_
+
 Kopfzeile: „Beim Maximum: Sonne **8° hoch, Richtung 292° WNW** (≈ eine Faust überm Horizont)."
 Darunter eine **3D-Ansicht der Umgebung** des Standorts mit **Bergen und Gebäuden**, darüber
 die Sonnenbahn und die verfinsterte Sonne. Ein **Zeitschieber** (19:36 – 20:47) fährt durch
@@ -86,9 +90,11 @@ Sonne verdecken, sieht man **direkt in der 3D-Szene** — die App macht dazu bew
 berechnete Aussage. Als harte Zeitangabe wird der **Sonnenuntergang** genannt.
 
 ### B6 — Checkliste & Countdown
+
 Countdown (gleicher wie A1) plus einfache Checkliste:
+
 - [ ] Finsternisbrille (ISO 12312-2) besorgen + auf Kratzer prüfen
-- [ ] **Wettervorhersage checken** *(nur als Punkt — keine Prognose in der App)*
+- [ ] **Wettervorhersage checken** _(nur als Punkt — keine Prognose in der App)_
 - [ ] Platz mit freier Westsicht suchen
 - [ ] Termin in den Kalender eintragen
 - [ ] Ggf. Reise in die Totalitätszone planen
@@ -102,8 +108,8 @@ Dazu „📅 In Kalender exportieren" mit den korrekten lokalen Phasenzeiten.
 - **🌐 Sprache:** i18n von Anfang an. Umschaltung im Header (Startset DE / EN / ES), Default
   aus Browser-Einstellung; Zeit-/Zahlenformate und Himmelsrichtungen lokalisiert.
 - **⚠ Augenschutz:** in A als Fußzeile, in B im Verdikt und in den Phasen.
-  - Partial-Standort → „Brille die ganze Zeit auf."
-  - Totalitäts-Standort → „nur *innerhalb* der Totalität absetzen."
+   - Partial-Standort → „Brille die ganze Zeit auf."
+   - Totalitäts-Standort → „nur _innerhalb_ der Totalität absetzen."
 - **ℹ Über:** Impressum, Datenquellen, Hinweis „Standort bleibt lokal, kein Konto nötig".
 
 ---

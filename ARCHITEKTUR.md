@@ -17,7 +17,7 @@ Ergänzt [`KONZEPT.md`](./KONZEPT.md) und [`WIREFRAMES.md`](./WIREFRAMES.md).
 ## Stack (festgelegt)
 
 | Schicht     | Wahl                                                                  |
-|-------------|-----------------------------------------------------------------------|
+| ----------- | --------------------------------------------------------------------- |
 | Framework   | **SvelteKit** (static adapter, prerendered)                           |
 | Astronomie  | **`astronomy-engine`** (reines JS, im Browser) — Ergebnisse validiert |
 | Karten/3D   | **MapLibre GL JS** (Globus-Projektion für A2, 3D-Szene für B3)        |
@@ -33,13 +33,14 @@ Ergänzt [`KONZEPT.md`](./KONZEPT.md) und [`WIREFRAMES.md`](./WIREFRAMES.md).
 ## Datenquellen (VersaTiles)
 
 | Zweck      | URL                                               | Typ / Format            | Wichtig                                                           |
-|------------|---------------------------------------------------|-------------------------|-------------------------------------------------------------------|
+| ---------- | ------------------------------------------------- | ----------------------- | ----------------------------------------------------------------- |
 | Satellit   | `tiles.versatiles.org/tiles/satellite/tiles.json` | raster, WebP, z0–19     | Hintergrundtextur                                                 |
 | OSM-Vektor | `tiles.versatiles.org/tiles/osm/tiles.json`       | vector (pbf)            | Layer `buildings`, Feld **`height`** (m), `min_height`, `hide_3d` |
 | Elevation  | `tiles.versatiles.org/tiles/elevation/tiles.json` | raster, WebP, z0–**12** | **Terrarium-Encoding** → `raster-dem`, `encoding: "terrarium"`    |
 | Geocoder   | Playground: `versatiles.org/playground/geocoder/` | —                       | Ortssuche + Reverse (für Karten-Tap)                              |
 
 **Hinweise:**
+
 - Elevation nur bis z12 → grob im Nahbereich, aber ausreichend für **Berge am Horizont**
   (Fernfeld). Das **Nahfeld** übernehmen die OSM-Gebäude.
 - Gebäudehöhe kommt direkt aus `height` — kein Schätzen aus Stockwerken nötig.
@@ -49,19 +50,23 @@ Ergänzt [`KONZEPT.md`](./KONZEPT.md) und [`WIREFRAMES.md`](./WIREFRAMES.md).
 ## Komponenten
 
 ### 1. Astronomie-Engine
+
 `astronomy-engine` rechnet für beliebige lat/lon: Bedeckungsgrad, Kontaktzeiten (1.–4.),
 bei Totalität Dauer, sowie Sonnenhöhe/-azimut über die Zeit.
 **Qualitätssicherung:** Ergebnisse für Referenzstädte gegen die publizierten
 Espenak-/NASA-Tabellen gegenprüfen (räumt auch die widersprüchlichen Wikipedia-Werte aus).
 
 ### 2. Standort
+
 - **GPS:** Browser-`Geolocation`-API.
 - **Ortssuche:** VersaTiles-Geocoder.
 - **Karten-Tap:** Klick auf Karte → Reverse-Geocoding für den Ortsnamen.
 - Gesetzter Ort in `localStorage` **und** URL (`?lat=&lon=`) → teilbar, bleibt lokal.
 
 ### 3. Schattenlauf (A2)
+
 MapLibre GL JS mit **Globus-Projektion**. Zwei getrennte Ebenen:
+
 - **Ganzer Verlauf (vorberechnet, statisch):** Zentrallinie und Umbra-/Penumbra-Grenzen als
   zur **Build-Zeit berechnetes GeoJSON**, dargestellt als **gestrichelte Linien** — deuten den
   gesamten Pfad an, ohne den Blick zu dominieren.
@@ -74,20 +79,24 @@ So bleibt der Verlauf jederzeit als gestrichelte Spur sichtbar, während der Sch
 Schatten flüssig darüberführt — kein Interpolieren aus vorgerechneten Stützstellen.
 
 ### 4. 3D-Horizont + Zeitschieber (B3) — Kern-Feature
+
 MapLibre-3D-Szene auf **stilisiertem OSM-Vektor-Grund** (`@versatiles/style`, Theme
 `colorful`) + **Terrain/Hillshade (Elevation, Fernfeld)** + **`fill-extrusion` 3D-Gebäude
 (OSM, Nahfeld, `height`)**. Die flachen Gebäude-Layer des Themes werden durch Extrusionen
 ersetzt. Zeitschieber = reine UI, teilt die Astronomie-Engine. Details zur Sonne unten.
-*(Satellitenkacheln bleiben dem A2-Globus vorbehalten.)*
+_(Satellitenkacheln bleiben dem A2-Globus vorbehalten.)_
 
 ### 6. Checkliste (B6)
+
 **Nicht interaktiv** — schlichte Textaufzählung. `.ics`-Kalender-Export clientseitig.
 
 ### 7. i18n
+
 Texte aus Sprachdateien, `Intl` für Datum/Zahl/Himmelsrichtung, Umschaltung im Header,
 Default aus Browser. Start: DE / EN / ES.
 
 ### 8. App-Shell
+
 SvelteKit prerendered → statische Dateien auf bunny.net. Service Worker macht die App nach
 dem ersten Besuch (und ab gesetztem Standort) offline nutzbar.
 
@@ -107,7 +116,7 @@ Distanz → teilt den Raum mit Terrain und Gebäuden.
 MapLibre **v5 kennt kein `FreeCameraOptions` mehr**. Stattdessen
 **`map.calculateCameraOptionsFromTo(Auge, Augenhöhe, Ziel, Zielhöhe)`** → berechnet aus
 Beobachter-Augenpunkt und einem Zielpunkt entlang des Sonnen-Azimuts die First-Person-Kamera.
-Das Ziel liegt auf einem **festen leichten Abwärtswinkel (~6°)**, *nicht* auf der Sonnenhöhe —
+Das Ziel liegt auf einem **festen leichten Abwärtswinkel (~6°)**, _nicht_ auf der Sonnenhöhe —
 sonst verlangt hohe Sonne einen Pitch > maxPitch, der Clamp erzeugt eine degenerierte Kamera und
 der Vordergrund flackert/verschwindet. Pitch bleibt so stabil bei ~84°; die tief stehende Sonne
 erscheint im oberen Bildbereich.
@@ -168,6 +177,7 @@ Im Ordner [`prototype/`](./prototype/) — lauffähig via `npx serve .` oder
 - `validate.mjs` — `node validate.mjs` prüft die Mathematik gegen bekannte Werte.
 
 **Gelöst / verifiziert:**
+
 - Schattenzentrum stimmt **auf 0,0 km** mit `SearchGlobalSolarEclipse` überein — Schlüssel:
   Sonnenvektor **mit Aberration** (`GeoVector(Sun, t, true)`).
 - Sichel-Geometrie (eigene Disk-Overlap-Formel) trifft astronomy-engines Bedeckung auf ~1 %.
@@ -176,6 +186,7 @@ Im Ordner [`prototype/`](./prototype/) — lauffähig via `npx serve .` oder
 Sonnengröße/Fade kalibrieren).
 
 **Per Playwright-Screenshots verifiziert & behoben:**
+
 - B3 rendert Vektor-Grund (colorful), 3D-Gebäude, Ego-Kamera, Sichel; Terrain verdeckt die
   Sonne (Innsbruck: 6°-Berghorizont blendet die 1,7°-Sonne aus).
 - **Fallstrick 1:** `@versatiles/style` braucht im Browser explizites `baseUrl`
@@ -188,14 +199,14 @@ Sonnengröße/Fade kalibrieren).
 
 ## Validierte Referenzwerte (astronomy-engine, UTC)
 
-| Ort | Art | Bedeckung | Maximum | Sonnenhöhe | Azimut |
-|---|---|---|---|---|---|
-| Größte Finsternis (bei Island) | total | 100 % | 17:45:46 | — | — |
-| Reykjavík | total | 100 % | 17:48 | 24,6° | — |
-| Oviedo (N-Spanien) | total | 100 % | 18:27 | 10,3° | — |
-| Palma | total | 100 % | 18:31 | 2,6° | — |
-| Berlin | partiell | **84,8 %** | 18:08 | 3,5° | 290° WNW |
-| München | partiell | **88,7 %** | 18:15 | 2,1° | — |
+| Ort                            | Art      | Bedeckung  | Maximum  | Sonnenhöhe | Azimut   |
+| ------------------------------ | -------- | ---------- | -------- | ---------- | -------- |
+| Größte Finsternis (bei Island) | total    | 100 %      | 17:45:46 | —          | —        |
+| Reykjavík                      | total    | 100 %      | 17:48    | 24,6°      | —        |
+| Oviedo (N-Spanien)             | total    | 100 %      | 18:27    | 10,3°      | —        |
+| Palma                          | total    | 100 %      | 18:31    | 2,6°       | —        |
+| Berlin                         | partiell | **84,8 %** | 18:08    | 3,5°       | 290° WNW |
+| München                        | partiell | **88,7 %** | 18:15    | 2,1°       | —        |
 
 „München > Berlin" bestätigt: München liegt südlicher, näher am Pfad. Ortszeit = UTC + 2 (MESZ),
 d. h. Maximum Berlin ≈ **20:08 Uhr** MESZ.

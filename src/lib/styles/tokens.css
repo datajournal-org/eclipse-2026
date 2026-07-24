@@ -13,77 +13,77 @@
 
 /* ---------- 1. PRIMITIVES (brand) ---------- */
 :root {
-  /* palette */
-  --amber-500:  #e8a33d;   /* the Sun / primary accent */
-  --amber-300:  #ffd27f;   /* live shadow rings / hover */
-  --night-900:  #05070d;   /* page ground */
-  --night-800:  #0a0e16;   /* raised ground */
-  --sky-700:    #16233b;   /* top-of-page glow */
-  --ink-000:    #ece9e1;   /* near-white text */
-  --danger-500: #ff7a5c;   /* eye-safety */
-  --success-500:#7fd4a0;
+	/* palette */
+	--amber-500: #e8a33d; /* the Sun / primary accent */
+	--amber-300: #ffd27f; /* live shadow rings / hover */
+	--night-900: #05070d; /* page ground */
+	--night-800: #0a0e16; /* raised ground */
+	--sky-700: #16233b; /* top-of-page glow */
+	--ink-000: #ece9e1; /* near-white text */
+	--danger-500: #ff7a5c; /* eye-safety */
+	--success-500: #7fd4a0;
 
-  /* ink alpha steps — text, surfaces and hairlines over the dark ground */
-  --ink-a04: rgb(236 233 225 / 0.045);
-  --ink-a08: rgb(236 233 225 / 0.08);
-  --ink-a12: rgb(236 233 225 / 0.12);
-  --ink-a20: rgb(236 233 225 / 0.20);
-  --ink-a42: rgb(236 233 225 / 0.42);
-  --ink-a66: rgb(236 233 225 / 0.66);
+	/* ink alpha steps — text, surfaces and hairlines over the dark ground */
+	--ink-a04: rgb(236 233 225 / 0.045);
+	--ink-a08: rgb(236 233 225 / 0.08);
+	--ink-a12: rgb(236 233 225 / 0.12);
+	--ink-a20: rgb(236 233 225 / 0.2);
+	--ink-a42: rgb(236 233 225 / 0.42);
+	--ink-a66: rgb(236 233 225 / 0.66);
 
-  /* radii — deliberate for the flat look (Open Props' radius steps jump 5px→16px) */
-  --radius-tight: 10px;
-  --radius-soft:  14px;
+	/* radii — deliberate for the flat look (Open Props' radius steps jump 5px→16px) */
+	--radius-tight: 10px;
+	--radius-soft: 14px;
 }
 
 /* ---------- 2. SEMANTIC (roles components use) ---------- */
 :root {
-  /* color roles */
-  --bg:         var(--night-900);
-  --bg-2:       var(--night-800);
-  --glow:       var(--sky-700);
-  --surface:    var(--ink-a04);
-  --surface-2:  var(--ink-a08);
-  --border:     var(--ink-a12);
-  --border-2:   var(--ink-a20);
-  --text:       var(--ink-000);
-  --muted:      var(--ink-a66);
-  --faint:      var(--ink-a42);
-  --accent:     var(--amber-500);
-  --accent-2:   var(--amber-300);
-  --warn:       var(--danger-500);
-  --good:       var(--success-500);
+	/* color roles */
+	--bg: var(--night-900);
+	--bg-2: var(--night-800);
+	--glow: var(--sky-700);
+	--surface: var(--ink-a04);
+	--surface-2: var(--ink-a08);
+	--border: var(--ink-a12);
+	--border-2: var(--ink-a20);
+	--text: var(--ink-000);
+	--muted: var(--ink-a66);
+	--faint: var(--ink-a42);
+	--accent: var(--amber-500);
+	--accent-2: var(--amber-300);
+	--warn: var(--danger-500);
+	--good: var(--success-500);
 
-  /* radii */
-  --radius:     var(--radius-soft);
-  --radius-sm:  var(--radius-tight);
+	/* radii */
+	--radius: var(--radius-soft);
+	--radius-sm: var(--radius-tight);
 
-  /* spacing scale — mapped onto Open Props sizes */
-  --space-3xs:  var(--size-1);   /*  4px */
-  --space-2xs:  var(--size-2);   /*  8px */
-  --space-xs:   var(--size-3);   /* 16px */
-  --space-sm:   var(--size-4);   /* 20px */
-  --space-md:   var(--size-5);   /* 24px */
-  --space-lg:   var(--size-7);   /* 32px */
-  --space-xl:   var(--size-8);   /* 48px */
-  --edge:       var(--size-3);   /* 16px — horizontal viewport gutter */
+	/* spacing scale — mapped onto Open Props sizes */
+	--space-3xs: var(--size-1); /*  4px */
+	--space-2xs: var(--size-2); /*  8px */
+	--space-xs: var(--size-3); /* 16px */
+	--space-sm: var(--size-4); /* 20px */
+	--space-md: var(--size-5); /* 24px */
+	--space-lg: var(--size-7); /* 32px */
+	--space-xl: var(--size-8); /* 48px */
+	--edge: var(--size-3); /* 16px — horizontal viewport gutter */
 
-  /* type scale — mapped onto Open Props font sizes */
-  --text-caption: var(--font-size-0);  /* 12px */
-  --text-body:    var(--font-size-1);  /* 16px */
-  --text-h3:      var(--font-size-1);  /* 16px */
-  --text-h2:      var(--font-size-3);  /* 20px */
-  --text-h1:      var(--font-size-4);  /* 24px */
-  --text-display: var(--font-size-6);  /* 40px */
+	/* type scale — mapped onto Open Props font sizes */
+	--text-caption: var(--font-size-0); /* 12px */
+	--text-body: var(--font-size-1); /* 16px */
+	--text-h3: var(--font-size-1); /* 16px */
+	--text-h2: var(--font-size-3); /* 20px */
+	--text-h1: var(--font-size-4); /* 24px */
+	--text-display: var(--font-size-6); /* 40px */
 
-  /* fonts — Open Props system stacks */
-  --font:     var(--font-sans);
-  --font-num: var(--font-mono);
+	/* fonts — Open Props system stacks */
+	--font: var(--font-sans);
+	--font-num: var(--font-mono);
 
-  /* motion */
-  --ease:     var(--ease-3);
-  --dur:      0.15s;
+	/* motion */
+	--ease: var(--ease-3);
+	--dur: 0.15s;
 
-  /* layout */
-  --maxw:     680px;
+	/* layout */
+	--maxw: 680px;
 }
