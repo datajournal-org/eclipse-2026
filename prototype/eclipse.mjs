@@ -55,6 +55,30 @@ export function shadowCenter(date) {
   return { lat, lon };
 }
 
+/**
+ * Sun & Moon in Earth-Centered Earth-Fixed (ECEF) coordinates at a given instant, in units of
+ * Earth radii. For the per-pixel shadow shader, whose surface point is
+ * P = [cos(lat)cos(lon), cos(lat)sin(lon), sin(lat)] in the same frame.
+ * Returns { sun: unit dir to Sun, moon: position (Earth radii), sunAngR: Sun angular radius (rad) }.
+ */
+export function sunMoonECEF(date) {
+  const time = A.MakeTime(date);
+  const rot = A.Rotation_EQJ_EQD(time);               // EQJ → equator-of-date
+  const g = A.SiderealTime(time) * 15 * D2R;          // GAST, radians
+  const cg = Math.cos(g), sg = Math.sin(g);
+  const toECEF = (v) => { const e = A.RotateVector(rot, v);   // then Rz(-GAST): EQD → Earth-fixed
+    return { x: e.x*cg + e.y*sg, y: -e.x*sg + e.y*cg, z: e.z }; };
+  const ER = 6371;                                     // mean Earth radius, km
+  const sunE = toECEF(A.GeoVector(A.Body.Sun, time, true));    // AU
+  const moonE = toECEF(A.GeoVector(A.Body.Moon, time, true));  // AU
+  const sunLen = Math.hypot(sunE.x, sunE.y, sunE.z);
+  return {
+    sun: [ sunE.x/sunLen, sunE.y/sunLen, sunE.z/sunLen ],            // unit ECEF dir to Sun
+    moon: [ moonE.x*AU_KM/ER, moonE.y*AU_KM/ER, moonE.z*AU_KM/ER ],  // ECEF, Earth radii
+    sunAngR: Math.asin(696000 / (sunLen * AU_KM)),                   // Sun angular radius, rad
+  };
+}
+
 /** Greatest-eclipse point + time (for validation and framing the globe). */
 export function greatestEclipse() {
   const g = A.SearchGlobalSolarEclipse(A.MakeTime(new Date(ECLIPSE_DATE + 'T00:00:00Z')));

@@ -16,7 +16,7 @@
   .panel { position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 5;
     background: rgba(10,14,22,.82); backdrop-filter: blur(8px);
     border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 12px 14px;
-    max-width: 620px; margin: 0 auto; }
+    max-width: 640px; margin: 0 auto; }
   .row { display: flex; align-items: center; gap: 12px; }
   .clock { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.15rem; }
   .clock small { font-weight: 400; opacity: .6; }
@@ -25,12 +25,11 @@
   .title { position: absolute; top: 12px; left: 12px; z-index: 5; font-weight: 700;
     text-shadow: 0 1px 4px #000; }
   .title small { display:block; font-weight: 400; opacity: .7; }
-  .badge { color:#e8a33d; }
 </style>
 </head>
 <body>
 <div id="map"></div>
-<div class="title">☀︎ Schattenlauf · 12. Aug 2026 <small>Prototyp A2 — gestrichelt = ganzer Pfad · gefüllt = Live-Schatten aus dem Schieber</small></div>
+<div class="title">☀︎ Schattenlauf · 12. Aug 2026 <small>Prototyp A2 — realistischer Mondschatten (Umbra + Penumbra), pro Pixel per Custom-Layer-Shader.</small></div>
 <div class="panel">
   <div class="row">
     <div class="clock" id="clock">--:--<small> UTC</small></div>
@@ -40,77 +39,121 @@
 </div>
 
 <script type="module">
-import { shadowCenter } from './eclipse.mjs';
+import { shadowCenter, sunMoonECEF } from './eclipse.mjs';
 
 const SAT = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
 
-// --- Build the whole shadow path once (the "vorberechnet" dashed line) ---
-const t0 = Date.UTC(2026, 7, 12, 16, 30), t1 = Date.UTC(2026, 7, 12, 19, 0);
-const STEP = 30 * 1000; // 30 s
-const samples = [];      // {t, lat, lon} where the umbra touches Earth
-for (let t = t0; t <= t1; t += STEP) {
-  const p = shadowCenter(new Date(t));
-  if (p) samples.push({ t, lat: p.lat, lon: p.lon });
-}
+// whole shadow path (precomputed dashed central line)
+const t0 = Date.UTC(2026,7,12,16,30), t1 = Date.UTC(2026,7,12,19,0), STEP = 30*1000;
+const samples = [];
+for (let t=t0; t<=t1; t+=STEP){ const p=shadowCenter(new Date(t)); if(p) samples.push({t, ...p}); }
 const pathCoords = samples.map(s => [s.lon, s.lat]);
-const tMin = samples[0].t, tMax = samples[samples.length - 1].t;
+const tMin = samples[0].t, tMax = samples[samples.length-1].t;
+const fmt = t => new Date(t).toISOString().slice(11,16);
 
-// circle polygon (approx, on sphere) for the umbra footprint
-function circle(lat, lon, km, n = 48) {
-  const R = 6371, d = km / R, la = lat * Math.PI/180, lo = lon * Math.PI/180, ring = [];
-  for (let i = 0; i <= n; i++) {
-    const b = 2*Math.PI*i/n;
-    const la2 = Math.asin(Math.sin(la)*Math.cos(d) + Math.cos(la)*Math.sin(d)*Math.cos(b));
-    const lo2 = lo + Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la), Math.cos(d)-Math.sin(la)*Math.sin(la2));
-    ring.push([lo2*180/Math.PI, la2*180/Math.PI]);
-  }
-  return { type:'Feature', geometry:{ type:'Polygon', coordinates:[ring] } };
+function compile(gl, vs, fs){
+  const c=(t,s)=>{const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);
+    if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(sh);return sh;};
+  const p=gl.createProgram(); gl.attachShader(p,c(gl.VERTEX_SHADER,vs)); gl.attachShader(p,c(gl.FRAGMENT_SHADER,fs));
+  gl.linkProgram(p); if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw gl.getProgramInfoLog(p); return p;
 }
+
+// ---- per-pixel moon shadow, drawn onto the globe via MapLibre's own projection ----
+// shared state (Sun/Moon in Earth-fixed frame), updated from the time slider
+const shadow = { sun:[0,0,1], moon:[60,0,0], sunAngR:0.00465, ready:false };
+const GRID = 200;
+// fragment shader: per surface point, obscuration = overlap of Sun & Moon discs → darken
+const FRAG = `#version 300 es
+precision highp float; in vec3 v_ecef;
+uniform vec3 u_sun; uniform vec3 u_moon; uniform float u_sunAngR;
+out vec4 fragColor;
+float ov(float rS,float rM,float d){ if(d>=rS+rM)return 0.0; if(d<=abs(rM-rS))return rM>=rS?1.0:(rM*rM)/(rS*rS);
+  float a=clamp((d*d+rS*rS-rM*rM)/(2.0*d*rS),-1.,1.), b=clamp((d*d+rM*rM-rS*rS)/(2.0*d*rM),-1.,1.);
+  float A=rS*rS*acos(a)+rM*rM*acos(b)-0.5*sqrt(max(0.,(-d+rS+rM)*(d+rS-rM)*(d-rS+rM)*(d+rS+rM)));
+  return A/(3.141592653*rS*rS); }
+void main(){ vec3 P=normalize(v_ecef);
+  float day=smoothstep(-0.02, 0.12, dot(P,u_sun));  // fade to 0 at the terminator (soft edge)
+  if(day<=0.0) discard;                             // night side: no sunlight to block
+  vec3 mv=u_moon-P; float mR=0.27271/length(mv);    // Moon radius (Earth radii) / distance to P
+  float sep=acos(clamp(dot(u_sun,normalize(mv)),-1.,1.));
+  float o=ov(u_sunAngR,mR,sep); if(o<0.002) discard;
+  fragColor=vec4(0.0,0.0,0.03, o*0.82*day); }`;
+
+const shadowLayer = {
+  id:'moon-shadow', type:'custom', renderingMode:'2d',
+  onAdd(map, gl){
+    const v=[], idx=[];
+    for(let iy=0;iy<=GRID;iy++) for(let ix=0;ix<=GRID;ix++) v.push(ix/GRID, iy/GRID);
+    for(let iy=0;iy<GRID;iy++) for(let ix=0;ix<GRID;ix++){ const a=iy*(GRID+1)+ix,b=a+1,c=a+GRID+1,d=c+1;
+      idx.push(a,c,b, b,c,d); }
+    this.count=idx.length;
+    this.vbo=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,this.vbo);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.STATIC_DRAW);
+    this.ibo=gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.ibo);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint32Array(idx),gl.STATIC_DRAW);
+    this.progs={};
+  },
+  // compile per projection variant (globe/mercator/transition) — MapLibre's prelude provides projectTile()
+  prog(gl, sd){
+    if(this.progs[sd.variantName]) return this.progs[sd.variantName];
+    const vs = `#version 300 es\n`+sd.vertexShaderPrelude+`\n`+sd.define+`\n`+
+      `in vec2 a_pos; out vec3 v_ecef;
+       void main(){ gl_Position=projectTile(a_pos);
+         float lon=a_pos.x*6.283185307-3.141592653;                 // mercator 0..1 → lon/lat
+         float lat=atan(sinh(3.141592653*(1.0-2.0*a_pos.y)));
+         float cl=cos(lat); v_ecef=vec3(cl*cos(lon), cl*sin(lon), sin(lat)); }`;
+    const p=compile(gl, vs, FRAG); const L=n=>gl.getUniformLocation(p,n);
+    return this.progs[sd.variantName]={ p, a:gl.getAttribLocation(p,'a_pos'),
+      pm:L('u_projection_matrix'), tmc:L('u_projection_tile_mercator_coords'),
+      cp:L('u_projection_clipping_plane'), tr:L('u_projection_transition'), fm:L('u_projection_fallback_matrix'),
+      sun:L('u_sun'), moon:L('u_moon'), sar:L('u_sunAngR') };
+  },
+  render(gl, opt){
+    if(!shadow.ready) return;
+    const o=this.prog(gl, opt.shaderData), pd=opt.defaultProjectionData;
+    gl.useProgram(o.p);
+    if(o.pm) gl.uniformMatrix4fv(o.pm,false,pd.mainMatrix);            // bind MapLibre's projection uniforms
+    if(o.tmc&&pd.tileMercatorCoords) gl.uniform4fv(o.tmc,pd.tileMercatorCoords);
+    if(o.cp&&pd.clippingPlane) gl.uniform4fv(o.cp,pd.clippingPlane);
+    if(o.tr!=null&&pd.projectionTransition!=null) gl.uniform1f(o.tr,pd.projectionTransition);
+    if(o.fm&&pd.fallbackMatrix) gl.uniformMatrix4fv(o.fm,false,pd.fallbackMatrix);
+    gl.uniform3fv(o.sun,shadow.sun); gl.uniform3fv(o.moon,shadow.moon); gl.uniform1f(o.sar,shadow.sunAngR);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this.vbo); gl.enableVertexAttribArray(o.a); gl.vertexAttribPointer(o.a,2,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.ibo);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.disable(gl.DEPTH_TEST);   // near hemisphere only
+    gl.drawElements(gl.TRIANGLES,this.count,gl.UNSIGNED_INT,0);
+    gl.disable(gl.CULL_FACE);
+  },
+};
 
 const map = new maplibregl.Map({
-  container: 'map',
-  center: [-18, 58], zoom: 2.2,
-  style: {
-    version: 8,
-    sources: { sat: { type:'raster', tiles:[SAT], tileSize:256, maxzoom:19,
-      attribution:'© VersaTiles / Mapterhorn' } },
-    layers: [
-      { id:'bg', type:'background', paint:{ 'background-color':'#05070d' } },
-      { id:'sat', type:'raster', source:'sat', paint:{ 'raster-brightness-max':.9 } },
-    ],
-  },
+  container:'map', center:[-18,58], zoom:2.2,
+  style:{ version:8,
+    sources:{ sat:{ type:'raster', tiles:[SAT], tileSize:256, maxzoom:19, attribution:'© VersaTiles / Mapterhorn' } },
+    layers:[ { id:'bg', type:'background', paint:{'background-color':'#05070d'} },
+             { id:'sat', type:'raster', source:'sat', paint:{'raster-brightness-max':.9} } ] },
 });
 map.addControl(new maplibregl.NavigationControl({ visualizePitch:true }));
+window.map = map;
 
 map.on('load', () => {
-  map.setProjection({ type: 'globe' });
-
-  // whole path (dashed)
-  map.addSource('path', { type:'geojson', data:{ type:'Feature',
-    geometry:{ type:'LineString', coordinates: pathCoords } } });
+  map.setProjection({ type:'globe' });
+  map.addSource('path', { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates:pathCoords } } });
   map.addLayer({ id:'path', type:'line', source:'path',
     paint:{ 'line-color':'#e8a33d', 'line-width':2, 'line-dasharray':[2,2], 'line-opacity':.9 } });
-
-  // live umbra (filled) + center dot
-  map.addSource('umbra', { type:'geojson', data:{ type:'FeatureCollection', features:[] } });
-  map.addLayer({ id:'umbra-fill', type:'fill', source:'umbra',
-    paint:{ 'fill-color':'#000', 'fill-opacity':.55 } });
-  map.addLayer({ id:'umbra-line', type:'line', source:'umbra',
-    paint:{ 'line-color':'#ffd27f', 'line-width':1.5 } });
+  map.addLayer(shadowLayer);
 
   const slider = document.getElementById('slider');
-  slider.min = 0; slider.max = samples.length - 1; slider.value = Math.floor(samples.length/2);
-
-  const fmt = (t) => new Date(t).toISOString().slice(11,16);
-  function update() {
-    const s = samples[+slider.value];
-    document.getElementById('clock').innerHTML = `${fmt(s.t)}<small> UTC</small>`;
-    // Recompute live (not read from samples) to prove real-time from the slider:
-    const p = shadowCenter(new Date(s.t));
-    const feat = circle(p.lat, p.lon, 60); // ~120 km umbra footprint (approx)
-    map.getSource('umbra').setData({ type:'FeatureCollection', features:[feat] });
-    document.getElementById('meta').textContent =
-      `Kernschatten @ ${p.lat.toFixed(2)}°, ${p.lon.toFixed(2)}°  ·  Pfad ${fmt(tMin)}–${fmt(tMax)} UTC (Umbra berührt die Erde)`;
+  slider.min=0; slider.max=samples.length-1; slider.value=Math.floor(samples.length/2);
+  function update(){
+    const s=samples[+slider.value], date=new Date(s.t);
+    const sm=sunMoonECEF(date); shadow.sun=sm.sun; shadow.moon=sm.moon; shadow.sunAngR=sm.sunAngR; shadow.ready=true;
+    map.triggerRepaint();
+    const p=shadowCenter(date);
+    document.getElementById('clock').innerHTML=`${fmt(s.t)}<small> UTC</small>`;
+    document.getElementById('meta').textContent=
+      `Kernschatten @ ${p.lat.toFixed(2)}°, ${p.lon.toFixed(2)}°  ·  Umbra + Penumbra pro Pixel  ·  Pfad ${fmt(tMin)}–${fmt(tMax)} UTC`;
   }
   slider.addEventListener('input', update);
   update();
