@@ -1,9 +1,10 @@
 <!--
   A2 — Schattenlauf. A MapLibre globe with the whole shadow path (dashed) and the live Moon
   shadow driven by a time slider. The heavy lifting lives in $lib/shadow-globe/*:
-    · shadowPath        — precomputed central path + timeline frames
-    · moonShadowLayer   — the per-pixel day/night + umbra/penumbra WebGL layer
-    · obscurationField  — the live 50/75/100 % coverage rings (marching squares)
+    · shadowPath      — precomputed central path + timeline frames
+    · shadowProfile   — per-frame shadow axis + 1D coverage profile (LUT)
+    · moonShadowLayer — the WebGL layer; samples the profile texture per pixel (day/night + shadow)
+    · isoRing         — analytic 50/75/100 % rings (cylinder ∩ sphere)
   This component just wires those onto the map and to the slider UI.
 -->
 <script>
@@ -12,7 +13,8 @@
   import { t } from '$lib/i18n';
   import { sunMoonECEF, shadowCenter } from '$lib/eclipse';
   import { shadowFrames, shadowPathLine, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
-  import { ObscurationField, EMPTY_LINES } from '$lib/shadow-globe/obscurationField';
+  import { computeShadowModel, radiusForCoverage } from '$lib/shadow-globe/shadowProfile';
+  import { isoRing, EMPTY_LINES } from '$lib/shadow-globe/isoRing';
   import { createMoonShadowLayer } from '$lib/shadow-globe/moonShadowLayer';
 
   const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
@@ -26,10 +28,12 @@
     { id: 'iso100', level: 0.99, percent: 100 }
   ];
 
-  // Shared state the WebGL layer reads each frame (see moonShadowLayer.js) and the reusable grid
-  // behind the coverage rings.
-  const shadowState = { sunDir: [0, 0, 1], moonPos: [60, 0, 0], sunAngularRadius: 0.00465, ready: false };
-  const obscuration = new ObscurationField();
+  // Shared state the WebGL layer reads each frame (see moonShadowLayer.js): the shadow axis plus
+  // the 1D coverage profile (as an 8-bit LUT). `profileVersion` bumps so the texture re-uploads.
+  const shadowState = {
+    center: [0, 0, 1], axis: [0, 0, 1], sunDir: [0, 0, 1], rMax: 0.5,
+    profile: null, profileVersion: 0, ready: false
+  };
 
   // ---- reactive UI state ----
   const START_INDEX = Math.floor(shadowFrames.length / 2);
@@ -100,21 +104,26 @@
   function renderFrame(map, index) {
     const frame = shadowFrames[index];
     const date = new Date(frame.time);
-    const sunMoon = sunMoonECEF(date);
+    const center = shadowCenter(date);
+    const model = computeShadowModel(center, sunMoonECEF(date));
 
-    // feed the shadow shader
-    shadowState.sunDir = sunMoon.sun;
-    shadowState.moonPos = sunMoon.moon;
-    shadowState.sunAngularRadius = sunMoon.sunAngR;
+    // feed the shadow shader (axis + coverage profile)
+    shadowState.center = model.center;
+    shadowState.axis = model.axis;
+    shadowState.sunDir = model.sunDir;
+    shadowState.rMax = model.rMax;
+    shadowState.profile = model.profileBytes;
+    shadowState.profileVersion++;
     shadowState.ready = true;
     map.triggerRepaint();
 
-    // recompute the live coverage rings
-    obscuration.sample(sunMoon);
-    for (const ring of ISO_RINGS) map.getSource(ring.id).setData(obscuration.contour(ring.level));
+    // analytic iso-rings: cylinder (radius for the coverage level) ∩ sphere
+    for (const ring of ISO_RINGS) {
+      const radius = radiusForCoverage(model, ring.level);
+      map.getSource(ring.id).setData(radius == null ? EMPTY_LINES : isoRing(model, radius));
+    }
 
     // header readout
-    const center = shadowCenter(date);
     clockUtc = formatUtc(frame.time);
     umbraCenterText = `${center.lat.toFixed(2)}°, ${center.lon.toFixed(2)}°`;
   }

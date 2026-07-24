@@ -1,46 +1,37 @@
-// A MapLibre CustomLayerInterface that paints a realistic, per-pixel Moon shadow onto the
-// globe: day/night terminator + umbra/penumbra, using MapLibre's own projection so the shadow
-// sits correctly on the sphere (poles included). The layer reads a small shared `shadowState`
-// object that the component updates every frame from the timeline.
+// A MapLibre CustomLayerInterface that paints a realistic, per-pixel Moon shadow onto the globe:
+// day/night terminator + umbra/penumbra, using MapLibre's own projection so the shadow sits
+// correctly on the sphere (poles included).
+//
+// The per-pixel work is cheap: instead of a disc-overlap formula, each pixel measures its
+// perpendicular distance to the shadow axis and looks the coverage up in a 1D profile texture
+// (see shadowProfile.js). The component updates a shared `shadowState` every frame.
 
 // Segments per axis of the full-globe overlay mesh.
 const GRID_RESOLUTION = 200;
 
-// Moon radius in Earth radii (same unit as `shadowState.moonPos`); see obscurationField.js.
-const MOON_RADIUS_IN_EARTH_RADII = 0.27271;
-
-// Fragment shader: for each pixel's ground point, work out how much of the Sun is covered and
-// how brightly lit it is, then output a translucent darkening over the satellite tiles.
+// Fragment shader: coverage from the profile LUT (by off-axis distance) → day/night + shadow tint.
 const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 in vec3 v_surfaceDir;                 // unit vector from Earth's centre to this ground point
 uniform vec3 u_sunDir;                // unit direction to the Sun (Earth-fixed frame)
-uniform vec3 u_moonPos;               // Moon position, Earth radii
-uniform float u_sunAngularRadius;     // Sun's angular radius, radians
+uniform vec3 u_center;                // shadow axis anchor on the sphere (unit)
+uniform vec3 u_axis;                  // unit shadow-axis direction (toward the Moon)
+uniform float u_rMax;                 // penumbra radius (coverage → 0), Earth radii
+uniform sampler2D u_profile;          // 1D coverage LUT (N×1, R channel)
 out vec4 fragColor;
-
-// Fraction of the Sun's disc hidden by the Moon's disc (two-circle lens overlap).
-float discOverlap(float sunR, float moonR, float sep) {
-  if (sep >= sunR + moonR) return 0.0;
-  if (sep <= abs(moonR - sunR)) return moonR >= sunR ? 1.0 : (moonR * moonR) / (sunR * sunR);
-  float a = clamp((sep * sep + sunR * sunR - moonR * moonR) / (2.0 * sep * sunR), -1.0, 1.0);
-  float b = clamp((sep * sep + moonR * moonR - sunR * sunR) / (2.0 * sep * moonR), -1.0, 1.0);
-  float lens = sunR * sunR * acos(a) + moonR * moonR * acos(b)
-    - 0.5 * sqrt(max(0.0, (-sep + sunR + moonR) * (sep + sunR - moonR) * (sep - sunR + moonR) * (sep + sunR + moonR)));
-  return lens / (3.141592653 * sunR * sunR);
-}
 
 void main() {
   vec3 surfaceDir = normalize(v_surfaceDir);
   float sinElevation = dot(surfaceDir, u_sunDir);
   float dayness = smoothstep(-0.18, 0.10, sinElevation);          // soft day/night terminator
 
-  vec3 toMoon = u_moonPos - surfaceDir;
-  float moonAngularRadius = ${MOON_RADIUS_IN_EARTH_RADII} / length(toMoon);
-  float separation = acos(clamp(dot(u_sunDir, normalize(toMoon)), -1.0, 1.0));
-  float coverage = discOverlap(u_sunAngularRadius, moonAngularRadius, separation);
+  // Perpendicular distance from this ground point to the shadow axis, looked up in the profile.
+  vec3 delta = surfaceDir - u_center;
+  float offAxis = length(delta - dot(delta, u_axis) * u_axis);
+  float coverage = texture(u_profile, vec2(clamp(offAxis / u_rMax, 0.0, 1.0), 0.5)).r;
 
   // From space the ground brightness ≈ 1 − coverage; the night side is darkened toward 0.09.
+  // (On the night side dayness → 0, so coverage — including the axis's far exit — has no effect.)
   float eclipseBrightness = 1.0 - coverage * 0.97;
   float brightness = mix(0.09, 1.0, dayness) * mix(1.0, eclipseBrightness, dayness);
 
@@ -115,8 +106,8 @@ function buildGlobeMesh() {
   const northPole = tilePositions.length / 2; tilePositions.push(0.5, 0.0); poleFlags.push(0, -40000);
   const southPole = tilePositions.length / 2; tilePositions.push(0.5, 1.0); poleFlags.push(0, 40000);
   const bottomRowStart = N * VERTS_PER_ROW;
-  for (let ix = 0; ix < N; ix++) indices.push(northPole, ix, ix + 1);                          // north cap fan
-  for (let ix = 0; ix < N; ix++) indices.push(bottomRowStart + ix, southPole, bottomRowStart + ix + 1); // south cap fan
+  for (let ix = 0; ix < N; ix++) indices.push(northPole, ix, ix + 1);                                    // north cap fan
+  for (let ix = 0; ix < N; ix++) indices.push(bottomRowStart + ix, southPole, bottomRowStart + ix + 1);  // south cap fan
 
   return { tilePositions, poleFlags, indices };
 }
@@ -136,8 +127,10 @@ function bindVec2Attribute(gl, buffer, location) {
 
 /**
  * Build the custom shadow layer.
- * @param {{ sunDir: number[], moonPos: number[], sunAngularRadius: number, ready: boolean }} shadowState
- *   Shared, mutated by the component each frame. `ready` gates the first render.
+ * @param {{ center:number[], axis:number[], sunDir:number[], rMax:number,
+ *           profile:Uint8Array|null, profileVersion:number, ready:boolean }} shadowState
+ *   Shared, mutated by the component each frame. `ready` gates the first render; `profileVersion`
+ *   bumps whenever `profile` (the coverage LUT) changes so the texture is re-uploaded.
  */
 export function createMoonShadowLayer(shadowState) {
   const programByVariant = {}; // projectTile differs per projection variant (globe/mercator/transition)
@@ -153,6 +146,15 @@ export function createMoonShadowLayer(shadowState) {
       this.positionBuffer = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(mesh.tilePositions));
       this.poleFlagBuffer = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(mesh.poleFlags));
       this.indexBuffer = createBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(mesh.indices));
+
+      // 1D coverage LUT as an N×1 R8 texture (linear-filterable → smooth penumbra).
+      this.profileTexture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, this.profileTexture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      this.uploadedProfileVersion = -1;
     },
 
     _programFor(gl, shaderData) {
@@ -173,8 +175,10 @@ export function createMoonShadowLayer(shadowState) {
           transition: uniform('u_projection_transition'),
           fallbackMatrix: uniform('u_projection_fallback_matrix'),
           sunDir: uniform('u_sunDir'),
-          moonPos: uniform('u_moonPos'),
-          sunAngularRadius: uniform('u_sunAngularRadius')
+          center: uniform('u_center'),
+          axis: uniform('u_axis'),
+          rMax: uniform('u_rMax'),
+          profile: uniform('u_profile')
         }
       };
       programByVariant[shaderData.variantName] = built;
@@ -194,10 +198,20 @@ export function createMoonShadowLayer(shadowState) {
       if (uniforms.transition != null && projection.projectionTransition != null) gl.uniform1f(uniforms.transition, projection.projectionTransition);
       if (uniforms.fallbackMatrix && projection.fallbackMatrix) gl.uniformMatrix4fv(uniforms.fallbackMatrix, false, projection.fallbackMatrix);
 
-      // Current Sun/Moon state.
+      // Shadow axis + profile.
       gl.uniform3fv(uniforms.sunDir, shadowState.sunDir);
-      gl.uniform3fv(uniforms.moonPos, shadowState.moonPos);
-      gl.uniform1f(uniforms.sunAngularRadius, shadowState.sunAngularRadius);
+      gl.uniform3fv(uniforms.center, shadowState.center);
+      gl.uniform3fv(uniforms.axis, shadowState.axis);
+      gl.uniform1f(uniforms.rMax, shadowState.rMax);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, this.profileTexture);
+      if (shadowState.profile && shadowState.profileVersion !== this.uploadedProfileVersion) {
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, shadowState.profile.length, 1, 0, gl.RED, gl.UNSIGNED_BYTE, shadowState.profile);
+        this.uploadedProfileVersion = shadowState.profileVersion;
+      }
+      gl.uniform1i(uniforms.profile, 0);
 
       bindVec2Attribute(gl, this.positionBuffer, attribs.tilePos);
       bindVec2Attribute(gl, this.poleFlagBuffer, attribs.poleFlag);
