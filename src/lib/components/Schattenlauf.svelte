@@ -49,9 +49,11 @@
 		ready: false
 	};
 
-	// Iso rings render through a custom layer (projectTile) so they stay correct over the poles.
+	// The whole path + the iso rings render through a custom layer (projectTile) so they stay correct
+	// over the poles (GeoJSON line layers clamp at ±85°).
 	const isoLinesState: IsoLinesState = { lines: [], version: 0, ready: false };
 	let ringRgb: [number, number, number] = [1, 0.82, 0.5]; // --accent-2; set from tokens on mount
+	let pathLine: LinePrimitive | null = null; // the static whole-event central line (set on mount)
 
 	// ---- reactive UI state ----
 	const START_INDEX = Math.floor(shadowFrames.length / 2);
@@ -74,6 +76,7 @@
 
 			const brand = readBrandColors();
 			ringRgb = hexToRgb(brand.ring);
+			pathLine = linePrimitiveFromSegments([shadowPathLine.geometry.coordinates], hexToRgb(brand.path), 0.45);
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				...INITIAL_VIEW,
@@ -104,8 +107,8 @@
 			m.on('load', () => {
 				m.setProjection({ type: 'globe' });
 				m.addLayer(createMoonShadowLayer(shadowState)); // darkening, under the reference lines
-				addPathAndRings(m, brand);
-				m.addLayer(createIsoLinesLayer(isoLinesState)); // iso rings via projectTile — pole-correct
+				addTerminatorLayer(m);
+				m.addLayer(createIsoLinesLayer(isoLinesState)); // path + iso rings via projectTile — pole-correct
 				showFrame = (index) => renderFrame(m, index);
 				showFrame(frameIndex);
 				mapReady = true;
@@ -119,7 +122,7 @@
 	});
 
 	/** Pull brand colours from the central design tokens so the canvas honours them too. */
-	function readBrandColors() {
+	function readBrandColors(): Brand {
 		const css = getComputedStyle(document.documentElement);
 		const token = (name: string, fallback: string) => {
 			const v = css.getPropertyValue(name).trim();
@@ -140,16 +143,9 @@
 		return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 	}
 
-	/** Faint dashed whole-path line, then the three (initially empty) live ring layers on top. */
-	function addPathAndRings(map: MlMap, brand: Brand) {
-		map.addSource('path', { type: 'geojson', data: shadowPathLine });
-		map.addLayer({
-			id: 'path',
-			type: 'line',
-			source: 'path',
-			paint: { 'line-color': brand.path, 'line-width': 1, 'line-opacity': 0.45 }
-		});
-		// (iso rings are drawn by the custom iso-lines layer, not GeoJSON — see createIsoLinesLayer)
+	/** Day/night terminator as a GeoJSON line — it stays below 85°, so it doesn't need the custom
+	 *  layer. The path and iso rings are drawn by the pole-correct custom iso-lines layer instead. */
+	function addTerminatorLayer(map: MlMap) {
 		map.addSource('terminator', { type: 'geojson', data: EMPTY_LINES });
 		map.addLayer({
 			id: 'terminator',
@@ -176,8 +172,9 @@
 		shadowState.ready = true;
 		map.triggerRepaint();
 
-		// analytic iso-rings → LinePrimitives for the pole-correct custom layer (projectTile)
+		// path + analytic iso-rings → LinePrimitives for the pole-correct custom layer (projectTile)
 		const lines: LinePrimitive[] = [];
+		if (pathLine) lines.push(pathLine);
 		for (const ring of ISO_RINGS) {
 			const radius = radiusForCoverage(model, ring.level);
 			if (radius == null) continue;
