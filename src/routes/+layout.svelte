@@ -1,4 +1,8 @@
 <script>
+  // Open Props engineering scales (tokens.css maps these into our semantic roles).
+  import 'open-props/sizes';
+  import 'open-props/fonts';
+  import 'open-props/easings';
   import '../app.css';
   import { onMount } from 'svelte';
   import { initLocale } from '$lib/i18n';

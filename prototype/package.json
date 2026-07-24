@@ -13,6 +13,7 @@
   "dependencies": {
     "@versatiles/style": "^5.13.0",
     "astronomy-engine": "^2.1.19",
+    "open-props": "^1.7.23",
     "playwright": "^1.61.1"
   }
 }

@@ -168,11 +168,15 @@
     (async () => {
       const maplibregl = (await import('maplibre-gl')).default;
       if (disposed) return;
+      // Pull brand colours from the central design tokens so the canvas honours them too.
+      const css = getComputedStyle(document.documentElement);
+      const tok = (n, f) => { const v = css.getPropertyValue(n).trim(); return !v || v.includes('var(') ? f : v; };
+      const C_BG = tok('--bg', '#05070d'), C_PATH = tok('--accent', '#e8a33d'), C_RING = tok('--accent-2', '#ffd27f');
       map = new maplibregl.Map({
         container: mapEl, center: [-18, 58], zoom: 2.1, scrollZoom: false, attributionControl: { compact: true },
         style: { version: 8,
           sources: { sat: { type: 'raster', tiles: [SAT], tileSize: 256, maxzoom: 19, attribution: '© VersaTiles / Mapterhorn' } },
-          layers: [ { id: 'bg', type: 'background', paint: { 'background-color': '#05070d' } },
+          layers: [ { id: 'bg', type: 'background', paint: { 'background-color': C_BG } },
                     { id: 'sat', type: 'raster', source: 'sat', paint: { 'raster-brightness-max': 0.9 } } ] }
       });
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
@@ -181,10 +185,10 @@
         map.setProjection({ type: 'globe' });
         map.addLayer(shadowLayer);
         map.addSource('path', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: pathCoords } } });
-        map.addLayer({ id: 'path', type: 'line', source: 'path', paint: { 'line-color': '#e8a33d', 'line-width': 1, 'line-opacity': 0.45 } });
+        map.addLayer({ id: 'path', type: 'line', source: 'path', paint: { 'line-color': C_PATH, 'line-width': 1, 'line-opacity': 0.45 } });
         for (const pct of [50, 75, 100]) {
           map.addSource(`iso${pct}`, { type: 'geojson', data: EMPTY });
-          map.addLayer({ id: `iso${pct}`, type: 'line', source: `iso${pct}`, paint: { 'line-color': '#ffd27f', 'line-width': 1, 'line-opacity': pct / 100 } });
+          map.addLayer({ id: `iso${pct}`, type: 'line', source: `iso${pct}`, paint: { 'line-color': C_RING, 'line-width': 1, 'line-opacity': pct / 100 } });
         }
 
         applyFrame = (idx) => {
@@ -231,18 +235,18 @@
     <div class="meta tnum">{$t('a2.core')} @ {coreText} · {utc(tMin)}–{utc(tMax)} UTC</div>
     <div class="legend">
       <span class="lbl">{$t('a2.current_shadow')}:</span>
-      <span style="color:#ffd27f;opacity:.55"><i></i>50 %</span>
-      <span style="color:#ffd27f;opacity:.8"><i></i>75 %</span>
-      <span style="color:#ffd27f"><i></i>100 %</span>
-      <span style="color:#e8a33d;opacity:.7"><i></i>{$t('a2.path')}</span>
+      <span style="color:var(--accent-2);opacity:.55"><i></i>50 %</span>
+      <span style="color:var(--accent-2);opacity:.8"><i></i>75 %</span>
+      <span style="color:var(--accent-2)"><i></i>100 %</span>
+      <span style="color:var(--accent);opacity:.7"><i></i>{$t('a2.path')}</span>
     </div>
   </div>
 </section>
 
 <style>
   .sub { color: var(--muted); font-size: 0.9rem; margin: 2px 0 14px; }
-  .map-wrap { position: relative; overflow: hidden; background: #05070d; border-block: 1px solid var(--border); }
-  .map { height: min(64vh, 480px); background: #05070d; }
+  .map-wrap { position: relative; overflow: hidden; background: var(--bg); border-block: 1px solid var(--border); }
+  .map { height: min(64vh, 480px); background: var(--bg); }
   .map-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); pointer-events: none; }
   .panel { margin-top: 12px; }
   .row { display: flex; align-items: center; gap: 12px; }
