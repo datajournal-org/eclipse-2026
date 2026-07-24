@@ -46,6 +46,7 @@
 	// ---- reactive UI state ----
 	const START_INDEX = Math.floor(shadowFrames.length / 2);
 	let mapContainer: HTMLDivElement;
+	let stage: HTMLDivElement; // map + panel wrapper — what goes fullscreen (so the slider stays visible)
 	let frameIndex = $state(START_INDEX);
 	let clockUtc = $state(formatUtc(shadowFrames[START_INDEX].time));
 	let umbraCenterText = $state('');
@@ -65,7 +66,7 @@
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				...INITIAL_VIEW,
-				scrollZoom: false, // don't trap page scroll; drag still spins the globe
+				scrollZoom: true, // wheel zoom (over the map it takes the scroll; use fullscreen for full control)
 				attributionControl: { compact: true },
 				style: {
 					version: 8,
@@ -86,6 +87,7 @@
 			});
 			map = m;
 			m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+			m.addControl(new maplibregl.FullscreenControl({ container: stage }), 'top-right');
 
 			m.on('load', () => {
 				m.setProjection({ type: 'globe' });
@@ -189,33 +191,35 @@
 	</div>
 	<p class="sub">{$t('a2.subtitle')}</p>
 
-	<div class="map-wrap bleed">
-		<div class="map" bind:this={mapContainer}></div>
-		{#if !mapReady}<div class="map-loading">{$t('a2.loading')}</div>{/if}
-	</div>
+	<div class="a2-stage" bind:this={stage}>
+		<div class="map-wrap bleed">
+			<div class="map" bind:this={mapContainer}></div>
+			{#if !mapReady}<div class="map-loading">{$t('a2.loading')}</div>{/if}
+		</div>
 
-	<div class="panel">
-		<div class="row">
-			<div class="clock tnum">{clockUtc}<small> UTC</small></div>
-			<input
-				type="range"
-				min="0"
-				max={shadowFrames.length - 1}
-				step="1"
-				value={frameIndex}
-				oninput={onScrub}
-				aria-label="{$t('a2.title')} — {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC"
-			/>
-		</div>
-		<div class="meta tnum">
-			{$t('a2.core')} @ {umbraCenterText} · {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC
-		</div>
-		<div class="legend">
-			<span class="lbl">{$t('a2.current_shadow')}:</span>
-			{#each ISO_RINGS as ring (ring.id)}
-				<span style="color:var(--accent-2);opacity:{ring.percent / 100}"><i></i>{ring.percent} %</span>
-			{/each}
-			<span style="color:var(--accent);opacity:.7"><i></i>{$t('a2.path')}</span>
+		<div class="panel">
+			<div class="row">
+				<div class="clock tnum">{clockUtc}<small> UTC</small></div>
+				<input
+					type="range"
+					min="0"
+					max={shadowFrames.length - 1}
+					step="1"
+					value={frameIndex}
+					oninput={onScrub}
+					aria-label="{$t('a2.title')} — {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC"
+				/>
+			</div>
+			<div class="meta tnum">
+				{$t('a2.core')} @ {umbraCenterText} · {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC
+			</div>
+			<div class="legend">
+				<span class="lbl">{$t('a2.current_shadow')}:</span>
+				{#each ISO_RINGS as ring (ring.id)}
+					<span style="color:var(--accent-2);opacity:{ring.percent / 100}"><i></i>{ring.percent} %</span>
+				{/each}
+				<span style="color:var(--accent);opacity:.7"><i></i>{$t('a2.path')}</span>
+			</div>
 		</div>
 	</div>
 </section>
@@ -234,6 +238,28 @@
 	.map {
 		height: min(64vh, 480px);
 		background: var(--bg);
+	}
+	/* Fullscreen wraps map + panel so the time slider stays visible. */
+	.a2-stage:fullscreen {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		height: 100%;
+		background: var(--bg);
+	}
+	.a2-stage:fullscreen .map-wrap {
+		margin-inline: 0;
+		flex: 1;
+		min-height: 0;
+	}
+	.a2-stage:fullscreen .map {
+		height: 100%;
+	}
+	.a2-stage:fullscreen .panel {
+		margin: 0;
+		align-self: center;
+		width: min(760px, 100%);
+		padding: 12px var(--edge) 16px;
 	}
 	.map-loading {
 		position: absolute;
