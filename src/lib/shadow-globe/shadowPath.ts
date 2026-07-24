@@ -3,20 +3,14 @@
 
 import type { Feature, LineString } from 'geojson';
 import { shadowCenter } from '$lib/eclipse';
-
-// The umbra touches Earth roughly 17:00–18:32 UTC. We start the timeline at 17:30: before that
-// the umbra sits on the polar cap, where MapLibre's globe line rendering breaks up (vector data
-// clamps to the ±85° Mercator limit).
-const TIMELINE_START_UTC = Date.UTC(2026, 7, 12, 17, 30);
-const TIMELINE_END_UTC = Date.UTC(2026, 7, 12, 19, 0);
-const FRAME_STEP_MS = 30 * 1000;
+import { TIMELINE_START, TIMELINE_END, FRAME_STEP_MS } from '$lib/config';
 
 export type ShadowFrame = { time: number; lat: number; lon: number };
 
-/** One frame per 30 s where the umbra actually reaches Earth. */
+/** One frame per step across the configured window, keeping only where the umbra reaches Earth. */
 function computeFrames(): ShadowFrame[] {
 	const frames: ShadowFrame[] = [];
-	for (let time = TIMELINE_START_UTC; time <= TIMELINE_END_UTC; time += FRAME_STEP_MS) {
+	for (let time = TIMELINE_START.getTime(); time <= TIMELINE_END.getTime(); time += FRAME_STEP_MS) {
 		const center = shadowCenter(new Date(time));
 		if (center) frames.push({ time, lat: center.lat, lon: center.lon });
 	}

@@ -87,7 +87,7 @@
 							tiles: [SATELLITE_TILES],
 							tileSize: 512,
 							maxzoom: 19,
-							attribution: '© <a href="https://versatiles.org">VersaTiles sources</a>'
+							attribution: '© <a href="https://versatiles.org/sources/">VersaTiles sources</a>'
 						}
 					},
 					layers: [

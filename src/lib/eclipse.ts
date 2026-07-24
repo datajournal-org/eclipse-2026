@@ -1,11 +1,13 @@
 // Shared eclipse math — validated against Espenak/NASA tables. Runs in Node (prerender) and browser.
 import * as A from 'astronomy-engine';
 import type { Vec3 } from '$lib/types';
+import { ECLIPSE_DATE } from '$lib/config';
+
+export { ECLIPSE_DATE }; // re-exported for convenience; defined centrally in config.ts
 
 export type GeoPoint = { lat: number; lon: number };
 export type SunMoon = { sun: Vec3; moon: Vec3; sunAngR: number };
 
-export const ECLIPSE_DATE = '2026-08-12';
 const AU_KM = 149597870.7;
 // WGS84
 const ER_A = 6378.137; // equatorial radius, km
