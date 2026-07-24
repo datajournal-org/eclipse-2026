@@ -8,17 +8,19 @@
 // shader (as a lookup texture) and the iso-rings (see isoRing.ts). Pure math — no browser/WebGL.
 
 import type { Vec3 } from '$lib/types';
-import type { GeoPoint, SunMoon } from '$lib/eclipse';
+import type { SunMoon } from '$lib/eclipse';
 
 const MOON_RADIUS_IN_EARTH_RADII = 0.27271;
+const SUN_RADIUS_KM = 696000;
+const EARTH_RADIUS_KM = 6371;
 
 /** Number of samples in the brightness profile / LUT texture width. */
 export const PROFILE_SIZE = 256;
 
 export type ShadowModel = {
-	/** Shadow centre on the unit sphere (ECEF unit vector). */
+	/** A point on the shadow axis: the perpendicular foot from Earth's centre (⊥ to `axis`). */
 	center: Vec3;
-	/** Unit shadow-axis direction (centre → Moon). */
+	/** Unit shadow-axis direction (Moon → Sun, i.e. sunward). */
 	axis: Vec3;
 	/** Unit direction to the Sun. */
 	sunDir: Vec3;
@@ -76,20 +78,30 @@ export function latLonToUnitVector(latDeg: number, lonDeg: number): Vec3 {
 }
 
 /**
- * Build the shadow axis + brightness profile for one instant.
- * @param center   shadow centre (from `shadowCenter`)
+ * Build the shadow axis + brightness profile for one instant. Uses only the Sun/Moon geometry, so
+ * it's defined whether or not the umbra reaches Earth (unlike anchoring on the surface intersection).
  * @param sunMoon  from `sunMoonECEF`
  */
-export function computeShadowModel(center: GeoPoint, sunMoon: SunMoon): ShadowModel {
-	const C = latLonToUnitVector(center.lat, center.lon);
+export function computeShadowModel(sunMoon: SunMoon): ShadowModel {
 	const [mx, my, mz] = sunMoon.moon;
-	const axisX = mx - C[0],
-		axisY = my - C[1],
-		axisZ = mz - C[2];
-	const distToMoon = Math.hypot(axisX, axisY, axisZ);
-	const axis: Vec3 = [axisX / distToMoon, axisY / distToMoon, axisZ / distToMoon];
-
+	const sunDir = sunMoon.sun;
 	const sunAngR = sunMoon.sunAngR;
+
+	// Exact shadow axis = the Moon→Sun line. Sun distance is recovered from its angular radius.
+	const sunDistEr = SUN_RADIUS_KM / Math.sin(sunAngR) / EARTH_RADIUS_KM;
+	const ax = sunDir[0] * sunDistEr - mx,
+		ay = sunDir[1] * sunDistEr - my,
+		az = sunDir[2] * sunDistEr - mz;
+	const axisLen = Math.hypot(ax, ay, az);
+	const axis: Vec3 = [ax / axisLen, ay / axisLen, az / axisLen];
+
+	// Anchor: the foot of the perpendicular from Earth's centre onto the axis (a point ON the axis,
+	// ⊥ to it). Always defined; the perpendicular-distance coordinate is independent of which axis
+	// point is used, so the shader/rings behave the same when the umbra does reach Earth.
+	const mDotAxis = mx * axis[0] + my * axis[1] + mz * axis[2];
+	const center: Vec3 = [mx - mDotAxis * axis[0], my - mDotAxis * axis[1], mz - mDotAxis * axis[2]];
+
+	const distToMoon = Math.hypot(mx, my, mz);
 	const moonAngR = MOON_RADIUS_IN_EARTH_RADII / distToMoon;
 	const rMax = distToMoon * (sunAngR + moonAngR); // off-axis distance where the penumbra ends
 
@@ -102,7 +114,7 @@ export function computeShadowModel(center: GeoPoint, sunMoon: SunMoon): ShadowMo
 		profileBytes[i] = Math.round(cov * 255);
 	}
 
-	return { center: C, axis, sunDir: sunMoon.sun, rMax, coverage, profileBytes };
+	return { center, axis, sunDir, rMax, coverage, profileBytes };
 }
 
 /**

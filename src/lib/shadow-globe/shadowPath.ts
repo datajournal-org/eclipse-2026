@@ -1,31 +1,35 @@
-// The whole central shadow path (the dashed reference "Pfad") and the timeline frames the
-// slider scrubs through. Pure math, computed once at module load (also at prerender time).
+// The whole central shadow path (the "Pfad" reference line) and the timeline frames the slider
+// scrubs through. Pure math, computed once at module load (also at prerender time).
 
 import type { Feature, LineString } from 'geojson';
 import { shadowCenter } from '$lib/eclipse';
 import { TIMELINE_START, TIMELINE_END, FRAME_STEP_MS } from '$lib/config';
 
-export type ShadowFrame = { time: number; lat: number; lon: number };
+export type ShadowFrame = { time: number };
 
-/** One frame per step across the configured window, keeping only where the umbra reaches Earth. */
+/** Every frame across the configured window — the slider spans all of them. */
 function computeFrames(): ShadowFrame[] {
 	const frames: ShadowFrame[] = [];
 	for (let time = TIMELINE_START.getTime(); time <= TIMELINE_END.getTime(); time += FRAME_STEP_MS) {
-		const center = shadowCenter(new Date(time));
-		if (center) frames.push({ time, lat: center.lat, lon: center.lon });
+		frames.push({ time });
 	}
 	return frames;
 }
 
-/** Timeline frames: timestamp + umbra ground position, one per slider step. */
+/** Timeline frames, one per slider step. */
 export const shadowFrames = computeFrames();
 
-/** GeoJSON of the whole central path — drawn as the faint dashed "Pfad" reference line. */
-export const shadowPathLine: Feature<LineString> = {
-	type: 'Feature',
-	geometry: { type: 'LineString', coordinates: shadowFrames.map((f) => [f.lon, f.lat]) },
-	properties: null
-};
+/** GeoJSON of the umbra track (central line) — only the frames where the umbra reaches Earth. */
+function computePathLine(): Feature<LineString> {
+	const coordinates: [number, number][] = [];
+	for (const { time } of shadowFrames) {
+		const center = shadowCenter(new Date(time));
+		if (center) coordinates.push([center.lon, center.lat]);
+	}
+	return { type: 'Feature', geometry: { type: 'LineString', coordinates }, properties: null };
+}
+
+export const shadowPathLine = computePathLine();
 
 export const timelineStart = shadowFrames[0].time;
 export const timelineEnd = shadowFrames[shadowFrames.length - 1].time;

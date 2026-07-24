@@ -2,10 +2,12 @@
 // sphere, restricted to the sunlit hemisphere. Smooth, analytic, high-resolution — no marching
 // squares. See shadowProfile.ts for how X is picked from a coverage level.
 //
-// With an orthonormal basis {u, v, axis} where u is the axis-perpendicular part of the centre C,
-// the cylinder point C + X·(cosθ·u + sinθ·v) + s·axis lies on the unit sphere when
-//     s = −k + √(k² − X² − 2·X·a·cosθ),   k = C·axis,  a = |C − (C·axis)·axis|.
-// We take the +√ (sunward) root and keep only the day side.
+// `model.center` is the foot of the perpendicular from Earth's centre onto the shadow axis (⊥ to
+// axis, |foot| = footLen). With u = foot/footLen and v = axis × u, a cylinder point
+//     foot + X·(cosθ·u + sinθ·v) + w·axis   lies on the unit sphere when
+//     w = √(1 − footLen² − X² − 2·footLen·X·cosθ).
+// We take the +√ (sunward) root and keep only the day side. Because this uses only footLen (not a
+// surface intersection), the rings render even when the umbra misses Earth (footLen > 1 → no ring).
 //
 // A ring is open where it runs off the Earth's limb (discriminant < 0, the cylinder is tangent to
 // the sphere) or crosses into night (P·sunDir ≤ 0). To keep the open ends from flickering during
@@ -34,17 +36,16 @@ const RAD_TO_DEG = 180 / Math.PI;
  * @param steps   angular samples around the ring
  */
 export function isoRing(model: ShadowModel, radius: number, steps = 512): Feature<MultiLineString> {
-	const C = model.center,
+	const foot = model.center,
 		axis = model.axis,
 		sunDir = model.sunDir;
-	const k = dot(C, axis);
-	const cPerp: Vec3 = [C[0] - k * axis[0], C[1] - k * axis[1], C[2] - k * axis[2]];
-	const a = length(cPerp);
+	const footLen = length(foot); // perpendicular distance from Earth's centre to the shadow axis
 
-	// Basis perpendicular to the axis. When the Sun is exactly overhead (a ≈ 0) any u ⊥ axis works.
+	// Basis perpendicular to the axis. When the axis passes through Earth's centre (footLen ≈ 0) any
+	// u ⊥ axis works.
 	const u: Vec3 =
-		a > 1e-6
-			? [cPerp[0] / a, cPerp[1] / a, cPerp[2] / a]
+		footLen > 1e-6
+			? [foot[0] / footLen, foot[1] / footLen, foot[2] / footLen]
 			: normalize(cross(axis, Math.abs(axis[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
 	const v = cross(axis, u);
 
@@ -52,12 +53,12 @@ export function isoRing(model: ShadowModel, radius: number, steps = 512): Featur
 	const at = (theta: number): { valid: boolean; P: Vec3 } => {
 		const cosT = Math.cos(theta),
 			sinT = Math.sin(theta);
-		const disc = k * k - radius * radius - 2 * radius * a * cosT;
-		const s = -k + Math.sqrt(Math.max(0, disc));
+		const disc = 1 - footLen * footLen - radius * radius - 2 * footLen * radius * cosT;
+		const w = Math.sqrt(Math.max(0, disc));
 		const P: Vec3 = [
-			C[0] + radius * (cosT * u[0] + sinT * v[0]) + s * axis[0],
-			C[1] + radius * (cosT * u[1] + sinT * v[1]) + s * axis[1],
-			C[2] + radius * (cosT * u[2] + sinT * v[2]) + s * axis[2]
+			foot[0] + radius * (cosT * u[0] + sinT * v[0]) + w * axis[0],
+			foot[1] + radius * (cosT * u[1] + sinT * v[1]) + w * axis[1],
+			foot[2] + radius * (cosT * u[2] + sinT * v[2]) + w * axis[2]
 		];
 		const valid = disc >= 0 && dot(P, sunDir) > 0;
 		return { valid, P };

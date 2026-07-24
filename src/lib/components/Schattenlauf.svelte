@@ -12,7 +12,7 @@
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import { t } from '$lib/i18n';
 	import type { Map as MlMap, GeoJSONSource } from 'maplibre-gl';
-	import { sunMoonECEF } from '$lib/eclipse';
+	import { sunMoonECEF, shadowCenter } from '$lib/eclipse';
 	import { shadowFrames, shadowPathLine, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
 	import { computeShadowModel, radiusForCoverage } from '$lib/shadow-globe/shadowProfile';
 	import { isoRing, terminatorLine, EMPTY_LINES } from '$lib/shadow-globe/isoRing';
@@ -159,8 +159,7 @@
 	function renderFrame(map: MlMap, index: number) {
 		const frame = shadowFrames[index];
 		const date = new Date(frame.time);
-		const center = { lat: frame.lat, lon: frame.lon };
-		const model = computeShadowModel(center, sunMoonECEF(date));
+		const model = computeShadowModel(sunMoonECEF(date));
 
 		// feed the shadow shader (axis + coverage profile)
 		shadowState.center = model.center;
@@ -187,9 +186,10 @@
 		// day/night great circle
 		(map.getSource('terminator') as GeoJSONSource | undefined)?.setData(terminatorLine(model.sunDir));
 
-		// header readout
+		// header readout — umbra ground point if it reaches Earth, else "—"
+		const umbra = shadowCenter(date);
 		clockUtc = formatUtc(frame.time);
-		umbraCenterText = `${center.lat.toFixed(2)}°, ${center.lon.toFixed(2)}°`;
+		umbraCenterText = umbra ? `${umbra.lat.toFixed(2)}°, ${umbra.lon.toFixed(2)}°` : '—';
 	}
 
 	function onScrub(event: Event) {
