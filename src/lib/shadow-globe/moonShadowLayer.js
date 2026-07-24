@@ -22,25 +22,28 @@ out vec4 fragColor;
 
 void main() {
   vec3 surfaceDir = normalize(v_surfaceDir);
+
+  // Lambert illumination: brightness = sin(solar elevation) = cosine of the incidence angle.
+  // 90° (Sun at the zenith) → 1.0, 30° → 0.5, 0° (terminator) → 0.0, night → 0.
   float sinElevation = dot(surfaceDir, u_sunDir);
-  float dayness = smoothstep(-0.18, 0.10, sinElevation);          // soft day/night terminator
+  float sunBrightness = max(0.0, sinElevation);
 
   // Perpendicular distance from this ground point to the shadow axis, looked up in the profile.
   vec3 delta = surfaceDir - u_center;
   float offAxis = length(delta - dot(delta, u_axis) * u_axis);
   float coverage = texture(u_profile, vec2(clamp(offAxis / u_rMax, 0.0, 1.0), 0.5)).r;
 
-  // From space the ground brightness ≈ 1 − coverage; the night side is darkened toward 0.09.
-  // (On the night side dayness → 0, so coverage — including the axis's far exit — has no effect.)
-  float eclipseBrightness = 1.0 - coverage * 0.97;
-  float brightness = mix(0.09, 1.0, dayness) * mix(1.0, eclipseBrightness, dayness);
+  // The eclipse dims the sunlight further (from space, ground brightness ≈ 1 − coverage).
+  float brightness = sunBrightness * (1.0 - coverage);
 
   float alpha = clamp(1.0 - brightness, 0.0, 0.92);               // overlay opacity over the tiles
-  if (alpha < 0.004) discard;                                     // bright, uneclipsed day: leave tiles
+                                                                  // (0.92 cap keeps faint night geography)
+  if (alpha < 0.004) discard;                                     // bright, uneclipsed noon: leave tiles
 
+  float dayGate = smoothstep(0.0, 0.05, sinElevation);            // suppress the umbra tint on the night side
   vec3 nightTint = vec3(0.015, 0.03, 0.07);                       // deep-blue night
   vec3 umbraTint = vec3(0.0, 0.005, 0.02);                        // near-black core of totality
-  vec3 color = mix(nightTint, umbraTint, smoothstep(0.45, 1.0, coverage) * dayness);
+  vec3 color = mix(nightTint, umbraTint, smoothstep(0.45, 1.0, coverage) * dayGate);
   fragColor = vec4(color, alpha);
 }`;
 
