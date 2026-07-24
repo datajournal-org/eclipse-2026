@@ -1,5 +1,9 @@
 // Shared eclipse math — validated against Espenak/NASA tables. Runs in Node (prerender) and browser.
 import * as A from 'astronomy-engine';
+import type { Vec3 } from '$lib/types';
+
+export type GeoPoint = { lat: number; lon: number };
+export type SunMoon = { sun: Vec3; moon: Vec3; sunAngR: number };
 
 export const ECLIPSE_DATE = '2026-08-12';
 const AU_KM = 149597870.7;
@@ -11,14 +15,14 @@ const E2 = ER_F * (2 - ER_F); // eccentricity^2
 
 const D2R = Math.PI / 180,
 	R2D = 180 / Math.PI;
-const norm180 = (d) => ((d + 540) % 360) - 180;
+const norm180 = (d: number) => ((d + 540) % 360) - 180;
 
 /**
  * Ground point of the Moon's shadow axis at a given instant.
  * Returns {lat, lon} (geodetic degrees) or null if the axis misses Earth.
  * Validated against SearchGlobalSolarEclipse's greatest-eclipse point.
  */
-export function shadowCenter(date) {
+export function shadowCenter(date: Date): GeoPoint | null {
 	const time = A.MakeTime(date);
 	// Apparent geocentric vectors (aberration on), EQJ, in AU. Aberration shifts the
 	// Sun's apparent direction and therefore the shadow axis — validated to 0.0 km.
@@ -55,13 +59,13 @@ export function shadowCenter(date) {
  * P = [cos(lat)cos(lon), cos(lat)sin(lon), sin(lat)] in the same frame.
  * Returns { sun: unit dir to Sun, moon: position (Earth radii), sunAngR: Sun angular radius (rad) }.
  */
-export function sunMoonECEF(date) {
+export function sunMoonECEF(date: Date): SunMoon {
 	const time = A.MakeTime(date);
 	const rot = A.Rotation_EQJ_EQD(time);
 	const g = A.SiderealTime(time) * 15 * D2R;
 	const cg = Math.cos(g),
 		sg = Math.sin(g);
-	const toECEF = (v) => {
+	const toECEF = (v: A.Vector) => {
 		const e = A.RotateVector(rot, v);
 		return { x: e.x * cg + e.y * sg, y: -e.x * sg + e.y * cg, z: e.z };
 	};
@@ -89,14 +93,15 @@ export function greatestEclipse() {
 }
 
 /** Sun & Moon topocentric horizontal coords (az/alt, degrees) for an observer. */
-export function sunMoonHorizon(lat, lon, date, elevation = 0) {
+export function sunMoonHorizon(lat: number, lon: number, date: Date, elevation = 0) {
 	const time = A.MakeTime(date);
 	const obs = new A.Observer(lat, lon, elevation);
-	const out = {};
-	for (const [key, body] of [
+	const out: Record<string, { az: number; alt: number; distAu: number }> = {};
+	const bodies: [string, A.Body][] = [
 		['sun', A.Body.Sun],
 		['moon', A.Body.Moon]
-	]) {
+	];
+	for (const [key, body] of bodies) {
 		const eq = A.Equator(body, time, obs, true, true);
 		const h = A.Horizon(time, obs, eq.ra, eq.dec, 'normal');
 		out[key] = { az: h.azimuth, alt: h.altitude, distAu: eq.dist };
@@ -105,16 +110,16 @@ export function sunMoonHorizon(lat, lon, date, elevation = 0) {
 }
 
 /** Local circumstances: contact times, altitudes, obscuration for an observer. */
-export function localCircumstances(lat, lon, elevation = 0) {
+export function localCircumstances(lat: number, lon: number, elevation = 0) {
 	const obs = new A.Observer(lat, lon, elevation);
 	const start = A.MakeTime(new Date(ECLIPSE_DATE + 'T00:00:00Z'));
-	let e;
+	let e: A.LocalSolarEclipseInfo;
 	try {
 		e = A.SearchLocalSolarEclipse(start, obs);
 	} catch {
 		return null;
 	}
-	const ev = (x) => (x ? { time: x.time.date, alt: x.altitude } : null);
+	const ev = (x: A.EclipseEvent | undefined) => (x ? { time: x.time.date, alt: x.altitude } : null);
 	return {
 		kind: e.kind,
 		obscuration: e.obscuration,

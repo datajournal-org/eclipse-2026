@@ -1,24 +1,42 @@
 // Shadow model for one instant: the shadow axis + a 1D brightness profile.
 //
-// Instead of evaluating the Sun/Moon disc overlap per pixel, we exploit the shadow's rotational
-// symmetry: obscuration depends only on the perpendicular distance `r` from a ground point to the
-// shadow axis (the line through the Moon and the shadow centre). Moving `r` off-axis rotates the
-// Moon's apparent position against the Sun by the parallax σ ≈ r / d_moon, so
-//     coverage(r) = discOverlap(sunAngR, moonAngR, r / d_moon).
-// That 1D profile drives both the shader (as a lookup texture) and the iso-rings (see isoRing.js).
+// "Obscuration" = the fraction of the Sun's disc the Moon covers, as seen from a ground point.
+// Because the shadow is rotationally symmetric, it depends only on the perpendicular distance `r`
+// from a ground point to the shadow axis (the line through the Moon and the shadow centre). Moving
+// `r` off-axis rotates the Moon's apparent position against the Sun by the parallax σ ≈ r / d_moon,
+// so  coverage(r) = discOverlap(sunAngR, moonAngR, r / d_moon). That 1D profile drives both the
+// shader (as a lookup texture) and the iso-rings (see isoRing.ts). Pure math — no browser/WebGL.
+
+import type { Vec3 } from '$lib/types';
+import type { GeoPoint, SunMoon } from '$lib/eclipse';
 
 const MOON_RADIUS_IN_EARTH_RADII = 0.27271;
 
 /** Number of samples in the brightness profile / LUT texture width. */
 export const PROFILE_SIZE = 256;
 
+export type ShadowModel = {
+	/** Shadow centre on the unit sphere (ECEF unit vector). */
+	center: Vec3;
+	/** Unit shadow-axis direction (centre → Moon). */
+	axis: Vec3;
+	/** Unit direction to the Sun. */
+	sunDir: Vec3;
+	/** Penumbra radius in Earth radii (coverage → 0); the LUT is sampled over [0, rMax]. */
+	rMax: number;
+	/** coverage(r) samples, 0..1 (used to invert level → radius). */
+	coverage: Float32Array;
+	/** The same profile as an 8-bit R-channel LUT for the texture. */
+	profileBytes: Uint8Array;
+};
+
 /**
  * Fraction of the Sun's disc hidden by the Moon's disc (two-circle "lens" overlap), 0..1.
- * @param {number} sunRadius   Sun's angular radius (rad)
- * @param {number} moonRadius  Moon's angular radius (rad)
- * @param {number} separation  angular distance between the disc centres (rad)
+ * @param sunRadius   Sun's angular radius (rad)
+ * @param moonRadius  Moon's angular radius (rad)
+ * @param separation  angular distance between the disc centres (rad)
  */
-export function discOverlapFraction(sunRadius, moonRadius, separation) {
+export function discOverlapFraction(sunRadius: number, moonRadius: number, separation: number): number {
 	if (separation >= sunRadius + moonRadius) return 0;
 	if (separation <= Math.abs(moonRadius - sunRadius)) {
 		return moonRadius >= sunRadius ? 1 : (moonRadius * moonRadius) / (sunRadius * sunRadius);
@@ -50,7 +68,7 @@ export function discOverlapFraction(sunRadius, moonRadius, separation) {
 }
 
 /** Geodetic lat/lon (deg) → unit vector in the Earth-fixed frame used by the shader. */
-export function latLonToUnitVector(latDeg, lonDeg) {
+export function latLonToUnitVector(latDeg: number, lonDeg: number): Vec3 {
 	const lat = latDeg * (Math.PI / 180),
 		lon = lonDeg * (Math.PI / 180);
 	const cosLat = Math.cos(lat);
@@ -58,29 +76,18 @@ export function latLonToUnitVector(latDeg, lonDeg) {
 }
 
 /**
- * @typedef {Object} ShadowModel
- * @property {number[]} center   shadow centre on the unit sphere (ECEF unit vector)
- * @property {number[]} axis     unit shadow-axis direction (centre → Moon)
- * @property {number[]} sunDir   unit direction to the Sun
- * @property {number}   rMax     penumbra radius in Earth radii (coverage → 0); LUT is sampled over [0, rMax]
- * @property {Float32Array} coverage      coverage(r) samples, 0..1 (used to invert level → radius)
- * @property {Uint8Array}   profileBytes  the same profile as an 8-bit R-channel LUT for the texture
- */
-
-/**
  * Build the shadow axis + brightness profile for one instant.
- * @param {{lat:number, lon:number}} center  shadow centre (from `shadowCenter`)
- * @param {{sun:number[], moon:number[], sunAngR:number}} sunMoon  from `sunMoonECEF`
- * @returns {ShadowModel}
+ * @param center   shadow centre (from `shadowCenter`)
+ * @param sunMoon  from `sunMoonECEF`
  */
-export function computeShadowModel(center, sunMoon) {
+export function computeShadowModel(center: GeoPoint, sunMoon: SunMoon): ShadowModel {
 	const C = latLonToUnitVector(center.lat, center.lon);
 	const [mx, my, mz] = sunMoon.moon;
 	const axisX = mx - C[0],
 		axisY = my - C[1],
 		axisZ = mz - C[2];
 	const distToMoon = Math.hypot(axisX, axisY, axisZ);
-	const axis = [axisX / distToMoon, axisY / distToMoon, axisZ / distToMoon];
+	const axis: Vec3 = [axisX / distToMoon, axisY / distToMoon, axisZ / distToMoon];
 
 	const sunAngR = sunMoon.sunAngR;
 	const moonAngR = MOON_RADIUS_IN_EARTH_RADII / distToMoon;
@@ -103,7 +110,7 @@ export function computeShadowModel(center, sunMoon) {
  * if the eclipse never reaches that coverage (e.g. a 100 % ring for a non-total moment). Coverage
  * decreases monotonically with r, so a single linear scan suffices.
  */
-export function radiusForCoverage(model, level) {
+export function radiusForCoverage(model: ShadowModel, level: number): number | null {
 	const { coverage, rMax } = model;
 	const n = coverage.length;
 	if (coverage[0] < level) return null;
@@ -118,6 +125,6 @@ export function radiusForCoverage(model, level) {
 	return rMax;
 }
 
-function clamp(x, lo, hi) {
+function clamp(x: number, lo: number, hi: number): number {
 	return x < lo ? lo : x > hi ? hi : x;
 }

@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
 	import { t } from '$lib/i18n';
 	import { greatestEclipse } from '$lib/eclipse';
@@ -14,7 +14,7 @@
 	});
 
 	const diff = $derived(target - now);
-	const state = $derived(diff > 0 ? 'before' : diff > -3 * 3600 * 1000 ? 'now' : 'past');
+	const phase = $derived(diff > 0 ? 'before' : diff > -3 * 3600 * 1000 ? 'now' : 'past');
 	const parts = $derived.by(() => {
 		const s = Math.max(0, Math.floor(diff / 1000));
 		return {
@@ -24,11 +24,11 @@
 			s: s % 60
 		};
 	});
-	const pad = (n) => String(n).padStart(2, '0');
+	const pad = (n: number) => String(n).padStart(2, '0');
 </script>
 
 <section class="block cd">
-	{#if state === 'before'}
+	{#if phase === 'before'}
 		<div class="units" aria-live="off">
 			<div class="u">
 				<span class="n tnum">{parts.d}</span><span class="l">{$t('countdown.d')}</span>
@@ -44,7 +44,7 @@
 			</div>
 		</div>
 		<p class="cap">{$t('countdown.to_totality')}</p>
-	{:else if state === 'now'}
+	{:else if phase === 'now'}
 		<p class="head">{$t('countdown.happening')}</p>
 	{:else}
 		<p class="head">{$t('countdown.past')}</p>

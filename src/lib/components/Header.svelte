@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { t, locale, setLocale, LOCALES, LOCALE_NAMES } from '$lib/i18n';
 </script>
 

@@ -4,7 +4,53 @@
 //
 // The per-pixel work is cheap: instead of a disc-overlap formula, each pixel measures its
 // perpendicular distance to the shadow axis and looks the coverage up in a 1D profile texture
-// (see shadowProfile.js). The component updates a shared `shadowState` every frame.
+// (see shadowProfile.ts). The component updates a shared `shadowState` every frame.
+
+import type { CustomLayerInterface, CustomRenderMethodInput, Map as MlMap } from 'maplibre-gl';
+import type { Vec3 } from '$lib/types';
+
+/** Shared state the component mutates every frame and the layer reads while rendering. */
+export type ShadowState = {
+	center: Vec3;
+	axis: Vec3;
+	sunDir: Vec3;
+	rMax: number;
+	/** Coverage LUT (8-bit) uploaded to the profile texture; null before the first frame. */
+	profile: Uint8Array | null;
+	/** Bumped whenever `profile` changes so the texture is re-uploaded. */
+	profileVersion: number;
+	/** Gates the first render. */
+	ready: boolean;
+};
+
+type ShaderData = CustomRenderMethodInput['shaderData'];
+
+type ProgramInfo = {
+	program: WebGLProgram;
+	attribs: { tilePos: number; poleFlag: number };
+	uniforms: {
+		projMatrix: WebGLUniformLocation | null;
+		tileMercatorCoords: WebGLUniformLocation | null;
+		clippingPlane: WebGLUniformLocation | null;
+		transition: WebGLUniformLocation | null;
+		fallbackMatrix: WebGLUniformLocation | null;
+		sunDir: WebGLUniformLocation | null;
+		center: WebGLUniformLocation | null;
+		axis: WebGLUniformLocation | null;
+		rMax: WebGLUniformLocation | null;
+		profile: WebGLUniformLocation | null;
+	};
+};
+
+interface MoonShadowLayer extends CustomLayerInterface {
+	indexCount: number;
+	uploadedProfileVersion: number;
+	positionBuffer?: WebGLBuffer;
+	poleFlagBuffer?: WebGLBuffer;
+	indexBuffer?: WebGLBuffer;
+	profileTexture?: WebGLTexture;
+	_programFor(gl: WebGL2RenderingContext, shaderData: ShaderData): ProgramInfo;
+}
 
 // Segments per axis of the full-globe overlay mesh.
 const GRID_RESOLUTION = 200;
@@ -48,7 +94,7 @@ void main() {
 }`;
 
 // Vertex shader is assembled per projection variant so it can call MapLibre's own `projectTile`.
-function vertexShaderSource(shaderData) {
+function vertexShaderSource(shaderData: ShaderData): string {
 	return `#version 300 es
 ${shaderData.vertexShaderPrelude}
 ${shaderData.define}
@@ -71,31 +117,32 @@ void main() {
 }`;
 }
 
-function compileProgram(gl, vertexSrc, fragmentSrc) {
-	const compileShader = (type, src) => {
-		const shader = gl.createShader(type);
+function compileProgram(gl: WebGL2RenderingContext, vertexSrc: string, fragmentSrc: string): WebGLProgram {
+	const compileShader = (type: number, src: string): WebGLShader => {
+		const shader = gl.createShader(type)!;
 		gl.shaderSource(shader, src);
 		gl.compileShader(shader);
-		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
+		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+			throw new Error(gl.getShaderInfoLog(shader) ?? 'shader error');
 		return shader;
 	};
-	const program = gl.createProgram();
+	const program = gl.createProgram()!;
 	gl.attachShader(program, compileShader(gl.VERTEX_SHADER, vertexSrc));
 	gl.attachShader(program, compileShader(gl.FRAGMENT_SHADER, fragmentSrc));
 	gl.linkProgram(program);
-	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) ?? 'link error');
 	return program;
 }
 
 // A grid covering the whole globe, plus one extra vertex on each pole. The mercator grid only
 // reaches ±85°, so the top/bottom rows are fanned to a pole vertex whose sentinel poleFlag makes
 // `projectTile` place it exactly on the pole.
-function buildGlobeMesh() {
+function buildGlobeMesh(): { tilePositions: number[]; poleFlags: number[]; indices: number[] } {
 	const N = GRID_RESOLUTION,
 		VERTS_PER_ROW = N + 1;
-	const tilePositions = [],
-		poleFlags = [],
-		indices = [];
+	const tilePositions: number[] = [],
+		poleFlags: number[] = [],
+		indices: number[] = [];
 
 	for (let iy = 0; iy <= N; iy++)
 		for (let ix = 0; ix <= N; ix++) {
@@ -125,35 +172,33 @@ function buildGlobeMesh() {
 	return { tilePositions, poleFlags, indices };
 }
 
-function createBuffer(gl, target, data) {
-	const buffer = gl.createBuffer();
+function createBuffer(gl: WebGL2RenderingContext, target: number, data: BufferSource): WebGLBuffer {
+	const buffer = gl.createBuffer()!;
 	gl.bindBuffer(target, buffer);
 	gl.bufferData(target, data, gl.STATIC_DRAW);
 	return buffer;
 }
 
-function bindVec2Attribute(gl, buffer, location) {
+function bindVec2Attribute(gl: WebGL2RenderingContext, buffer: WebGLBuffer, location: number): void {
 	gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 	gl.enableVertexAttribArray(location);
 	gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
 }
 
 /**
- * Build the custom shadow layer.
- * @param {{ center:number[], axis:number[], sunDir:number[], rMax:number,
- *           profile:Uint8Array|null, profileVersion:number, ready:boolean }} shadowState
- *   Shared, mutated by the component each frame. `ready` gates the first render; `profileVersion`
- *   bumps whenever `profile` (the coverage LUT) changes so the texture is re-uploaded.
+ * Build the custom shadow layer. `shadowState` is shared and mutated by the component each frame.
  */
-export function createMoonShadowLayer(shadowState) {
-	const programByVariant = {}; // projectTile differs per projection variant (globe/mercator/transition)
+export function createMoonShadowLayer(shadowState: ShadowState): CustomLayerInterface {
+	const programByVariant: Record<string, ProgramInfo> = {}; // projectTile differs per projection variant
 
-	return {
+	const layer: MoonShadowLayer = {
 		id: 'moon-shadow',
 		type: 'custom',
 		renderingMode: '2d',
+		indexCount: 0,
+		uploadedProfileVersion: -1,
 
-		onAdd(_map, gl) {
+		onAdd(_map: MlMap, gl: WebGL2RenderingContext) {
 			const mesh = buildGlobeMesh();
 			this.indexCount = mesh.indices.length;
 			this.positionBuffer = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(mesh.tilePositions));
@@ -161,7 +206,7 @@ export function createMoonShadowLayer(shadowState) {
 			this.indexBuffer = createBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(mesh.indices));
 
 			// 1D coverage LUT as an N×1 R8 texture (linear-filterable → smooth penumbra).
-			this.profileTexture = gl.createTexture();
+			this.profileTexture = gl.createTexture()!;
 			gl.bindTexture(gl.TEXTURE_2D, this.profileTexture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -170,12 +215,12 @@ export function createMoonShadowLayer(shadowState) {
 			this.uploadedProfileVersion = -1;
 		},
 
-		_programFor(gl, shaderData) {
+		_programFor(gl: WebGL2RenderingContext, shaderData: ShaderData): ProgramInfo {
 			const cached = programByVariant[shaderData.variantName];
 			if (cached) return cached;
 			const program = compileProgram(gl, vertexShaderSource(shaderData), FRAGMENT_SHADER);
-			const uniform = (name) => gl.getUniformLocation(program, name);
-			const built = {
+			const uniform = (name: string) => gl.getUniformLocation(program, name);
+			const built: ProgramInfo = {
 				program,
 				attribs: {
 					tilePos: gl.getAttribLocation(program, 'a_tilePos'),
@@ -198,60 +243,63 @@ export function createMoonShadowLayer(shadowState) {
 			return built;
 		},
 
-		render(gl, options) {
+		render(gl: WebGLRenderingContext | WebGL2RenderingContext, options: CustomRenderMethodInput) {
 			if (!shadowState.ready) return;
-			const { program, attribs, uniforms } = this._programFor(gl, options.shaderData);
+			const gl2 = gl as WebGL2RenderingContext; // globe custom layers get a WebGL2 context
+			const { program, attribs, uniforms } = this._programFor(gl2, options.shaderData);
 			const projection = options.defaultProjectionData;
-			gl.useProgram(program);
+			gl2.useProgram(program);
 
 			// MapLibre's projection uniforms (supplied via the shader prelude).
-			if (uniforms.projMatrix) gl.uniformMatrix4fv(uniforms.projMatrix, false, projection.mainMatrix);
+			if (uniforms.projMatrix) gl2.uniformMatrix4fv(uniforms.projMatrix, false, projection.mainMatrix);
 			if (uniforms.tileMercatorCoords && projection.tileMercatorCoords)
-				gl.uniform4fv(uniforms.tileMercatorCoords, projection.tileMercatorCoords);
+				gl2.uniform4fv(uniforms.tileMercatorCoords, projection.tileMercatorCoords);
 			if (uniforms.clippingPlane && projection.clippingPlane)
-				gl.uniform4fv(uniforms.clippingPlane, projection.clippingPlane);
+				gl2.uniform4fv(uniforms.clippingPlane, projection.clippingPlane);
 			if (uniforms.transition != null && projection.projectionTransition != null)
-				gl.uniform1f(uniforms.transition, projection.projectionTransition);
+				gl2.uniform1f(uniforms.transition, projection.projectionTransition);
 			if (uniforms.fallbackMatrix && projection.fallbackMatrix)
-				gl.uniformMatrix4fv(uniforms.fallbackMatrix, false, projection.fallbackMatrix);
+				gl2.uniformMatrix4fv(uniforms.fallbackMatrix, false, projection.fallbackMatrix);
 
 			// Shadow axis + profile.
-			gl.uniform3fv(uniforms.sunDir, shadowState.sunDir);
-			gl.uniform3fv(uniforms.center, shadowState.center);
-			gl.uniform3fv(uniforms.axis, shadowState.axis);
-			gl.uniform1f(uniforms.rMax, shadowState.rMax);
+			gl2.uniform3fv(uniforms.sunDir, shadowState.sunDir);
+			gl2.uniform3fv(uniforms.center, shadowState.center);
+			gl2.uniform3fv(uniforms.axis, shadowState.axis);
+			gl2.uniform1f(uniforms.rMax, shadowState.rMax);
 
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, this.profileTexture);
+			gl2.activeTexture(gl2.TEXTURE0);
+			gl2.bindTexture(gl2.TEXTURE_2D, this.profileTexture!);
 			if (shadowState.profile && shadowState.profileVersion !== this.uploadedProfileVersion) {
-				gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-				gl.texImage2D(
-					gl.TEXTURE_2D,
+				gl2.pixelStorei(gl2.UNPACK_ALIGNMENT, 1);
+				gl2.texImage2D(
+					gl2.TEXTURE_2D,
 					0,
-					gl.R8,
+					gl2.R8,
 					shadowState.profile.length,
 					1,
 					0,
-					gl.RED,
-					gl.UNSIGNED_BYTE,
+					gl2.RED,
+					gl2.UNSIGNED_BYTE,
 					shadowState.profile
 				);
 				this.uploadedProfileVersion = shadowState.profileVersion;
 			}
-			gl.uniform1i(uniforms.profile, 0);
+			gl2.uniform1i(uniforms.profile, 0);
 
-			bindVec2Attribute(gl, this.positionBuffer, attribs.tilePos);
-			bindVec2Attribute(gl, this.poleFlagBuffer, attribs.poleFlag);
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+			bindVec2Attribute(gl2, this.positionBuffer!, attribs.tilePos);
+			bindVec2Attribute(gl2, this.poleFlagBuffer!, attribs.poleFlag);
+			gl2.bindBuffer(gl2.ELEMENT_ARRAY_BUFFER, this.indexBuffer!);
 
 			// Blend the darkening over the tiles; cull the far hemisphere; ignore depth.
-			gl.enable(gl.BLEND);
-			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-			gl.enable(gl.CULL_FACE);
-			gl.cullFace(gl.BACK);
-			gl.disable(gl.DEPTH_TEST);
-			gl.drawElements(gl.TRIANGLES, this.indexCount, gl.UNSIGNED_INT, 0);
-			gl.disable(gl.CULL_FACE);
+			gl2.enable(gl2.BLEND);
+			gl2.blendFunc(gl2.SRC_ALPHA, gl2.ONE_MINUS_SRC_ALPHA);
+			gl2.enable(gl2.CULL_FACE);
+			gl2.cullFace(gl2.BACK);
+			gl2.disable(gl2.DEPTH_TEST);
+			gl2.drawElements(gl2.TRIANGLES, this.indexCount, gl2.UNSIGNED_INT, 0);
+			gl2.disable(gl2.CULL_FACE);
 		}
 	};
+
+	return layer;
 }

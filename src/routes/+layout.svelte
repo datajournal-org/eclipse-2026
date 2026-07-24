@@ -1,15 +1,15 @@
-<script>
+<script lang="ts">
 	// Open Props engineering scales (tokens.css maps these into our semantic roles).
 	import 'open-props/sizes';
 	import 'open-props/fonts';
 	import 'open-props/easings';
 	import '../app.css';
-	import { onMount } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
 	import { initLocale } from '$lib/i18n';
 	import { initLocation } from '$lib/stores/location';
 	import Header from '$lib/components/Header.svelte';
 
-	let { children } = $props();
+	let { children }: { children: Snippet } = $props();
 
 	onMount(() => {
 		initLocale();

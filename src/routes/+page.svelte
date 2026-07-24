@@ -1,5 +1,5 @@
-<script>
-	import { userLocation, clearLocation } from '$lib/stores/location';
+<script lang="ts">
+	import { userLocation, clearLocation, type Place } from '$lib/stores/location';
 	import { t } from '$lib/i18n';
 	import Countdown from '$lib/components/Countdown.svelte';
 	import Schattenlauf from '$lib/components/Schattenlauf.svelte';
@@ -7,7 +7,7 @@
 	import Placeholder from '$lib/components/Placeholder.svelte';
 	import SafetyFooter from '$lib/components/SafetyFooter.svelte';
 
-	const label = (p) => p.name ?? `${p.lat.toFixed(3)}°, ${p.lon.toFixed(3)}°`;
+	const label = (p: Place) => p.name ?? `${p.lat.toFixed(3)}°, ${p.lon.toFixed(3)}°`;
 </script>
 
 <main class="content">

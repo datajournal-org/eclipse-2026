@@ -7,18 +7,21 @@
     · isoRing         — analytic 50/75/100 % rings (cylinder ∩ sphere)
   This component just wires those onto the map and to the slider UI.
 -->
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import { t } from '$lib/i18n';
-	import { sunMoonECEF, shadowCenter } from '$lib/eclipse';
+	import type { Map as MlMap, GeoJSONSource } from 'maplibre-gl';
+	import { sunMoonECEF } from '$lib/eclipse';
 	import { shadowFrames, shadowPathLine, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
 	import { computeShadowModel, radiusForCoverage } from '$lib/shadow-globe/shadowProfile';
 	import { isoRing, terminatorLine, EMPTY_LINES } from '$lib/shadow-globe/isoRing';
-	import { createMoonShadowLayer } from '$lib/shadow-globe/moonShadowLayer';
+	import { createMoonShadowLayer, type ShadowState } from '$lib/shadow-globe/moonShadowLayer';
+
+	type Brand = { bg: string; path: string; ring: string };
 
 	const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
-	const INITIAL_VIEW = { center: [-18, 58], zoom: 2.1 };
+	const INITIAL_VIEW = { center: [-18, 58] as [number, number], zoom: 2.1 };
 
 	// Coverage rings drawn live around the current shadow. `level` = obscuration threshold (0..1),
 	// `percent` drives both the map opacity and the legend label.
@@ -30,7 +33,7 @@
 
 	// Shared state the WebGL layer reads each frame (see moonShadowLayer.js): the shadow axis plus
 	// the 1D coverage profile (as an 8-bit LUT). `profileVersion` bumps so the texture re-uploads.
-	const shadowState = {
+	const shadowState: ShadowState = {
 		center: [0, 0, 1],
 		axis: [0, 0, 1],
 		sunDir: [0, 0, 1],
@@ -42,16 +45,16 @@
 
 	// ---- reactive UI state ----
 	const START_INDEX = Math.floor(shadowFrames.length / 2);
-	let mapContainer;
+	let mapContainer: HTMLDivElement;
 	let frameIndex = $state(START_INDEX);
 	let clockUtc = $state(formatUtc(shadowFrames[START_INDEX].time));
 	let umbraCenterText = $state('');
 	let mapReady = $state(false);
 	/** Set once the map has loaded; renders the frame at `index`. */
-	let showFrame = (index) => {};
+	let showFrame: (index: number) => void = () => {};
 
 	onMount(() => {
-		let map;
+		let map: MlMap | undefined;
 		let disposed = false;
 
 		(async () => {
@@ -59,7 +62,7 @@
 			if (disposed) return;
 
 			const brand = readBrandColors();
-			map = new maplibregl.Map({
+			const m = new maplibregl.Map({
 				container: mapContainer,
 				...INITIAL_VIEW,
 				scrollZoom: false, // don't trap page scroll; drag still spins the globe
@@ -81,13 +84,14 @@
 					]
 				}
 			});
-			map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+			map = m;
+			m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 
-			map.on('load', () => {
-				map.setProjection({ type: 'globe' });
-				map.addLayer(createMoonShadowLayer(shadowState)); // darkening, under the reference lines
-				addPathAndRings(map, brand);
-				showFrame = (index) => renderFrame(map, index);
+			m.on('load', () => {
+				m.setProjection({ type: 'globe' });
+				m.addLayer(createMoonShadowLayer(shadowState)); // darkening, under the reference lines
+				addPathAndRings(m, brand);
+				showFrame = (index) => renderFrame(m, index);
 				showFrame(frameIndex);
 				mapReady = true;
 			});
@@ -102,7 +106,7 @@
 	/** Pull brand colours from the central design tokens so the canvas honours them too. */
 	function readBrandColors() {
 		const css = getComputedStyle(document.documentElement);
-		const token = (name, fallback) => {
+		const token = (name: string, fallback: string) => {
 			const v = css.getPropertyValue(name).trim();
 			return !v || v.includes('var(') ? fallback : v;
 		};
@@ -114,7 +118,7 @@
 	}
 
 	/** Faint dashed whole-path line, then the three (initially empty) live ring layers on top. */
-	function addPathAndRings(map, brand) {
+	function addPathAndRings(map: MlMap, brand: Brand) {
 		map.addSource('path', { type: 'geojson', data: shadowPathLine });
 		map.addLayer({
 			id: 'path',
@@ -141,10 +145,10 @@
 	}
 
 	/** Advance everything to the timeline frame at `index`. */
-	function renderFrame(map, index) {
+	function renderFrame(map: MlMap, index: number) {
 		const frame = shadowFrames[index];
 		const date = new Date(frame.time);
-		const center = shadowCenter(date);
+		const center = { lat: frame.lat, lon: frame.lon };
 		const model = computeShadowModel(center, sunMoonECEF(date));
 
 		// feed the shadow shader (axis + coverage profile)
@@ -160,19 +164,20 @@
 		// analytic iso-rings: cylinder (radius for the coverage level) ∩ sphere
 		for (const ring of ISO_RINGS) {
 			const radius = radiusForCoverage(model, ring.level);
-			map.getSource(ring.id).setData(radius == null ? EMPTY_LINES : isoRing(model, radius));
+			(map.getSource(ring.id) as GeoJSONSource).setData(radius == null ? EMPTY_LINES : isoRing(model, radius));
 		}
 
 		// day/night great circle
-		map.getSource('terminator')?.setData(terminatorLine(model.sunDir));
+		(map.getSource('terminator') as GeoJSONSource | undefined)?.setData(terminatorLine(model.sunDir));
 
 		// header readout
 		clockUtc = formatUtc(frame.time);
 		umbraCenterText = `${center.lat.toFixed(2)}°, ${center.lon.toFixed(2)}°`;
 	}
 
-	function onScrub(event) {
-		frameIndex = +event.currentTarget.value;
+	function onScrub(event: Event) {
+		const target = event.currentTarget as HTMLInputElement;
+		frameIndex = +target.value;
 		showFrame(frameIndex);
 	}
 </script>

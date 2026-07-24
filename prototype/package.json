@@ -15,5 +15,10 @@
     "astronomy-engine": "^2.1.19",
     "open-props": "^1.7.23",
     "playwright": "^1.61.1"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "svelte-check": "^4.7.3",
+    "typescript": "^7.0.2"
   }
 }

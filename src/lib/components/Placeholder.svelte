@@ -1,6 +1,5 @@
-<script>
-	/** @type {{ title: string, note: string, tag?: string }} */
-	let { title, note, tag = '' } = $props();
+<script lang="ts">
+	let { title, note, tag = '' }: { title: string; note: string; tag?: string } = $props();
 </script>
 
 <section class="block ph">

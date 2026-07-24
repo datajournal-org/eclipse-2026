@@ -5,28 +5,29 @@ import { browser } from '$app/environment';
 
 const KEY = 'eclipse.location';
 
-/** @typedef {{ lat: number, lon: number, name: string|null }} Place */
+export type Place = { lat: number; lon: number; name: string | null };
 
 /** Start null so SSR and first client render agree; initLocation() hydrates the real value. */
-export const userLocation = writable(/** @type {Place|null} */ (null));
+export const userLocation = writable<Place | null>(null);
 
-function fromUrl() {
+function fromUrl(): Place | null {
 	const u = new URLSearchParams(location.search);
-	const lat = parseFloat(u.get('lat')),
-		lon = parseFloat(u.get('lon'));
+	const lat = parseFloat(u.get('lat') ?? ''),
+		lon = parseFloat(u.get('lon') ?? '');
 	if (Number.isFinite(lat) && Number.isFinite(lon)) {
 		return { lat, lon, name: u.get('name') };
 	}
 	return null;
 }
 
-function fromStorage() {
+function fromStorage(): Place | null {
 	try {
 		const s = localStorage.getItem(KEY);
 		if (s) {
 			const p = JSON.parse(s);
-			if (Number.isFinite(p?.lat) && Number.isFinite(p?.lon))
+			if (Number.isFinite(p?.lat) && Number.isFinite(p?.lon)) {
 				return { lat: p.lat, lon: p.lon, name: p.name ?? null };
+			}
 		}
 	} catch {
 		/* ignore */
@@ -41,8 +42,8 @@ export function initLocation() {
 	if (loc) userLocation.set(loc);
 }
 
-export function setLocation(/** @type {Place} */ loc) {
-	const clean = { lat: +loc.lat, lon: +loc.lon, name: loc.name ?? null };
+export function setLocation(loc: Place) {
+	const clean: Place = { lat: +loc.lat, lon: +loc.lon, name: loc.name ?? null };
 	userLocation.set(clean);
 	persist(clean);
 }
@@ -52,7 +53,7 @@ export function clearLocation() {
 	persist(null);
 }
 
-function persist(/** @type {Place|null} */ loc) {
+function persist(loc: Place | null) {
 	if (!browser) return;
 	try {
 		if (loc) localStorage.setItem(KEY, JSON.stringify(loc));
