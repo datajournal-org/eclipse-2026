@@ -1,5 +1,5 @@
-// A MapLibre custom layer that draws thin polylines through MapLibre's own `projectTile`, so they
-// render correctly at ANY latitude — including over the poles. GeoJSON `line` layers can't: their
+// A MapLibre custom layer that draws thin polylines and filled bands through MapLibre's own
+// `projectTile`, so they render correctly at ANY latitude — over the poles included. GeoJSON can't:
 // data is clamped to the ±85.05° Mercator tiling limit. `projectTile` also applies the globe's
 // horizon clipping (it sets gl_Position.z), so a line crossing to the far side is cut cleanly.
 //
@@ -7,12 +7,14 @@
 
 import type { CustomLayerInterface, CustomRenderMethodInput } from 'maplibre-gl';
 
-/** One coloured polyline group; `positions` is interleaved web-mercator x,y, drawn as LINE_STRIPs. */
+/** One coloured primitive; `positions` is interleaved web-mercator x,y. `mode` picks LINE_STRIP
+ *  (thin line, the default) or TRIANGLE_STRIP (a filled band). */
 export type LinePrimitive = {
 	color: [number, number, number]; // rgb 0..1
 	opacity: number;
 	positions: Float32Array;
 	segments: { first: number; count: number }[]; // vertex ranges within `positions`
+	mode?: 'line' | 'fill';
 };
 
 /** Shared state: the component swaps in fresh lines each frame and bumps `version`. */
@@ -51,6 +53,23 @@ export function linePrimitiveFromSegments(
 	return { color, opacity, positions: new Float32Array(flat), segments: ranges };
 }
 
+/** Build a filled band (TRIANGLE_STRIP) between two equal-length edge polylines (each of [lon, lat]). */
+export function fillStripPrimitive(
+	edgeA: number[][],
+	edgeB: number[][],
+	color: [number, number, number],
+	opacity: number
+): LinePrimitive {
+	const n = Math.min(edgeA.length, edgeB.length);
+	const flat: number[] = [];
+	for (let i = 0; i < n; i++) {
+		const [ax, ay] = lngLatToMercator(edgeA[i][0], edgeA[i][1]);
+		const [bx, by] = lngLatToMercator(edgeB[i][0], edgeB[i][1]);
+		flat.push(ax, ay, bx, by); // A,B,A,B… → a strip of quads between the two edges
+	}
+	return { color, opacity, mode: 'fill', positions: new Float32Array(flat), segments: [{ first: 0, count: 2 * n }] };
+}
+
 type ShaderData = CustomRenderMethodInput['shaderData'];
 
 type ProgramInfo = {
@@ -66,7 +85,14 @@ type ProgramInfo = {
 	};
 };
 
-type Draw = { r: number; g: number; b: number; a: number; segments: { first: number; count: number }[] };
+type Draw = {
+	r: number;
+	g: number;
+	b: number;
+	a: number;
+	mode: 'line' | 'fill';
+	segments: { first: number; count: number }[];
+};
 
 interface IsoLinesLayer extends CustomLayerInterface {
 	uploadedVersion: number;
@@ -159,6 +185,7 @@ export function createIsoLinesLayer(state: IsoLinesState): CustomLayerInterface 
 					g: line.color[1],
 					b: line.color[2],
 					a: line.opacity,
+					mode: line.mode ?? 'line',
 					segments: line.segments.map((s) => ({ first: base + s.first, count: s.count }))
 				});
 				offset += line.positions.length;
@@ -200,7 +227,8 @@ export function createIsoLinesLayer(state: IsoLinesState): CustomLayerInterface 
 
 			for (const d of this.drawList) {
 				gl2.uniform4f(u.color, d.r, d.g, d.b, d.a);
-				for (const seg of d.segments) gl2.drawArrays(gl2.LINE_STRIP, seg.first, seg.count);
+				const primitive = d.mode === 'fill' ? gl2.TRIANGLE_STRIP : gl2.LINE_STRIP;
+				for (const seg of d.segments) gl2.drawArrays(primitive, seg.first, seg.count);
 			}
 		}
 	};

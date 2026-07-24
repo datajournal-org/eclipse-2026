@@ -13,16 +13,18 @@
 	import { t } from '$lib/i18n';
 	import type { Map as MlMap, GeoJSONSource } from 'maplibre-gl';
 	import { sunMoonECEF, shadowCenter } from '$lib/eclipse';
-	import { shadowFrames, shadowPathLine, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
+	import { shadowFrames, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
 	import { computeShadowModel, radiusForCoverage } from '$lib/shadow-globe/shadowProfile';
 	import { isoRing, terminatorLine, EMPTY_LINES } from '$lib/shadow-globe/isoRing';
 	import { createMoonShadowLayer, type ShadowState } from '$lib/shadow-globe/moonShadowLayer';
 	import {
 		createIsoLinesLayer,
 		linePrimitiveFromSegments,
+		fillStripPrimitive,
 		type IsoLinesState,
 		type LinePrimitive
 	} from '$lib/shadow-globe/isoLinesLayer';
+	import { corridorEdges } from '$lib/shadow-globe/corridorBand';
 
 	type Brand = { bg: string; path: string; ring: string };
 
@@ -34,7 +36,7 @@
 	const ISO_RINGS = [
 		{ percent: 50, level: 0.5, opacity: 0.2 },
 		{ percent: 75, level: 0.75, opacity: 0.3 },
-		{ percent: 100, level: 0.99, opacity: 0.4 }
+		{ percent: 100, level: 0.999, opacity: 0.4 }
 	];
 
 	// Shared state the WebGL layer reads each frame (see moonShadowLayer.js): the shadow axis plus
@@ -49,11 +51,11 @@
 		ready: false
 	};
 
-	// The whole path + the iso rings render through a custom layer (projectTile) so they stay correct
-	// over the poles (GeoJSON line layers clamp at ±85°).
+	// The totality corridor (band) + the iso rings render through a custom layer (projectTile) so they
+	// stay correct over the poles (GeoJSON line/fill layers clamp at ±85°).
 	const isoLinesState: IsoLinesState = { lines: [], version: 0, ready: false };
 	let ringRgb: [number, number, number] = [1, 0.82, 0.5]; // --accent-2; set from tokens on mount
-	let pathLine: LinePrimitive | null = null; // the static whole-event central line (set on mount)
+	let corridorBand: LinePrimitive | null = null; // the static totality corridor (set on mount)
 
 	// ---- reactive UI state ----
 	const START_INDEX = Math.floor(shadowFrames.length / 2);
@@ -76,7 +78,7 @@
 
 			const brand = readBrandColors();
 			ringRgb = hexToRgb(brand.ring);
-			pathLine = linePrimitiveFromSegments([shadowPathLine.geometry.coordinates], hexToRgb(brand.path), 0.45);
+			corridorBand = fillStripPrimitive(corridorEdges.north, corridorEdges.south, hexToRgb(brand.path), 0.18);
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				...INITIAL_VIEW,
@@ -171,9 +173,9 @@
 		shadowState.ready = true;
 		map.triggerRepaint();
 
-		// path + analytic iso-rings → LinePrimitives for the pole-correct custom layer (projectTile)
+		// corridor band + analytic iso-rings → LinePrimitives for the pole-correct custom layer
 		const lines: LinePrimitive[] = [];
-		if (pathLine) lines.push(pathLine);
+		if (corridorBand) lines.push(corridorBand);
 		for (const ring of ISO_RINGS) {
 			const radius = radiusForCoverage(model, ring.level);
 			if (radius == null) continue;
