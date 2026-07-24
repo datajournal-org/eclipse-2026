@@ -40,10 +40,11 @@
   </div>
   <div class="meta" id="meta">…</div>
   <div class="legend">
-    <span style="color:#e8a33d"><i></i>100 % (Totalität)</span>
+    <span style="opacity:.7">Aktueller Schatten:</span>
+    <span style="color:#ffd27f"><i></i>100 %</span>
     <span style="color:#f0b24a"><i></i>50 %</span>
-    <span style="color:#f0d9a8"><i></i>0 % (Rand)</span>
-    <span style="opacity:.6">Bedeckung</span>
+    <span style="color:#f0d9a8"><i></i>0 %</span>
+    <span style="color:#e8a33d;opacity:.7"><i></i>Pfad</span>
   </div>
 </div>
 
@@ -61,41 +62,47 @@ const pathCoords = samples.map(s => [s.lon, s.lat]);
 const tMin = samples[0].t, tMax = samples[samples.length-1].t;
 const fmt = t => new Date(t).toISOString().slice(11,16);
 
-// ---- iso-coverage reference lines: max obscuration ever experienced at each ground point ----
-// Mirror of the shader's disc-overlap, sampled on a lat/lon grid over the whole penumbral window,
-// then marching-squares contours at 50% and (just above) 0% coverage.
+// ---- live iso-coverage rings: outline of the Moon's shadow AT THE CURRENT INSTANT ----
+// The obscuration field (mirror of the shader's disc-overlap) is re-sampled on a fixed lat/lon grid
+// every time the slider moves, then marching-squares gives the 0% / 50% / 100% rings that move with it.
+const D2R = Math.PI/180;
+const EMPTY = { type:'Feature', geometry:{ type:'MultiLineString', coordinates:[] } };
 function discOverlap(rS,rM,d){ if(d>=rS+rM)return 0; if(d<=Math.abs(rM-rS))return rM>=rS?1:(rM*rM)/(rS*rS);
   const a=Math.max(-1,Math.min(1,(d*d+rS*rS-rM*rM)/(2*d*rS))), b=Math.max(-1,Math.min(1,(d*d+rM*rM-rS*rS)/(2*d*rM)));
   const A=rS*rS*Math.acos(a)+rM*rM*Math.acos(b)-0.5*Math.sqrt(Math.max(0,(-d+rS+rM)*(d+rS-rM)*(d-rS+rM)*(d+rS+rM)));
   return A/(Math.PI*rS*rS); }
-function obscAt(clat,slat,clon,slon,sm){                 // surface point from pre-split lat/lon trig
-  const Px=clat*clon, Py=clat*slon, Pz=slat, su=sm.sun;
-  if(Px*su[0]+Py*su[1]+Pz*su[2] <= 0) return 0;          // Sun below horizon → eclipse not seen here
-  const mx=sm.moon[0]-Px, my=sm.moon[1]-Py, mz=sm.moon[2]-Pz, md=Math.hypot(mx,my,mz);
-  const dot=(su[0]*mx+su[1]*my+su[2]*mz)/md;
-  return discOverlap(sm.sunAngR, 0.27271/md, Math.acos(Math.max(-1,Math.min(1,dot)))); }
-const D2R = Math.PI/180;
-const lats=[], lons=[];
-for(let la=20; la<=90+1e-9; la+=1) lats.push(la);
-for(let lo=-150; lo<=100+1e-9; lo+=1) lons.push(lo);
-const smSamples=[];                                       // Sun/Moon over a window wide enough for the full penumbra
-for(let t=Date.UTC(2026,7,12,16,30); t<=Date.UTC(2026,7,12,19,30); t+=120*1000) smSamples.push(sunMoonECEF(new Date(t)));
-const obGrid = lats.map(la=>{ const clat=Math.cos(la*D2R), slat=Math.sin(la*D2R);
-  return lons.map(lo=>{ const clon=Math.cos(lo*D2R), slon=Math.sin(lo*D2R); let mx=0;
-    for(const sm of smSamples){ const o=obscAt(clat,slat,clon,slon,sm); if(o>mx)mx=o; } return mx; }); });
+// fixed grid; 0.7° captures even the small central umbra. Pre-split lat/lon trig for speed.
+const gridLats=[], gridLons=[];
+for(let la=12; la<=90+1e-9; la+=0.7) gridLats.push(la);
+for(let lo=-150; lo<=90+1e-9; lo+=0.7) gridLons.push(lo);
+const NLA=gridLats.length, NLO=gridLons.length;
+const clatA=gridLats.map(la=>Math.cos(la*D2R)), slatA=gridLats.map(la=>Math.sin(la*D2R));
+const clonA=gridLons.map(lo=>Math.cos(lo*D2R)), slonA=gridLons.map(lo=>Math.sin(lo*D2R));
+const gv=new Float32Array(NLA*NLO);
+function fillGrid(sm){ const su=sm.sun, mo=sm.moon, sar=sm.sunAngR;
+  // Soft horizon gate: geometrically the shadow footprint also reaches just past the terminator
+  // (where the Sun has set and the eclipse can't be seen). Fade obscuration out across the twilight
+  // band — this both drops that invisible overhang and cuts the penumbra ring smoothly at the terminator.
+  for(let i=0;i<NLA;i++){ const cl=clatA[i], sl=slatA[i], row=i*NLO;
+    for(let j=0;j<NLO;j++){ const Px=cl*clonA[j], Py=cl*slonA[j], Pz=sl;
+      const s=Px*su[0]+Py*su[1]+Pz*su[2];                        // sin(solar elevation)
+      let dayf=(s+0.03)/0.11; dayf=dayf<0?0:dayf>1?1:dayf;       // 0 below horizon → 1 in daylight (soft)
+      if(dayf<=0){ gv[row+j]=0; continue; }
+      const mx=mo[0]-Px, my=mo[1]-Py, mz=mo[2]-Pz, md=Math.sqrt(mx*mx+my*my+mz*mz);
+      let dt=(su[0]*mx+su[1]*my+su[2]*mz)/md; dt=dt>1?1:dt<-1?-1:dt;
+      gv[row+j]=discOverlap(sar, 0.27271/md, Math.acos(dt))*dayf; } } }
 function isoContour(level){ const segs=[];
-  for(let i=0;i<lats.length-1;i++) for(let j=0;j<lons.length-1;j++){
-    const v00=obGrid[i][j], v01=obGrid[i][j+1], v11=obGrid[i+1][j+1], v10=obGrid[i+1][j];
-    const la0=lats[i], la1=lats[i+1], lo0=lons[j], lo1=lons[j+1], cr=[];
-    const ip=(va,vb,pa,pb)=>{ const t=(level-va)/(vb-va); return [pa[0]+(pb[0]-pa[0])*t, pa[1]+(pb[1]-pa[1])*t]; };
-    if((v00>level)!==(v01>level)) cr.push(ip(v00,v01,[lo0,la0],[lo1,la0]));   // top
-    if((v01>level)!==(v11>level)) cr.push(ip(v01,v11,[lo1,la0],[lo1,la1]));   // right
-    if((v11>level)!==(v10>level)) cr.push(ip(v11,v10,[lo1,la1],[lo0,la1]));   // bottom
-    if((v10>level)!==(v00>level)) cr.push(ip(v10,v00,[lo0,la1],[lo0,la0]));   // left
-    if(cr.length===2) segs.push([cr[0],cr[1]]);
-    else if(cr.length===4){ segs.push([cr[0],cr[1]]); segs.push([cr[2],cr[3]]); } }
+  for(let i=0;i<NLA-1;i++){ const la0=gridLats[i], la1=gridLats[i+1], r0=i*NLO, r1=r0+NLO;
+    for(let j=0;j<NLO-1;j++){ const lo0=gridLons[j], lo1=gridLons[j+1];
+      const v00=gv[r0+j], v01=gv[r0+j+1], v11=gv[r1+j+1], v10=gv[r1+j], cr=[];
+      const ip=(va,vb,pa,pb)=>{ const t=(level-va)/(vb-va); return [pa[0]+(pb[0]-pa[0])*t, pa[1]+(pb[1]-pa[1])*t]; };
+      if((v00>level)!==(v01>level)) cr.push(ip(v00,v01,[lo0,la0],[lo1,la0]));   // top
+      if((v01>level)!==(v11>level)) cr.push(ip(v01,v11,[lo1,la0],[lo1,la1]));   // right
+      if((v11>level)!==(v10>level)) cr.push(ip(v11,v10,[lo1,la1],[lo0,la1]));   // bottom
+      if((v10>level)!==(v00>level)) cr.push(ip(v10,v00,[lo0,la1],[lo0,la0]));   // left
+      if(cr.length===2) segs.push([cr[0],cr[1]]);
+      else if(cr.length===4){ segs.push([cr[0],cr[1]]); segs.push([cr[2],cr[3]]); } } }
   return { type:'Feature', geometry:{ type:'MultiLineString', coordinates:segs } }; }
-const iso50 = isoContour(0.5), iso0 = isoContour(0.02);
 
 function compile(gl, vs, fs){
   const c=(t,s)=>{const sh=gl.createShader(t);gl.shaderSource(sh,s);gl.compileShader(sh);
@@ -206,15 +213,19 @@ window.map = map;
 map.on('load', () => {
   map.setProjection({ type:'globe' });
   map.addLayer(shadowLayer);                                  // day/night + eclipse darkening, under the lines
-  map.addSource('iso0', { type:'geojson', data:iso0 });
-  map.addLayer({ id:'iso0', type:'line', source:'iso0',
-    paint:{ 'line-color':'#f0d9a8', 'line-width':1, 'line-dasharray':[1,3], 'line-opacity':.5 } });   // 0% edge
-  map.addSource('iso50', { type:'geojson', data:iso50 });
-  map.addLayer({ id:'iso50', type:'line', source:'iso50',
-    paint:{ 'line-color':'#f0b24a', 'line-width':1.3, 'line-dasharray':[3,3], 'line-opacity':.75 } }); // 50%
+  // faint trace of the whole route (context), then the three LIVE rings that move with the slider
   map.addSource('path', { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates:pathCoords } } });
   map.addLayer({ id:'path', type:'line', source:'path',
-    paint:{ 'line-color':'#e8a33d', 'line-width':2, 'line-dasharray':[2,2], 'line-opacity':.95 } });   // 100% totality
+    paint:{ 'line-color':'#e8a33d', 'line-width':1, 'line-dasharray':[1,3], 'line-opacity':.45 } });   // Pfad
+  map.addSource('iso0', { type:'geojson', data:EMPTY });
+  map.addLayer({ id:'iso0', type:'line', source:'iso0',
+    paint:{ 'line-color':'#f0d9a8', 'line-width':1.1, 'line-dasharray':[2,3], 'line-opacity':.6 } });  // 0% edge
+  map.addSource('iso50', { type:'geojson', data:EMPTY });
+  map.addLayer({ id:'iso50', type:'line', source:'iso50',
+    paint:{ 'line-color':'#f0b24a', 'line-width':1.4, 'line-dasharray':[3,3], 'line-opacity':.85 } }); // 50%
+  map.addSource('iso100', { type:'geojson', data:EMPTY });
+  map.addLayer({ id:'iso100', type:'line', source:'iso100',
+    paint:{ 'line-color':'#ffd27f', 'line-width':2, 'line-dasharray':[2,2], 'line-opacity':.95 } });   // 100% umbra
 
   const slider = document.getElementById('slider');
   slider.min=0; slider.max=samples.length-1; slider.value=Math.floor(samples.length/2);
@@ -222,6 +233,10 @@ map.on('load', () => {
     const s=samples[+slider.value], date=new Date(s.t);
     const sm=sunMoonECEF(date); shadow.sun=sm.sun; shadow.moon=sm.moon; shadow.sunAngR=sm.sunAngR; shadow.ready=true;
     map.triggerRepaint();
+    fillGrid(sm);                                         // live obscuration field → moving iso rings
+    map.getSource('iso0').setData(isoContour(0.02));
+    map.getSource('iso50').setData(isoContour(0.5));
+    map.getSource('iso100').setData(isoContour(0.98));
     const p=shadowCenter(date);
     document.getElementById('clock').innerHTML=`${fmt(s.t)}<small> UTC</small>`;
     document.getElementById('meta').textContent=
