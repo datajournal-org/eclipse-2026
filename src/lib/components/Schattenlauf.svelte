@@ -230,7 +230,6 @@
 		position: relative;
 		overflow: hidden;
 		background: var(--bg);
-		border-block: 1px solid var(--border);
 	}
 	.map {
 		height: min(64vh, 480px);
