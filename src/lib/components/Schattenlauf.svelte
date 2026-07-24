@@ -73,9 +73,9 @@
 						sat: {
 							type: 'raster',
 							tiles: [SATELLITE_TILES],
-							tileSize: 256,
+							tileSize: 512,
 							maxzoom: 19,
-							attribution: '© VersaTiles / Mapterhorn'
+							attribution: '© VersaTiles'
 						}
 					},
 					layers: [
