@@ -1,0 +1,7 @@
+node_modules
+/build
+/.svelte-kit
+package-lock.json
+
+# reference-only prototype (hand-tuned single-file demos)
+prototype
