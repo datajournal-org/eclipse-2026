@@ -26,9 +26,9 @@
 	// Coverage rings drawn live around the current shadow. `level` = obscuration threshold (0..1),
 	// `percent` drives both the map opacity and the legend label.
 	const ISO_RINGS = [
-		{ id: 'iso50', level: 0.5, percent: 20 },
-		{ id: 'iso75', level: 0.75, percent: 40 },
-		{ id: 'iso100', level: 0.99, percent: 60 }
+		{ percent: 50, level: 0.5, opacity: 0.2 },
+		{ percent: 75, level: 0.75, opacity: 0.3 },
+		{ percent: 100, level: 0.99, opacity: 0.4 }
 	];
 
 	// Shared state the WebGL layer reads each frame (see moonShadowLayer.js): the shadow axis plus
@@ -129,12 +129,13 @@
 			paint: { 'line-color': brand.path, 'line-width': 1, 'line-opacity': 0.45 }
 		});
 		for (const ring of ISO_RINGS) {
-			map.addSource(ring.id, { type: 'geojson', data: EMPTY_LINES });
+			const id = `iso${ring.percent}`;
+			map.addSource(id, { type: 'geojson', data: EMPTY_LINES });
 			map.addLayer({
-				id: ring.id,
+				id: id,
 				type: 'line',
-				source: ring.id,
-				paint: { 'line-color': brand.ring, 'line-width': 1, 'line-opacity': ring.percent / 100 }
+				source: id,
+				paint: { 'line-color': brand.ring, 'line-width': 1, 'line-opacity': ring.opacity }
 			});
 		}
 		map.addSource('terminator', { type: 'geojson', data: EMPTY_LINES });
@@ -166,7 +167,9 @@
 		// analytic iso-rings: cylinder (radius for the coverage level) ∩ sphere
 		for (const ring of ISO_RINGS) {
 			const radius = radiusForCoverage(model, ring.level);
-			(map.getSource(ring.id) as GeoJSONSource).setData(radius == null ? EMPTY_LINES : isoRing(model, radius));
+			(map.getSource(`iso${ring.percent}`) as GeoJSONSource).setData(
+				radius == null ? EMPTY_LINES : isoRing(model, radius)
+			);
 		}
 
 		// day/night great circle
@@ -215,8 +218,8 @@
 			</div>
 			<div class="legend">
 				<span class="lbl">{$t('a2.current_shadow')}:</span>
-				{#each ISO_RINGS as ring (ring.id)}
-					<span style="color:var(--accent-2);opacity:{ring.percent / 100}"><i></i>{ring.percent} %</span>
+				{#each ISO_RINGS as ring (ring.percent)}
+					<span style="color:var(--accent-2);opacity:{ring.opacity}"><i></i>{ring.percent} %</span>
 				{/each}
 				<span style="color:var(--accent);opacity:.7"><i></i>{$t('a2.path')}</span>
 			</div>
