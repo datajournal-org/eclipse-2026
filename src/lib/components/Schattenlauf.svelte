@@ -14,7 +14,7 @@
   import { sunMoonECEF, shadowCenter } from '$lib/eclipse';
   import { shadowFrames, shadowPathLine, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
   import { computeShadowModel, radiusForCoverage } from '$lib/shadow-globe/shadowProfile';
-  import { isoRing, EMPTY_LINES } from '$lib/shadow-globe/isoRing';
+  import { isoRing, terminatorLine, EMPTY_LINES } from '$lib/shadow-globe/isoRing';
   import { createMoonShadowLayer } from '$lib/shadow-globe/moonShadowLayer';
 
   const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
@@ -98,6 +98,8 @@
       map.addSource(ring.id, { type: 'geojson', data: EMPTY_LINES });
       map.addLayer({ id: ring.id, type: 'line', source: ring.id, paint: { 'line-color': brand.ring, 'line-width': 1, 'line-opacity': ring.percent / 100 } });
     }
+    map.addSource('terminator', { type: 'geojson', data: EMPTY_LINES });
+    map.addLayer({ id: 'terminator', type: 'line', source: 'terminator', paint: { 'line-color': '#5cc8ff', 'line-width': 1, 'line-opacity': 0.2 } });
   }
 
   /** Advance everything to the timeline frame at `index`. */
@@ -122,6 +124,9 @@
       const radius = radiusForCoverage(model, ring.level);
       map.getSource(ring.id).setData(radius == null ? EMPTY_LINES : isoRing(model, radius));
     }
+
+    // day/night great circle
+    map.getSource('terminator')?.setData(terminatorLine(model.sunDir));
 
     // header readout
     clockUtc = formatUtc(frame.time);

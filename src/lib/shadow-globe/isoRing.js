@@ -96,6 +96,25 @@ export function isoRing(model, radius, steps = 512) {
   return { type: 'Feature', geometry: { type: 'MultiLineString', coordinates: segments } };
 }
 
+/**
+ * The day/night boundary (terminator) as a GeoJSON line: the great circle where the Sun sits
+ * exactly on the horizon (P·sunDir = 0). The iso-ring open ends are anchored on this same circle,
+ * so drawing it lets you check they coincide with the shader's day/night transition.
+ */
+export function terminatorLine(sunDir, steps = 256) {
+  const ref = Math.abs(sunDir[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0];
+  const u = normalize(cross(sunDir, ref));   // two orthonormal directions spanning the plane ⊥ sunDir
+  const w = cross(sunDir, u);
+  const points = [];
+  for (let i = 0; i <= steps; i++) {
+    const theta = (i / steps) * TAU;
+    const cosT = Math.cos(theta), sinT = Math.sin(theta);
+    const P = [u[0] * cosT + w[0] * sinT, u[1] * cosT + w[1] * sinT, u[2] * cosT + w[2] * sinT];
+    points.push([Math.atan2(P[1], P[0]) * RAD_TO_DEG, Math.asin(clamp(P[2], -1, 1)) * RAD_TO_DEG]);
+  }
+  return { type: 'Feature', geometry: { type: 'MultiLineString', coordinates: splitAtAntimeridian(points) } };
+}
+
 /** Split a point run wherever consecutive longitudes jump the antimeridian. */
 function splitAtAntimeridian(points) {
   const runs = [];
