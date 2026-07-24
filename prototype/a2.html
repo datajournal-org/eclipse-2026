@@ -41,9 +41,9 @@
   <div class="meta" id="meta">…</div>
   <div class="legend">
     <span style="opacity:.7">Aktueller Schatten:</span>
-    <span style="color:#ffd27f"><i></i>100 %</span>
-    <span style="color:#f0b24a"><i></i>50 %</span>
-    <span style="color:#f0d9a8"><i></i>0 %</span>
+    <span style="color:#ffd27f;opacity:1.0"><i></i>100 %</span>
+    <span style="color:#ffd27f;opacity:0.75"><i></i>75 %</span>
+    <span style="color:#ffd27f;opacity:0.5"><i></i>50 %</span>
     <span style="color:#e8a33d;opacity:.7"><i></i>Pfad</span>
   </div>
 </div>
@@ -73,8 +73,8 @@ function discOverlap(rS,rM,d){ if(d>=rS+rM)return 0; if(d<=Math.abs(rM-rS))retur
   return A/(Math.PI*rS*rS); }
 // fixed grid; 0.7° captures even the small central umbra. Pre-split lat/lon trig for speed.
 const gridLats=[], gridLons=[];
-for(let la=12; la<=90+1e-9; la+=0.7) gridLats.push(la);
-for(let lo=-150; lo<=90+1e-9; lo+=0.7) gridLons.push(lo);
+for(let la=12; la<=90+1e-9; la+=0.2) gridLats.push(la);
+for(let lo=-150; lo<=90+1e-9; lo+=0.2) gridLons.push(lo);
 const NLA=gridLats.length, NLO=gridLons.length;
 const clatA=gridLats.map(la=>Math.cos(la*D2R)), slatA=gridLats.map(la=>Math.sin(la*D2R));
 const clonA=gridLons.map(lo=>Math.cos(lo*D2R)), slonA=gridLons.map(lo=>Math.sin(lo*D2R));
@@ -215,17 +215,15 @@ map.on('load', () => {
   map.addLayer(shadowLayer);                                  // day/night + eclipse darkening, under the lines
   // faint trace of the whole route (context), then the three LIVE rings that move with the slider
   map.addSource('path', { type:'geojson', data:{ type:'Feature', geometry:{ type:'LineString', coordinates:pathCoords } } });
+
   map.addLayer({ id:'path', type:'line', source:'path',
-    paint:{ 'line-color':'#e8a33d', 'line-width':1, 'line-dasharray':[1,3], 'line-opacity':.45 } });   // Pfad
-  map.addSource('iso0', { type:'geojson', data:EMPTY });
-  map.addLayer({ id:'iso0', type:'line', source:'iso0',
-    paint:{ 'line-color':'#f0d9a8', 'line-width':1.1, 'line-dasharray':[2,3], 'line-opacity':.6 } });  // 0% edge
-  map.addSource('iso50', { type:'geojson', data:EMPTY });
-  map.addLayer({ id:'iso50', type:'line', source:'iso50',
-    paint:{ 'line-color':'#f0b24a', 'line-width':1.4, 'line-dasharray':[3,3], 'line-opacity':.85 } }); // 50%
-  map.addSource('iso100', { type:'geojson', data:EMPTY });
-  map.addLayer({ id:'iso100', type:'line', source:'iso100',
-    paint:{ 'line-color':'#ffd27f', 'line-width':2, 'line-dasharray':[2,2], 'line-opacity':.95 } });   // 100% umbra
+  paint:{ 'line-color':'#e8a33d', 'line-width':1, 'line-opacity':.45 } });   // Pfad
+  
+  [50,75,100].forEach(pct => {
+    map.addSource(`iso${pct}`, { type:'geojson', data:EMPTY });
+    map.addLayer({ id:`iso${pct}`, type:'line', source:`iso${pct}`,
+      paint:{ 'line-color':'#ffd27f', 'line-width':1, 'line-opacity':pct/100 } });
+  });
 
   const slider = document.getElementById('slider');
   slider.min=0; slider.max=samples.length-1; slider.value=Math.floor(samples.length/2);
@@ -233,10 +231,10 @@ map.on('load', () => {
     const s=samples[+slider.value], date=new Date(s.t);
     const sm=sunMoonECEF(date); shadow.sun=sm.sun; shadow.moon=sm.moon; shadow.sunAngR=sm.sunAngR; shadow.ready=true;
     map.triggerRepaint();
-    fillGrid(sm);                                         // live obscuration field → moving iso rings
-    map.getSource('iso0').setData(isoContour(0.02));
+    fillGrid(sm);                                    
     map.getSource('iso50').setData(isoContour(0.5));
-    map.getSource('iso100').setData(isoContour(0.98));
+    map.getSource('iso75').setData(isoContour(0.75));
+    map.getSource('iso100').setData(isoContour(0.99));
     const p=shadowCenter(date);
     document.getElementById('clock').innerHTML=`${fmt(s.t)}<small> UTC</small>`;
     document.getElementById('meta').textContent=
