@@ -77,18 +77,26 @@ void main(){ vec3 P=normalize(v_ecef);
   vec3 mv=u_moon-P; float mR=0.27271/length(mv);    // Moon radius (Earth radii) / distance to P
   float sep=acos(clamp(dot(u_sun,normalize(mv)),-1.,1.));
   float o=ov(u_sunAngR,mR,sep); if(o<0.002) discard;
-  fragColor=vec4(0.0,0.0,0.03, o*0.82*day); }`;
+  float a = o*0.72 + smoothstep(0.88,1.0,o)*0.22;   // penumbra gentle, crisp & dark umbra core
+  vec3 col = mix(vec3(0.05,0.07,0.12), vec3(0.0,0.0,0.015), smoothstep(0.45,1.0,o)); // twilight-blue → near-black
+  fragColor = vec4(col, min(0.94, a)*day); }`;
 
 const shadowLayer = {
   id:'moon-shadow', type:'custom', renderingMode:'2d',
   onAdd(map, gl){
-    const v=[], idx=[];
-    for(let iy=0;iy<=GRID;iy++) for(let ix=0;ix<=GRID;ix++) v.push(ix/GRID, iy/GRID);
-    for(let iy=0;iy<GRID;iy++) for(let ix=0;ix<GRID;ix++){ const a=iy*(GRID+1)+ix,b=a+1,c=a+GRID+1,d=c+1;
-      idx.push(a,c,b, b,c,d); }
+    const pos=[], raw=[], idx=[], G1=GRID+1;
+    for(let iy=0;iy<=GRID;iy++) for(let ix=0;ix<=GRID;ix++){ pos.push(ix/GRID, iy/GRID); raw.push(0,0); }
+    for(let iy=0;iy<GRID;iy++) for(let ix=0;ix<GRID;ix++){ const a=iy*G1+ix,b=a+1,c=a+G1,d=c+1; idx.push(a,c,b, b,c,d); }
+    // pole caps: Mercator only reaches ±85° — fill 85°→90° with a fan to a pole vertex,
+    // placed exactly on the pole via projectTile's rawPos sentinel (see prelude projectToSphere).
+    const np=pos.length/2; pos.push(0.5,0.0); raw.push(0,-40000);   // north pole
+    const sp=pos.length/2; pos.push(0.5,1.0); raw.push(0, 40000);   // south pole
+    const bb=GRID*G1;                                              // bottom row start
+    for(let ix=0;ix<GRID;ix++) idx.push(np, ix, ix+1);             // north fan (top row iy=0)
+    for(let ix=0;ix<GRID;ix++) idx.push(bb+ix, sp, bb+ix+1);       // south fan (bottom row iy=GRID)
     this.count=idx.length;
-    this.vbo=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,this.vbo);
-    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.STATIC_DRAW);
+    const buf=d=>{ const b=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,b); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(d),gl.STATIC_DRAW); return b; };
+    this.vbo=buf(pos); this.rbo=buf(raw);
     this.ibo=gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.ibo);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint32Array(idx),gl.STATIC_DRAW);
     this.progs={};
@@ -97,13 +105,15 @@ const shadowLayer = {
   prog(gl, sd){
     if(this.progs[sd.variantName]) return this.progs[sd.variantName];
     const vs = `#version 300 es\n`+sd.vertexShaderPrelude+`\n`+sd.define+`\n`+
-      `in vec2 a_pos; out vec3 v_ecef;
-       void main(){ gl_Position=projectTile(a_pos);
-         float lon=a_pos.x*6.283185307-3.141592653;                 // mercator 0..1 → lon/lat
-         float lat=atan(sinh(3.141592653*(1.0-2.0*a_pos.y)));
-         float cl=cos(lat); v_ecef=vec3(cl*cos(lon), cl*sin(lon), sin(lat)); }`;
+      `in vec2 a_pos; in vec2 a_raw; out vec3 v_ecef;
+       void main(){ gl_Position=projectTile(a_pos, a_raw);          // 2-arg: rawPos sentinel → pole
+         if(a_raw.y < -32767.5){ v_ecef=vec3(0.0,0.0,1.0); }        // north pole (frame: z=north)
+         else if(a_raw.y > 32766.5){ v_ecef=vec3(0.0,0.0,-1.0); }   // south pole
+         else { float lon=a_pos.x*6.283185307-3.141592653;          // mercator 0..1 → lon/lat
+           float lat=atan(sinh(3.141592653*(1.0-2.0*a_pos.y)));
+           float cl=cos(lat); v_ecef=vec3(cl*cos(lon), cl*sin(lon), sin(lat)); } }`;
     const p=compile(gl, vs, FRAG); const L=n=>gl.getUniformLocation(p,n);
-    return this.progs[sd.variantName]={ p, a:gl.getAttribLocation(p,'a_pos'),
+    return this.progs[sd.variantName]={ p, a:gl.getAttribLocation(p,'a_pos'), ar:gl.getAttribLocation(p,'a_raw'),
       pm:L('u_projection_matrix'), tmc:L('u_projection_tile_mercator_coords'),
       cp:L('u_projection_clipping_plane'), tr:L('u_projection_transition'), fm:L('u_projection_fallback_matrix'),
       sun:L('u_sun'), moon:L('u_moon'), sar:L('u_sunAngR') };
@@ -112,13 +122,14 @@ const shadowLayer = {
     if(!shadow.ready) return;
     const o=this.prog(gl, opt.shaderData), pd=opt.defaultProjectionData;
     gl.useProgram(o.p);
-    if(o.pm) gl.uniformMatrix4fv(o.pm,false,pd.mainMatrix);            // bind MapLibre's projection uniforms
+    if(o.pm) gl.uniformMatrix4fv(o.pm,false,pd.mainMatrix);            // MapLibre projection uniforms
     if(o.tmc&&pd.tileMercatorCoords) gl.uniform4fv(o.tmc,pd.tileMercatorCoords);
     if(o.cp&&pd.clippingPlane) gl.uniform4fv(o.cp,pd.clippingPlane);
     if(o.tr!=null&&pd.projectionTransition!=null) gl.uniform1f(o.tr,pd.projectionTransition);
     if(o.fm&&pd.fallbackMatrix) gl.uniformMatrix4fv(o.fm,false,pd.fallbackMatrix);
     gl.uniform3fv(o.sun,shadow.sun); gl.uniform3fv(o.moon,shadow.moon); gl.uniform1f(o.sar,shadow.sunAngR);
     gl.bindBuffer(gl.ARRAY_BUFFER,this.vbo); gl.enableVertexAttribArray(o.a); gl.vertexAttribPointer(o.a,2,gl.FLOAT,false,0,0);
+    gl.bindBuffer(gl.ARRAY_BUFFER,this.rbo); gl.enableVertexAttribArray(o.ar); gl.vertexAttribPointer(o.ar,2,gl.FLOAT,false,0,0);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.ibo);
     gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
     gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.disable(gl.DEPTH_TEST);   // near hemisphere only
@@ -127,8 +138,12 @@ const shadowLayer = {
   },
 };
 
+const Q = new URLSearchParams(location.search);
+const camLat = Q.has('lat') ? +Q.get('lat') : 58;
+const camLon = Q.has('lon') ? +Q.get('lon') : -18;
+const camZoom = Q.has('zoom') ? +Q.get('zoom') : 2.2;
 const map = new maplibregl.Map({
-  container:'map', center:[-18,58], zoom:2.2,
+  container:'map', center:[camLon,camLat], zoom:camZoom,
   style:{ version:8,
     sources:{ sat:{ type:'raster', tiles:[SAT], tileSize:256, maxzoom:19, attribution:'© VersaTiles / Mapterhorn' } },
     layers:[ { id:'bg', type:'background', paint:{'background-color':'#05070d'} },
