@@ -23,9 +23,9 @@
   // Coverage rings drawn live around the current shadow. `level` = obscuration threshold (0..1),
   // `percent` drives both the map opacity and the legend label.
   const ISO_RINGS = [
-    { id: 'iso50', level: 0.5, percent: 50 },
-    { id: 'iso75', level: 0.75, percent: 75 },
-    { id: 'iso100', level: 0.99, percent: 100 }
+    { id: 'iso50', level: 0.5, percent: 20 },
+    { id: 'iso75', level: 0.75, percent: 40 },
+    { id: 'iso100', level: 0.99, percent: 60 }
   ];
 
   // Shared state the WebGL layer reads each frame (see moonShadowLayer.js): the shadow axis plus

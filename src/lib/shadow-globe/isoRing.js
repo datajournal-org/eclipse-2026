@@ -5,12 +5,17 @@
 // With an orthonormal basis {u, v, axis} where u is the axis-perpendicular part of the centre C,
 // the cylinder point C + X·(cosθ·u + sinθ·v) + s·axis lies on the unit sphere when
 //     s = −k + √(k² − X² − 2·X·a·cosθ),   k = C·axis,  a = |C − (C·axis)·axis|.
-// We take the +√ (sunward) root and keep only the day side. Where the discriminant is negative the
-// ring runs off the limb, so it is simply left open there.
+// We take the +√ (sunward) root and keep only the day side.
+//
+// A ring is open where it runs off the Earth's limb (discriminant < 0, the cylinder is tangent to
+// the sphere) or crosses into night (P·sunDir ≤ 0). To keep the open ends from flickering during
+// the animation, each end is anchored on the *exact* boundary angle (found by bisection) instead of
+// the last sampled point — so the endpoints move continuously frame to frame.
 
 /** Empty ring geometry, for initialising a MapLibre source before the first frame. */
 export const EMPTY_LINES = { type: 'Feature', geometry: { type: 'MultiLineString', coordinates: [] } };
 
+const TAU = 2 * Math.PI;
 const RAD_TO_DEG = 180 / Math.PI;
 
 /**
@@ -31,48 +36,76 @@ export function isoRing(model, radius, steps = 512) {
     : normalize(cross(axis, Math.abs(axis[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]));
   const v = cross(axis, u);
 
-  // Sample one full turn; null where the ring leaves the sphere or the night side.
-  const points = new Array(steps);
-  for (let i = 0; i < steps; i++) {
-    const theta = (i / steps) * 2 * Math.PI;
+  // Surface point at angle θ, plus whether it is on the sphere and sunlit.
+  const at = (theta) => {
     const cosT = Math.cos(theta), sinT = Math.sin(theta);
     const disc = k * k - radius * radius - 2 * radius * a * cosT;
-    if (disc < 0) { points[i] = null; continue; }
-    const s = -k + Math.sqrt(disc);
-    const px = C[0] + radius * (cosT * u[0] + sinT * v[0]) + s * axis[0];
-    const py = C[1] + radius * (cosT * u[1] + sinT * v[1]) + s * axis[1];
-    const pz = C[2] + radius * (cosT * u[2] + sinT * v[2]) + s * axis[2];
-    if (px * sunDir[0] + py * sunDir[1] + pz * sunDir[2] <= 0) { points[i] = null; continue; } // night side
-    const lat = Math.asin(clamp(pz, -1, 1)) * RAD_TO_DEG;
-    const lon = Math.atan2(py, px) * RAD_TO_DEG;
-    points[i] = [lon, lat];
-  }
+    const s = -k + Math.sqrt(Math.max(0, disc));
+    const P = [
+      C[0] + radius * (cosT * u[0] + sinT * v[0]) + s * axis[0],
+      C[1] + radius * (cosT * u[1] + sinT * v[1]) + s * axis[1],
+      C[2] + radius * (cosT * u[2] + sinT * v[2]) + s * axis[2]
+    ];
+    const valid = disc >= 0 && dot(P, sunDir) > 0;
+    return { valid, P };
+  };
+  const toLonLat = (P) => [Math.atan2(P[1], P[0]) * RAD_TO_DEG, Math.asin(clamp(P[2], -1, 1)) * RAD_TO_DEG];
 
-  // Start at a gap so an open ring never wraps the θ=0 seam; a fully closed ring repeats its start.
-  const firstGap = points.findIndex((p) => p === null);
-  const closed = firstGap === -1;
-  const order = [];
-  const startAt = closed ? 0 : firstGap;
-  for (let n = 0; n < steps; n++) order.push((startAt + n) % steps);
-  if (closed) order.push(startAt);
+  // Exact boundary point between an invalid and a valid angle (bisection → the valid-side limit,
+  // i.e. exactly on the limb or the terminator, whichever ends the arc).
+  const boundaryPoint = (thetaInvalid, thetaValid) => {
+    let ti = thetaInvalid, tv = thetaValid;
+    for (let iter = 0; iter < 24; iter++) { const mid = (ti + tv) / 2; if (at(mid).valid) tv = mid; else ti = mid; }
+    return toLonLat(at(tv).P);
+  };
+
+  // Sample validity + points once around the ring.
+  const valid = new Array(steps), point = new Array(steps);
+  for (let i = 0; i < steps; i++) { const e = at((i / steps) * TAU); valid[i] = e.valid; point[i] = e.valid ? toLonLat(e.P) : null; }
 
   const segments = [];
-  let run = [];
-  for (const i of order) {
-    const point = points[i];
-    if (!point) {
-      if (run.length > 1) segments.push(run);
-      run = [];
-    } else if (run.length && Math.abs(point[0] - run[run.length - 1][0]) > 180) {
-      if (run.length > 1) segments.push(run); // split at the antimeridian
-      run = [point];
-    } else {
-      run.push(point);
+  const emit = (points) => { for (const seg of splitAtAntimeridian(points)) if (seg.length > 1) segments.push(seg); };
+
+  if (valid.every(Boolean)) {
+    emit([...point, point[0]]); // fully closed ring
+  } else if (valid.some(Boolean)) {
+    // Walk from a gap so runs never wrap the θ=0 seam; anchor each end on its exact boundary.
+    const thetaOf = (i) => (i / steps) * TAU;
+    const adjacent = (invalidIdx, validIdx) => {           // bring the two angles within one step
+      let ti = thetaOf(invalidIdx), tv = thetaOf(validIdx);
+      if (ti - tv > Math.PI) ti -= TAU; else if (tv - ti > Math.PI) ti += TAU;
+      return [ti, tv];
+    };
+    const finish = (run) => {
+      const prev = (run.start - 1 + steps) % steps, next = (run.end + 1) % steps;
+      const startB = boundaryPoint(...adjacent(prev, run.start));
+      const endB = boundaryPoint(...adjacent(next, run.end));
+      emit([startB, ...run.points, endB]);
+    };
+
+    const start = valid.indexOf(false);
+    let run = null;
+    for (let n = 0; n < steps; n++) {
+      const i = (start + n) % steps;
+      if (valid[i]) { if (!run) run = { start: i, points: [] }; run.points.push(point[i]); run.end = i; }
+      else if (run) { finish(run); run = null; }
     }
+    if (run) finish(run);
   }
-  if (run.length > 1) segments.push(run);
 
   return { type: 'Feature', geometry: { type: 'MultiLineString', coordinates: segments } };
+}
+
+/** Split a point run wherever consecutive longitudes jump the antimeridian. */
+function splitAtAntimeridian(points) {
+  const runs = [];
+  let current = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    if (Math.abs(points[i][0] - points[i - 1][0]) > 180) { runs.push(current); current = [points[i]]; }
+    else current.push(points[i]);
+  }
+  runs.push(current);
+  return runs;
 }
 
 // --- tiny vec3 helpers ---
