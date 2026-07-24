@@ -290,11 +290,49 @@
 		border-top: 2px solid currentColor;
 		display: inline-block;
 	}
-	/* MapLibre's controls on a dark surface */
+	/* ---- MapLibre controls, restyled for the dark map ---- */
 	:global(.a2 .maplibregl-ctrl-group) {
-		background: rgba(10, 14, 22, 0.85);
+		background: color-mix(in oklab, var(--bg-2) 88%, transparent);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		overflow: hidden;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+		backdrop-filter: blur(6px);
 	}
+	:global(.a2 .maplibregl-ctrl-group button) {
+		width: 32px;
+		height: 32px;
+		background: transparent;
+	}
+	:global(.a2 .maplibregl-ctrl-group button + button) {
+		border-top: 1px solid var(--border);
+	}
+	:global(.a2 .maplibregl-ctrl-group button:hover) {
+		background: var(--surface-2);
+	}
+	:global(.a2 .maplibregl-ctrl-group button:focus-visible) {
+		outline: 2px solid var(--accent);
+		outline-offset: -2px;
+	}
+	/* icons are dark SVG background-images — invert them to read on the dark buttons */
+	:global(.a2 .maplibregl-ctrl-group button .maplibregl-ctrl-icon) {
+		filter: invert(1) brightness(1.1) opacity(0.75);
+	}
+	:global(.a2 .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon) {
+		filter: invert(1) brightness(1.1);
+	}
+	:global(.a2 .maplibregl-ctrl-group button:disabled .maplibregl-ctrl-icon) {
+		filter: invert(1) opacity(0.28);
+	}
+	/* attribution pill */
 	:global(.a2 .maplibregl-ctrl-attrib) {
-		background: rgba(10, 14, 22, 0.6);
+		background: color-mix(in oklab, var(--bg-2) 70%, transparent);
+		color: var(--muted);
+	}
+	:global(.a2 .maplibregl-ctrl-attrib a) {
+		color: var(--muted);
+	}
+	:global(.a2 .maplibregl-ctrl-attrib-button) {
+		filter: invert(1) opacity(0.6);
 	}
 </style>
