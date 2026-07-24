@@ -8,10 +8,11 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"sync": "svelte-kit sync",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"format": "prettier --write .",
-		"format:check": "prettier --check ."
+		"check": "npm run check:ts && npm run check:svelte && npm run check:format",
+		"check:svelte": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:ts": "tsc --noEmit",
+		"check:format": "prettier --check .",
+		"format": "prettier --write ."
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "^3.0.6",
