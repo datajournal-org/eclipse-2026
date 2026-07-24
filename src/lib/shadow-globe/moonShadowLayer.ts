@@ -82,15 +82,9 @@ void main() {
   // The eclipse dims the sunlight further (from space, ground brightness ≈ 1 − coverage).
   float brightness = sunBrightness * (1.0 - coverage);
 
-  float alpha = clamp(1.0 - brightness, 0.0, 0.92);               // overlay opacity over the tiles
-                                                                  // (0.92 cap keeps faint night geography)
-  if (alpha < 0.004) discard;                                     // bright, uneclipsed noon: leave tiles
-
-  float dayGate = smoothstep(0.0, 0.05, sinElevation);            // suppress the umbra tint on the night side
-  vec3 nightTint = vec3(0.015, 0.03, 0.07);                       // deep-blue night
-  vec3 umbraTint = vec3(0.0, 0.005, 0.02);                        // near-black core of totality
-  vec3 color = mix(nightTint, umbraTint, smoothstep(0.45, 1.0, coverage) * dayGate);
-  fragColor = vec4(color, alpha);
+  float alpha = clamp(1.0 - brightness, 0.0, 1.0) * 0.95; // overlay opacity over the tiles
+  if (alpha < 0.004) discard; // bright, uneclipsed noon: leave tiles
+  fragColor = vec4(vec3(0.0, 0.0, 0.0), alpha * 0.95);
 }`;
 
 // Vertex shader is assembled per projection variant so it can call MapLibre's own `projectTile`.
