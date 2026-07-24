@@ -3,17 +3,23 @@
 </script>
 
 <footer class="safety">
-  <span class="icon" aria-hidden="true">⚠</span>
-  <span>{$t('safety')}</span>
+  <div class="inner">
+    <span class="icon" aria-hidden="true">⚠</span>
+    <span>{$t('safety')}</span>
+  </div>
 </footer>
 
 <style>
   .safety {
-    display: flex; align-items: flex-start; gap: 10px;
-    max-width: var(--maxw); margin: 12px auto 0; padding: 14px 16px;
-    color: var(--text); font-size: 0.88rem; font-weight: 600;
+    /* full-bleed accent bar; the text stays in the centred content column */
     border-top: 1px solid color-mix(in oklab, var(--warn) 40%, var(--border));
     background: color-mix(in oklab, var(--warn) 9%, transparent);
+    margin-top: 8px;
+  }
+  .inner {
+    display: flex; align-items: flex-start; gap: 10px;
+    max-width: var(--maxw); margin: 0 auto; padding: 14px var(--edge);
+    font-size: 0.88rem; font-weight: 600;
   }
   .icon { color: var(--warn); font-size: 1.1rem; line-height: 1.4; }
 </style>

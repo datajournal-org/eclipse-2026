@@ -217,7 +217,7 @@
   </div>
   <p class="sub">{$t('a2.subtitle')}</p>
 
-  <div class="map-wrap">
+  <div class="map-wrap bleed">
     <div class="map" bind:this={mapEl}></div>
     {#if !ready}<div class="map-loading">{$t('a2.loading')}</div>{/if}
   </div>
@@ -241,8 +241,8 @@
 
 <style>
   .sub { color: var(--muted); font-size: 0.9rem; margin: 2px 0 14px; }
-  .map-wrap { position: relative; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
-  .map { height: min(58vh, 440px); background: #05070d; }
+  .map-wrap { position: relative; overflow: hidden; background: #05070d; border-block: 1px solid var(--border); }
+  .map { height: min(64vh, 480px); background: #05070d; }
   .map-loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); pointer-events: none; }
   .panel { margin-top: 12px; }
   .row { display: flex; align-items: center; gap: 12px; }

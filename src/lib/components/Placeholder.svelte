@@ -12,6 +12,6 @@
 </section>
 
 <style>
-  .ph { border-style: dashed; opacity: 0.85; }
+  .ph { opacity: 0.72; }
   .note { color: var(--muted); font-size: 0.9rem; }
 </style>

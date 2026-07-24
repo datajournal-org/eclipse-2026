@@ -13,7 +13,7 @@
 <main class="content">
   {#if $userLocation}
     <!-- Zustand B — mit Standort -->
-    <div class="place">
+    <div class="place block">
       <div class="place-id">
         <span class="eyebrow">{$t('b.your_sky')}</span>
         <div class="pname">📍 {label($userLocation)}</div>
