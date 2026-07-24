@@ -202,7 +202,7 @@
 
 		<div class="panel">
 			<div class="row">
-				<div class="clock tnum">{clockUtc}<small> UTC</small></div>
+				<div class="clock tnum">{clockUtc} <small>UTC</small></div>
 				<input
 					type="range"
 					min="0"
@@ -212,9 +212,6 @@
 					oninput={onScrub}
 					aria-label="{$t('a2.title')} — {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC"
 				/>
-			</div>
-			<div class="meta tnum">
-				{$t('a2.core')} @ {umbraCenterText} · {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC
 			</div>
 			<div class="legend">
 				<span class="lbl">{$t('a2.current_shadow')}:</span>
@@ -291,11 +288,6 @@
 	input[type='range'] {
 		flex: 1;
 		accent-color: var(--accent);
-	}
-	.meta {
-		color: var(--muted);
-		font-size: 0.8rem;
-		margin-top: 8px;
 	}
 	.legend {
 		display: flex;
