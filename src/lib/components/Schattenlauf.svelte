@@ -302,7 +302,7 @@
 		flex-direction: column;
 		width: 100%;
 		height: 100%;
-		background: var(--bg);
+		background: #000;
 	}
 	.a2-stage:fullscreen .map-wrap {
 		margin-inline: 0;
@@ -311,6 +311,7 @@
 	}
 	.a2-stage:fullscreen .map {
 		height: 100%;
+		background: #000;
 	}
 	.a2-stage:fullscreen .panel {
 		margin: 0;

@@ -82,7 +82,7 @@ void main() {
   // The eclipse dims the sunlight further (from space, ground brightness ≈ 1 − coverage).
   float brightness = sunBrightness * (1.0 - coverage);
 
-  float alpha = clamp(1.0 - brightness, 0.0, 1.0) * 0.95; // overlay opacity over the tiles
+  float alpha = clamp(1.0 - brightness, 0.0, 1.0); // overlay opacity over the tiles
   if (alpha < 0.004) discard; // bright, uneclipsed noon: leave tiles
   fragColor = vec4(vec3(0.0, 0.0, 0.0), alpha * 0.95);
 }`;
