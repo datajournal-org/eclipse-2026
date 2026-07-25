@@ -1,30 +1,16 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { t } from '$lib/i18n';
 	import { greatestEclipse } from '$lib/eclipse';
+	import { now, splitDuration, pad2 } from '$lib/stores/now';
 
 	// Target = instant of greatest eclipse (peak), computed once from astronomy-engine.
 	const target = new Date(greatestEclipse().date).getTime();
 
-	let now = $state(target); // SSR-safe placeholder; real time set on mount
-	onMount(() => {
-		now = Date.now();
-		const id = setInterval(() => (now = Date.now()), 1000);
-		return () => clearInterval(id);
-	});
-
-	const diff = $derived(target - now);
+	// $now is 0 until the client clock starts → fall back to `target` so SSR / first paint shows zeros
+	// rather than a bogus multi-thousand-day countdown.
+	const diff = $derived(target - ($now || target));
 	const phase = $derived(diff > 0 ? 'before' : diff > -3 * 3600 * 1000 ? 'now' : 'past');
-	const parts = $derived.by(() => {
-		const s = Math.max(0, Math.floor(diff / 1000));
-		return {
-			d: Math.floor(s / 86400),
-			h: Math.floor((s % 86400) / 3600),
-			m: Math.floor((s % 3600) / 60),
-			s: s % 60
-		};
-	});
-	const pad = (n: number) => String(n).padStart(2, '0');
+	const parts = $derived(splitDuration(diff));
 </script>
 
 <section class="block cd">
@@ -34,13 +20,13 @@
 				<span class="n tnum">{parts.d}</span><span class="l">{$t('countdown.d')}</span>
 			</div>
 			<div class="u">
-				<span class="n tnum">{pad(parts.h)}</span><span class="l">{$t('countdown.h')}</span>
+				<span class="n tnum">{pad2(parts.h)}</span><span class="l">{$t('countdown.h')}</span>
 			</div>
 			<div class="u">
-				<span class="n tnum">{pad(parts.m)}</span><span class="l">{$t('countdown.m')}</span>
+				<span class="n tnum">{pad2(parts.m)}</span><span class="l">{$t('countdown.m')}</span>
 			</div>
 			<div class="u">
-				<span class="n tnum">{pad(parts.s)}</span><span class="l">{$t('countdown.s')}</span>
+				<span class="n tnum">{pad2(parts.s)}</span><span class="l">{$t('countdown.s')}</span>
 			</div>
 		</div>
 		<p class="cap">{$t('countdown.to_totality')}</p>

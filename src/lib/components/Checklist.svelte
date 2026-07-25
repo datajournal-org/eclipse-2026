@@ -2,11 +2,11 @@
      (glasses, clear view to the Sun's azimuth, weather) and a one-tap calendar export (.ics, built
      client-side so nothing leaves the device). Times/azimuth from the shared localEclipse store. -->
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { t } from '$lib/i18n';
 	import { localEclipse } from '$lib/stores/localEclipse';
 	import { userLocation } from '$lib/stores/location';
 	import { sunMoonHorizon } from '$lib/eclipse';
+	import { now, splitDuration, pad2 } from '$lib/stores/now';
 
 	const lc = $derived($localEclipse);
 	const loc = $derived($userLocation);
@@ -15,19 +15,8 @@
 	// Sun azimuth at maximum → "look toward the west (azimuth N°)".
 	const az = $derived(peak && loc ? Math.round(sunMoonHorizon(loc.lat, loc.lon, peak.time).sun.az) : null);
 
-	let now = $state(0);
-	onMount(() => {
-		now = Date.now();
-		const id = setInterval(() => (now = Date.now()), 1000);
-		return () => clearInterval(id);
-	});
-
-	const remaining = $derived(peak ? peak.time.getTime() - now : 0);
-	const parts = $derived.by(() => {
-		const s = Math.max(0, Math.floor(remaining / 1000));
-		return { d: Math.floor(s / 86400), h: Math.floor((s % 86400) / 3600), m: Math.floor((s % 3600) / 60), s: s % 60 };
-	});
-	const pad = (n: number) => String(n).padStart(2, '0');
+	const remaining = $derived(peak ? peak.time.getTime() - $now : 0);
+	const parts = $derived(splitDuration(remaining));
 
 	const items = $derived([
 		{ key: 'glasses', text: $t('b6.glasses') },
@@ -80,9 +69,9 @@
 		{#if remaining > 0}
 			<div class="count tnum" aria-live="off">
 				{#if parts.d > 0}<span class="seg"><b>{parts.d}</b>{$t('countdown.d')}</span>{/if}
-				<span class="seg"><b>{pad(parts.h)}</b>{$t('countdown.h')}</span>
-				<span class="seg"><b>{pad(parts.m)}</b>{$t('countdown.m')}</span>
-				<span class="seg"><b>{pad(parts.s)}</b>{$t('countdown.s')}</span>
+				<span class="seg"><b>{pad2(parts.h)}</b>{$t('countdown.h')}</span>
+				<span class="seg"><b>{pad2(parts.m)}</b>{$t('countdown.m')}</span>
+				<span class="seg"><b>{pad2(parts.s)}</b>{$t('countdown.s')}</span>
 				<span class="until">{$t('b6.until_max')}</span>
 			</div>
 		{:else}
