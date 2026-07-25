@@ -29,17 +29,18 @@ void main() {
 
 const FRAGMENT = `
 precision highp float; varying vec2 v_uv;
-uniform vec2 u_moon; uniform float u_moonR; uniform float u_opacity;
+uniform vec2 u_moon; uniform float u_moonR; uniform float u_opacity; uniform vec3 u_sun;
 void main() {
   float rs = length(v_uv); if (rs > 1.0) discard;              // outside the Sun disc
   float rm = length(v_uv - u_moon);
   float moon = smoothstep(u_moonR - 0.03, u_moonR + 0.01, rm); // 0 inside the Moon, 1 outside
   float limb = smoothstep(1.0, 0.90, rs);
   float a = moon * limb * u_opacity; if (a < 0.01) discard;
-  gl_FragColor = vec4(1.0, 0.93, 0.72, a);
+  gl_FragColor = vec4(u_sun, a);
 }`;
 
-export function createSunLayer(sun: SunState): CustomLayerInterface {
+/** @param color Sun-disc colour as rgb in 0..1 (from config's SKY_PALETTE via hexToRgb). */
+export function createSunLayer(sun: SunState, color: [number, number, number]): CustomLayerInterface {
 	let prog: WebGLProgram;
 	let buffer: WebGLBuffer;
 	let aCorner: number;
@@ -65,7 +66,7 @@ export function createSunLayer(sun: SunState): CustomLayerInterface {
 			gl.linkProgram(prog);
 			if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) ?? 'link error');
 			aCorner = gl.getAttribLocation(prog, 'a_corner');
-			for (const n of ['u_matrix', 'u_center', 'u_pix', 'u_moon', 'u_moonR', 'u_opacity'])
+			for (const n of ['u_matrix', 'u_center', 'u_pix', 'u_moon', 'u_moonR', 'u_opacity', 'u_sun'])
 				u[n] = gl.getUniformLocation(prog, n);
 			buffer = gl.createBuffer()!;
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -84,6 +85,7 @@ export function createSunLayer(sun: SunState): CustomLayerInterface {
 			gl.uniform2f(u.u_moon, sun.moon[0], sun.moon[1]);
 			gl.uniform1f(u.u_moonR, sun.moonR);
 			gl.uniform1f(u.u_opacity, sun.opacity);
+			gl.uniform3f(u.u_sun, color[0], color[1], color[2]);
 			gl.enable(gl.DEPTH_TEST);
 			gl.depthFunc(gl.LEQUAL);
 			gl.depthMask(false);

@@ -347,8 +347,8 @@
 				white-space: nowrap;
 				pointer-events: none;
 				text-shadow:
-					0 0 2px rgba(5, 7, 13, 0.9),
-					0 0 2px rgba(5, 7, 13, 0.9);
+					0 0 2px color-mix(in oklab, var(--bg) 90%, transparent),
+					0 0 2px color-mix(in oklab, var(--bg) 90%, transparent);
 				/* own compositor layer → moving the marker while rotating is composited, not repainted */
 				will-change: transform;
 			}

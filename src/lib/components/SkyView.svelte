@@ -12,6 +12,8 @@
 	import { discOverlapFraction } from '$lib/shadow-globe/shadowProfile';
 	import { destPoint } from '$lib/shadow-globe/vec3';
 	import { createSunLayer, type SunState } from '$lib/skyview/sunLayer';
+	import { SKY_PALETTE } from '$lib/config';
+	import { hexToRgb } from '$lib/brand';
 
 	const ELEV = 'https://tiles.versatiles.org/tiles/elevation/{z}/{x}/{y}';
 	const D2R = Math.PI / 180,
@@ -76,9 +78,9 @@
 				m.setTerrain({ source: 'dem', exaggeration: 1.0 });
 				try {
 					m.setSky({
-						'sky-color': '#8fb4e0',
-						'horizon-color': '#f4c48a',
-						'fog-color': '#e6c39a',
+						'sky-color': SKY_PALETTE.sky,
+						'horizon-color': SKY_PALETTE.horizon,
+						'fog-color': SKY_PALETTE.fog,
 						'sky-horizon-blend': 0.7,
 						'horizon-fog-blend': 0.6
 					});
@@ -99,7 +101,7 @@
 						'source-layer': 'buildings',
 						filter: ['!=', ['get', 'hide_3d'], true],
 						paint: {
-							'fill-extrusion-color': '#d7c9b6',
+							'fill-extrusion-color': SKY_PALETTE.buildings,
 							'fill-extrusion-height': ['coalesce', ['get', 'height'], 3],
 							'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
 							'fill-extrusion-opacity': 0.96
@@ -107,7 +109,7 @@
 					},
 					firstSymbol
 				);
-				m.addLayer(createSunLayer(sun));
+				m.addLayer(createSunLayer(sun, hexToRgb(SKY_PALETTE.sun)));
 
 				const EYE = 1.7,
 					CAM_TGT = 3000,
@@ -254,7 +256,7 @@
 			color: var(--accent);
 		}
 		& .warn {
-			color: var(--accent-2, #ffcf9a);
+			color: var(--warn);
 		}
 	}
 </style>

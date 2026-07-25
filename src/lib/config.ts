@@ -16,3 +16,17 @@ export const TIMELINE_END = eclipseDayUtc(18, 45);
 
 /** Time between animation frames / slider steps (ms). */
 export const FRAME_STEP_MS = 30 * 1000;
+
+/**
+ * B3 sky-view scene palette — the realistic dusk look of the first-person horizon.
+ * These are deliberately NOT brand colours (they must not track the accent): a blue sky
+ * should stay blue. Kept here as the single place to tweak the horizon rendering.
+ * The Sun disc is stored as hex and converted to 0..1 rgb for the WebGL shader.
+ */
+export const SKY_PALETTE = {
+	sky: '#8fb4e0', // upper sky
+	horizon: '#f4c48a', // horizon glow
+	fog: '#e6c39a', // atmospheric fog
+	buildings: '#d7c9b6', // 3D building fill
+	sun: '#ffedb8' // eclipsed Sun disc
+} as const;

@@ -90,7 +90,7 @@
 			left: 0;
 			right: 0;
 			height: 2px;
-			background: var(--border, rgba(128, 128, 128, 0.35));
+			background: var(--border);
 			z-index: 0;
 		}
 		&:first-child::before {
