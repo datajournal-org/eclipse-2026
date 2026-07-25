@@ -17,8 +17,7 @@
 import type { Feature, MultiLineString } from 'geojson';
 import type { Vec3 } from '$lib/types';
 import type { ShadowModel } from './shadowProfile';
-import { clamp, cross, dot, length, normalize } from './vec3';
-import { RAD_TO_DEG } from '$lib/constants';
+import { cross, dot, length, normalize, toLonLat } from './vec3';
 
 type Point = [number, number]; // [lon, lat]
 
@@ -57,11 +56,6 @@ export function isoRing(model: ShadowModel, radius: number, steps = 512): Featur
 		const valid = disc >= 0 && dot(P, sunDir) > 0;
 		return { valid, P };
 	};
-	const toLonLat = (P: Vec3): Point => [
-		Math.atan2(P[1], P[0]) * RAD_TO_DEG,
-		Math.asin(clamp(P[2], -1, 1)) * RAD_TO_DEG
-	];
-
 	// Exact boundary point between an invalid and a valid angle (bisection → the valid-side limit,
 	// i.e. exactly on the limb or the terminator, whichever ends the arc).
 	const boundaryPoint = (thetaInvalid: number, thetaValid: number): Point => {
@@ -145,7 +139,7 @@ export function terminatorLine(sunDir: Vec3, steps = 256): Feature<MultiLineStri
 		const cosT = Math.cos(theta),
 			sinT = Math.sin(theta);
 		const P: Vec3 = [u[0] * cosT + w[0] * sinT, u[1] * cosT + w[1] * sinT, u[2] * cosT + w[2] * sinT];
-		points.push([Math.atan2(P[1], P[0]) * RAD_TO_DEG, Math.asin(clamp(P[2], -1, 1)) * RAD_TO_DEG]);
+		points.push(toLonLat(P));
 	}
 	return {
 		type: 'Feature',
@@ -162,7 +156,7 @@ export function umbraGroundPoint(model: ShadowModel): Point | null {
 	if (footLen >= 1) return null;
 	const w0 = Math.sqrt(1 - footLen * footLen);
 	const C: Vec3 = [foot[0] + w0 * axis[0], foot[1] + w0 * axis[1], foot[2] + w0 * axis[2]];
-	return [Math.atan2(C[1], C[0]) * RAD_TO_DEG, Math.asin(clamp(C[2], -1, 1)) * RAD_TO_DEG];
+	return toLonLat(C);
 }
 
 const LABEL_ITERS = 14; // bisection steps → ~2⁻¹⁴ rad (sub-km); ample for placing a label on the line
@@ -209,7 +203,7 @@ export function labelPoint(model: ShadowModel, radius: number, dir: Vec3): Point
 	}
 	const P = at(hi);
 	if (P[0] * sunDir[0] + P[1] * sunDir[1] + P[2] * sunDir[2] <= 0) return null; // night side
-	return [Math.atan2(P[1], P[0]) * RAD_TO_DEG, Math.asin(clamp(P[2], -1, 1)) * RAD_TO_DEG];
+	return toLonLat(P);
 }
 
 /**

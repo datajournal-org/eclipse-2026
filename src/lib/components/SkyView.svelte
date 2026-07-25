@@ -12,7 +12,7 @@
 	import { discOverlapFraction } from '$lib/shadow-globe/shadowProfile';
 	import { destPoint } from '$lib/shadow-globe/vec3';
 	import { createSunLayer, type SunState } from '$lib/skyview/sunLayer';
-	import { SKY_PALETTE } from '$lib/config';
+	import { SKY_PALETTE, ECLIPSE_DATE } from '$lib/config';
 	import { hexToRgb } from '$lib/brand';
 	import {
 		DEG_TO_RAD as D2R,
@@ -51,8 +51,8 @@
 			if (disposed) return;
 
 			const lc = localCircumstances(LAT, LON);
-			const tStart = (lc?.partialBegin?.time ?? new Date('2026-08-12T16:30:00Z')).getTime();
-			const tEnd = (lc?.partialEnd?.time ?? new Date('2026-08-12T19:00:00Z')).getTime();
+			const tStart = (lc?.partialBegin?.time ?? new Date(ECLIPSE_DATE + 'T16:30:00Z')).getTime();
+			const tEnd = (lc?.partialEnd?.time ?? new Date(ECLIPSE_DATE + 'T19:00:00Z')).getTime();
 			const N = 240;
 			const times = Array.from({ length: N + 1 }, (_, i) => tStart + ((tEnd - tStart) * i) / N);
 			frameMax = N;
@@ -190,7 +190,7 @@
 					update();
 				};
 				// start at greatest eclipse
-				const peakT = (lc?.peak?.time ?? new Date('2026-08-12T18:08:00Z')).getTime();
+				const peakT = (lc?.peak?.time ?? new Date(ECLIPSE_DATE + 'T18:08:00Z')).getTime();
 				frameIndex = Math.round(((peakT - tStart) / (tEnd - tStart)) * N);
 				m.once('idle', update); // recompute once terrain tiles are loaded (queryTerrainElevation needs them)
 				update();
