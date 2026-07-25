@@ -34,7 +34,6 @@
 		{ key: 'view', text: $t('b6.view', { az: az ?? '—' }) },
 		{ key: 'weather', text: $t('b6.weather') }
 	]);
-	let done = $state<Record<string, boolean>>({});
 
 	function icsStamp(d: Date): string {
 		return d
@@ -92,12 +91,7 @@
 
 		<ul class="checks">
 			{#each items as it (it.key)}
-				<li>
-					<label>
-						<input type="checkbox" bind:checked={done[it.key]} />
-						<span class:struck={done[it.key]}>{it.text}</span>
-					</label>
-				</li>
+				<li>{it.text}</li>
 			{/each}
 		</ul>
 
@@ -139,23 +133,21 @@
 		flex-direction: column;
 		gap: 10px;
 	}
-	.checks label {
-		display: flex;
-		align-items: flex-start;
-		gap: 10px;
-		cursor: pointer;
+	.checks li {
+		position: relative;
+		padding-left: 26px;
 		font-size: 0.95rem;
+		line-height: 1.35;
 	}
-	.checks input {
-		width: 20px;
-		height: 20px;
-		accent-color: var(--accent);
-		flex: none;
-		margin-top: 1px;
-	}
-	.struck {
-		text-decoration: line-through;
-		color: var(--muted);
+	.checks li::before {
+		content: '';
+		position: absolute;
+		left: 4px;
+		top: 0.5em;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--accent);
 	}
 	.cal {
 		width: 100%;
