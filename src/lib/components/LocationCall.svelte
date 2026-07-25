@@ -73,34 +73,37 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 8px;
-	}
-	.actions .primary {
-		border-color: var(--accent);
-		color: var(--accent);
-		font-weight: 600;
-	}
-	.actions button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
+
+		& .primary {
+			border-color: var(--accent);
+			color: var(--accent);
+			font-weight: 600;
+		}
+		& button:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
 	}
 	.manual {
 		display: flex;
 		gap: 8px;
 		margin-top: 12px;
-	}
-	.manual input {
-		flex: 1;
-		min-width: 0;
-		padding: 0.55rem 0.7rem;
-		border-radius: var(--radius-sm);
-		border: 1px solid var(--border);
-		background: var(--bg-2);
-		color: var(--text);
-		font: inherit;
-	}
-	.manual input:focus-visible {
-		outline: 2px solid var(--accent);
-		outline-offset: 1px;
+
+		& input {
+			flex: 1;
+			min-width: 0;
+			padding: 0.55rem 0.7rem;
+			border-radius: var(--radius-sm);
+			border: 1px solid var(--border);
+			background: var(--bg-2);
+			color: var(--text);
+			font: inherit;
+
+			&:focus-visible {
+				outline: 2px solid var(--accent);
+				outline-offset: 1px;
+			}
+		}
 	}
 	.err {
 		margin-top: 10px;

@@ -69,19 +69,20 @@
 		background: var(--surface);
 		border-radius: var(--radius-sm);
 		padding: 10px 6px;
-	}
-	.n {
-		font-size: clamp(1.8rem, 8vw, 2.6rem);
-		font-weight: 800;
-		line-height: 1;
-		color: var(--accent);
-	}
-	.l {
-		font-size: 0.7rem;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--muted);
-		margin-top: 6px;
+
+		& .n {
+			font-size: clamp(1.8rem, 8vw, 2.6rem);
+			font-weight: 800;
+			line-height: 1;
+			color: var(--accent);
+		}
+		& .l {
+			font-size: 0.7rem;
+			letter-spacing: 0.1em;
+			text-transform: uppercase;
+			color: var(--muted);
+			margin-top: 6px;
+		}
 	}
 	.cap {
 		margin-top: 12px;

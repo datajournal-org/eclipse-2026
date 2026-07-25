@@ -66,9 +66,10 @@
 		margin: 0;
 		list-style: none;
 		scrollbar-width: none;
-	}
-	.timeline::-webkit-scrollbar {
-		display: none;
+
+		&::-webkit-scrollbar {
+			display: none;
+		}
 	}
 	.step {
 		flex: 1 0 auto;
@@ -80,50 +81,52 @@
 		text-align: center;
 		gap: 4px;
 		position: relative;
-	}
-	.clock {
-		font-weight: 700;
-		font-size: 0.95rem;
-	}
-	/* the connecting rail lives on the dot row */
-	.dot {
-		width: 12px;
-		height: 12px;
-		border-radius: 50%;
-		background: var(--accent);
-		box-shadow: 0 0 0 3px var(--bg);
-		z-index: 1;
-	}
-	.step.total .dot {
-		background: var(--accent-2, var(--accent));
-	}
-	.step::before {
-		content: '';
-		position: absolute;
-		top: calc(0.95rem + 4px + 8px); /* centre of the 16px dot row */
-		left: 0;
-		right: 0;
-		height: 2px;
-		background: var(--border, rgba(128, 128, 128, 0.35));
-		z-index: 0;
-	}
-	.step:first-child::before {
-		left: 50%;
-	}
-	.step:last-child::before {
-		right: 50%;
-	}
-	.label {
-		font-size: 0.82rem;
-		line-height: 1.2;
-		color: var(--fg);
-	}
-	.alt {
-		font-size: 0.75rem;
-		color: var(--muted);
-	}
-	.step.below {
-		opacity: 0.4;
+
+		/* the connecting rail runs across the dot row, behind the dots */
+		&::before {
+			content: '';
+			position: absolute;
+			top: calc(0.95rem + 4px + 8px); /* centre of the 16px dot row */
+			left: 0;
+			right: 0;
+			height: 2px;
+			background: var(--border, rgba(128, 128, 128, 0.35));
+			z-index: 0;
+		}
+		&:first-child::before {
+			left: 50%;
+		}
+		&:last-child::before {
+			right: 50%;
+		}
+		&.below {
+			opacity: 0.4;
+		}
+
+		& .clock {
+			font-weight: 700;
+			font-size: 0.95rem;
+		}
+		& .dot {
+			width: 12px;
+			height: 12px;
+			border-radius: 50%;
+			background: var(--accent);
+			box-shadow: 0 0 0 3px var(--bg);
+			z-index: 1;
+		}
+		&.total .dot {
+			background: var(--accent-2, var(--accent));
+		}
+		& .label {
+			font-size: 0.82rem;
+			line-height: 1.2;
+			color: var(--fg);
+		}
+		& .alt {
+			font-size: 0.75rem;
+			color: var(--muted);
+		}
 	}
 	.tz {
 		margin-top: 12px;

@@ -250,21 +250,22 @@
 		width: 100%;
 		height: 100%;
 		background: #000;
-	}
-	.a2-stage:fullscreen .map-wrap {
-		margin-inline: 0;
-		flex: 1;
-		min-height: 0;
-	}
-	.a2-stage:fullscreen .map {
-		height: 100%;
-		background: #000;
-	}
-	.a2-stage:fullscreen .panel {
-		margin: 0;
-		align-self: center;
-		width: min(760px, 100%);
-		padding: 12px var(--edge) 16px;
+
+		& .map-wrap {
+			margin-inline: 0;
+			flex: 1;
+			min-height: 0;
+		}
+		& .map {
+			height: 100%;
+			background: #000;
+		}
+		& .panel {
+			margin: 0;
+			align-self: center;
+			width: min(760px, 100%);
+			padding: 12px var(--edge) 16px;
+		}
 	}
 	.map-loading {
 		position: absolute;
@@ -285,91 +286,106 @@
 	.clock {
 		font-weight: 700;
 		font-size: 1.1rem;
-	}
-	.clock small {
-		font-weight: 400;
-		opacity: 0.6;
+
+		& small {
+			font-weight: 400;
+			opacity: 0.6;
+		}
 	}
 	input[type='range'] {
 		flex: 1;
 		accent-color: var(--accent);
 	}
-	/* ---- MapLibre controls, restyled for the dark map ---- */
-	:global(.a2 .maplibregl-ctrl-group) {
-		background: color-mix(in oklab, var(--bg-2) 88%, transparent);
-		border: 1px solid var(--border);
-		border-radius: var(--radius-sm);
-		overflow: hidden;
-		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
-		backdrop-filter: blur(6px);
-	}
-	:global(.a2 .maplibregl-ctrl-group button) {
-		width: 32px;
-		height: 32px;
-		background: transparent;
-	}
-	:global(.a2 .maplibregl-ctrl-group button + button) {
-		border-top: 1px solid var(--border);
-	}
-	:global(.a2 .maplibregl-ctrl-group button:hover) {
-		background: var(--surface-2);
-	}
-	:global(.a2 .maplibregl-ctrl-group button:focus-visible) {
-		outline: 2px solid var(--accent);
-		outline-offset: -2px;
-	}
-	/* overlay-toggle button uses an inline (light) SVG rather than an inverted background image */
-	:global(.a2 .a2-overlay-toggle) {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: #eef2f8;
-	}
-	:global(.a2 .a2-overlay-toggle svg) {
-		width: 17px;
-		height: 17px;
-		opacity: 0.75;
-	}
-	:global(.a2 .a2-overlay-toggle:hover svg) {
-		opacity: 1;
-	}
-	:global(.a2 .a2-overlay-toggle.is-off svg) {
-		opacity: 0.5;
-	}
-	/* icons are dark SVG background-images — invert them to read on the dark buttons */
-	:global(.a2 .maplibregl-ctrl-group button .maplibregl-ctrl-icon) {
-		filter: invert(1) brightness(1.1) opacity(0.75);
-	}
-	:global(.a2 .maplibregl-ctrl-group button:hover .maplibregl-ctrl-icon) {
-		filter: invert(1) brightness(1.1);
-	}
-	:global(.a2 .maplibregl-ctrl-group button:disabled .maplibregl-ctrl-icon) {
-		filter: invert(1) opacity(0.28);
-	}
-	/* attribution pill */
-	:global(.a2 .maplibregl-ctrl-attrib) {
-		background: color-mix(in oklab, var(--bg-2) 70%, transparent);
-		color: var(--muted);
-	}
-	:global(.a2 .maplibregl-ctrl-attrib a) {
-		color: var(--muted);
-	}
-	:global(.a2 .maplibregl-ctrl-attrib-button) {
-		filter: invert(1) opacity(0.6);
-	}
-	/* percent labels are DOM markers (added outside the component tree) → :global */
-	:global(.a2 .iso-label) {
-		font:
-			700 11px/1 system-ui,
-			-apple-system,
-			sans-serif;
-		color: var(--accent);
-		white-space: nowrap;
-		pointer-events: none;
-		text-shadow:
-			0 0 2px rgba(5, 7, 13, 0.9),
-			0 0 2px rgba(5, 7, 13, 0.9);
-		/* own compositor layer → moving the marker while rotating is composited, not repainted */
-		will-change: transform;
+	/* Everything below targets MapLibre's own DOM (added outside the component tree),
+	   so it lives in one :global block, nested under the map's .a2 root. */
+	:global {
+		.a2 {
+			/* control groups (zoom / fullscreen / overlay), restyled for the dark map */
+			.maplibregl-ctrl-group {
+				background: color-mix(in oklab, var(--bg-2) 88%, transparent);
+				border: 1px solid var(--border);
+				border-radius: var(--radius-sm);
+				overflow: hidden;
+				box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+				backdrop-filter: blur(6px);
+
+				button {
+					width: 32px;
+					height: 32px;
+					background: transparent;
+
+					& + button {
+						border-top: 1px solid var(--border);
+					}
+					&:hover {
+						background: var(--surface-2);
+					}
+					&:focus-visible {
+						outline: 2px solid var(--accent);
+						outline-offset: -2px;
+					}
+
+					/* icons are dark SVG background-images — invert them to read on the dark buttons */
+					.maplibregl-ctrl-icon {
+						filter: invert(1) brightness(1.1) opacity(0.75);
+					}
+					&:hover .maplibregl-ctrl-icon {
+						filter: invert(1) brightness(1.1);
+					}
+					&:disabled .maplibregl-ctrl-icon {
+						filter: invert(1) opacity(0.28);
+					}
+				}
+			}
+
+			/* overlay-toggle button uses an inline (light) SVG rather than an inverted background image */
+			.a2-overlay-toggle {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: #eef2f8;
+
+				svg {
+					width: 17px;
+					height: 17px;
+					opacity: 0.75;
+				}
+				&:hover svg {
+					opacity: 1;
+				}
+				&.is-off svg {
+					opacity: 0.5;
+				}
+			}
+
+			/* attribution pill */
+			.maplibregl-ctrl-attrib {
+				background: color-mix(in oklab, var(--bg-2) 70%, transparent);
+				color: var(--muted);
+
+				a {
+					color: var(--muted);
+				}
+			}
+			.maplibregl-ctrl-attrib-button {
+				filter: invert(1) opacity(0.6);
+			}
+
+			/* percent labels are DOM markers (added outside the component tree) */
+			.iso-label {
+				font:
+					700 11px/1 system-ui,
+					-apple-system,
+					sans-serif;
+				color: var(--accent);
+				white-space: nowrap;
+				pointer-events: none;
+				text-shadow:
+					0 0 2px rgba(5, 7, 13, 0.9),
+					0 0 2px rgba(5, 7, 13, 0.9);
+				/* own compositor layer → moving the marker while rotating is composited, not repainted */
+				will-change: transform;
+			}
+		}
 	}
 </style>

@@ -284,11 +284,12 @@
 		margin-top: 8px;
 		font-size: 0.86rem;
 		color: var(--muted);
-	}
-	.chips b {
-		color: var(--accent);
-	}
-	.chips .warn {
-		color: var(--accent-2, #ffcf9a);
+
+		& b {
+			color: var(--accent);
+		}
+		& .warn {
+			color: var(--accent-2, #ffcf9a);
+		}
 	}
 </style>

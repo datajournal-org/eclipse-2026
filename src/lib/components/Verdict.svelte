@@ -44,9 +44,10 @@
 		color: var(--accent);
 		line-height: 1.1;
 		margin: 4px 0 2px;
-	}
-	.b1.total .obsc {
-		color: var(--accent-2, var(--accent));
+
+		.b1.total & {
+			color: var(--accent-2, var(--accent));
+		}
 	}
 	.meta {
 		color: var(--muted);
@@ -59,8 +60,9 @@
 		background: var(--surface);
 		border-left: 3px solid var(--accent);
 		font-size: 0.9rem;
-	}
-	.b1.total .safety {
-		border-left-color: var(--accent-2, var(--accent));
+
+		.b1.total & {
+			border-left-color: var(--accent-2, var(--accent));
+		}
 	}
 </style>

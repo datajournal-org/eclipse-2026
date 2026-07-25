@@ -110,12 +110,13 @@
 	.seg {
 		font-size: 0.8rem;
 		color: var(--muted);
-	}
-	.seg b {
-		font-size: 1.6rem;
-		font-weight: 800;
-		color: var(--accent);
-		margin-right: 2px;
+
+		& b {
+			font-size: 1.6rem;
+			font-weight: 800;
+			color: var(--accent);
+			margin-right: 2px;
+		}
 	}
 	.until {
 		font-size: 0.9rem;
@@ -132,22 +133,24 @@
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
-	}
-	.checks li {
-		position: relative;
-		padding-left: 26px;
-		font-size: 0.95rem;
-		line-height: 1.35;
-	}
-	.checks li::before {
-		content: '';
-		position: absolute;
-		left: 4px;
-		top: 0.5em;
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background: var(--accent);
+
+		& li {
+			position: relative;
+			padding-left: 26px;
+			font-size: 0.95rem;
+			line-height: 1.35;
+
+			&::before {
+				content: '';
+				position: absolute;
+				left: 4px;
+				top: 0.5em;
+				width: 8px;
+				height: 8px;
+				border-radius: 50%;
+				background: var(--accent);
+			}
+		}
 	}
 	.cal {
 		width: 100%;
@@ -159,9 +162,10 @@
 		font-weight: 600;
 		font-size: 0.95rem;
 		cursor: pointer;
-	}
-	.cal:hover {
-		background: var(--accent);
-		color: var(--bg);
+
+		&:hover {
+			background: var(--accent);
+			color: var(--bg);
+		}
 	}
 </style>

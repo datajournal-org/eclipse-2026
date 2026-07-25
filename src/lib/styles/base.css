@@ -45,9 +45,10 @@ p {
 a {
 	color: var(--accent);
 	text-decoration: none;
-}
-a:hover {
-	text-decoration: underline;
+
+	&:hover {
+		text-decoration: underline;
+	}
 }
 
 button {
@@ -61,14 +62,15 @@ button {
 	transition:
 		border-color var(--dur) var(--ease),
 		background var(--dur) var(--ease);
-}
-button:hover {
-	border-color: var(--border-2);
-	background: var(--surface-2);
-}
-button:focus-visible {
-	outline: 2px solid var(--accent);
-	outline-offset: 2px;
+
+	&:hover {
+		border-color: var(--border-2);
+		background: var(--surface-2);
+	}
+	&:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
 }
 
 .tnum {
@@ -98,19 +100,20 @@ button:focus-visible {
    vertical rhythm comes from the .content gap. */
 .block {
 	padding-inline: var(--edge);
-}
-.block > .block-head {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: var(--space-2xs);
-	margin-bottom: var(--space-2xs);
-}
-.block .eyebrow {
-	font-size: var(--text-caption);
-	letter-spacing: 0.14em;
-	text-transform: uppercase;
-	color: var(--faint);
+
+	& > .block-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-2xs);
+		margin-bottom: var(--space-2xs);
+	}
+	& .eyebrow {
+		font-size: var(--text-caption);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--faint);
+	}
 }
 
 /* Full-bleed: cancel .block inline padding so a graphic reaches the section edges

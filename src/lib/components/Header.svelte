@@ -48,17 +48,19 @@
 	.langs {
 		display: flex;
 		gap: 4px;
-	}
-	.langs button {
-		padding: 4px 8px;
-		font-size: 0.78rem;
-		font-weight: 600;
-		border-radius: 8px;
-		color: var(--muted);
-	}
-	.langs button.active {
-		color: var(--bg);
-		background: var(--accent);
-		border-color: var(--accent);
+
+		& button {
+			padding: 4px 8px;
+			font-size: 0.78rem;
+			font-weight: 600;
+			border-radius: 8px;
+			color: var(--muted);
+
+			&.active {
+				color: var(--bg);
+				background: var(--accent);
+				border-color: var(--accent);
+			}
+		}
 	}
 </style>

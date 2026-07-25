@@ -46,10 +46,11 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-	}
-	.pname {
-		font-size: 1.15rem;
-		font-weight: 700;
-		margin-top: 2px;
+
+		.pname {
+			font-size: 1.15rem;
+			font-weight: 700;
+			margin-top: 2px;
+		}
 	}
 </style>
