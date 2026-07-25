@@ -1,5 +1,5 @@
 <!--
-  A2 — Schattenlauf. A MapLibre globe: the totality corridor + live iso-coverage rings + Moon-shadow,
+  A2 — Shadow run. A MapLibre globe: the totality corridor + live iso-coverage rings + Moon-shadow,
   driven by a time slider. The geometry/rendering lives in $lib/shadow-globe/*:
     · shadowPath          — precomputed timeline frames
     · shadowProfile       — per-frame shadow axis + 1D coverage profile (LUT)

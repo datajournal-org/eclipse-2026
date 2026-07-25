@@ -2,7 +2,7 @@
 	import { userLocation, clearLocation, type Place } from '$lib/stores/location';
 	import { t } from '$lib/i18n';
 	import Countdown from '$lib/components/Countdown.svelte';
-	import Schattenlauf from '$lib/components/Schattenlauf.svelte';
+	import ShadowRun from '$lib/components/ShadowRun.svelte';
 	import LocationCall from '$lib/components/LocationCall.svelte';
 	import Verdict from '$lib/components/Verdict.svelte';
 	import SkyView from '$lib/components/SkyView.svelte';
@@ -17,7 +17,7 @@
 <main class="content">
 	<!-- A — always visible (event overview) -->
 	<Countdown />
-	<Schattenlauf />
+	<ShadowRun />
 	<Placeholder title={$t('a3.title')} note={$t('a3.note')} tag="A3" />
 
 	{#if $userLocation}
