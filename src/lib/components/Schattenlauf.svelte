@@ -43,8 +43,8 @@
 		{ percent: 100, level: 0.999, opacity: 0.5 }
 	];
 
-	// Shared state the WebGL layer reads each frame (see moonShadowLayer.js): the shadow axis plus
-	// the 1D coverage profile (as an 8-bit LUT). `profileVersion` bumps so the texture re-uploads.
+	// Shared state the WebGL layer reads each frame (see moonShadowLayer.ts): the shadow axis plus
+	// the 1D coverage profile (a float LUT). `profileVersion` bumps so the texture re-uploads.
 	const shadowState: ShadowState = {
 		center: [0, 0, 1],
 		axis: [0, 0, 1],
@@ -212,7 +212,7 @@
 		shadowState.axis = model.axis;
 		shadowState.sunDir = model.sunDir;
 		shadowState.rMax = model.rMax;
-		shadowState.profile = model.profileBytes;
+		shadowState.profile = model.coverage;
 		shadowState.profileVersion++;
 		shadowState.ready = true;
 		map.triggerRepaint();

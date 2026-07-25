@@ -14,8 +14,8 @@ const MOON_RADIUS_IN_EARTH_RADII = 0.27271;
 const SUN_RADIUS_KM = 696000;
 const EARTH_RADIUS_KM = 6371;
 
-/** Number of samples in the brightness profile / LUT texture width. */
-export const PROFILE_SIZE = 256;
+/** Number of samples in the coverage profile / LUT texture width. */
+export const PROFILE_SIZE = 512;
 
 export type ShadowModel = {
 	/** A point on the shadow axis: the perpendicular foot from Earth's centre (⊥ to `axis`). */
@@ -26,10 +26,9 @@ export type ShadowModel = {
 	sunDir: Vec3;
 	/** Penumbra radius in Earth radii (coverage → 0); the LUT is sampled over [0, rMax]. */
 	rMax: number;
-	/** coverage(r) samples, 0..1 (used to invert level → radius). */
+	/** coverage(r) samples, 0..1 — used both to invert level → radius and as the shader LUT (uploaded
+	 *  as a float texture, so the penumbra gradient stays smooth, no 8-bit stepping). */
 	coverage: Float32Array;
-	/** The same profile as an 8-bit R-channel LUT for the texture. */
-	profileBytes: Uint8Array;
 };
 
 /**
@@ -106,15 +105,12 @@ export function computeShadowModel(sunMoon: SunMoon): ShadowModel {
 	const rMax = distToMoon * (sunAngR + moonAngR); // off-axis distance where the penumbra ends
 
 	const coverage = new Float32Array(PROFILE_SIZE);
-	const profileBytes = new Uint8Array(PROFILE_SIZE);
 	for (let i = 0; i < PROFILE_SIZE; i++) {
 		const r = (i / (PROFILE_SIZE - 1)) * rMax;
-		const cov = discOverlapFraction(sunAngR, moonAngR, r / distToMoon);
-		coverage[i] = cov;
-		profileBytes[i] = Math.round(cov * 255);
+		coverage[i] = discOverlapFraction(sunAngR, moonAngR, r / distToMoon);
 	}
 
-	return { center, axis, sunDir, rMax, coverage, profileBytes };
+	return { center, axis, sunDir, rMax, coverage };
 }
 
 /**

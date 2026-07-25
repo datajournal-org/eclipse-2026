@@ -15,8 +15,8 @@ export type ShadowState = {
 	axis: Vec3;
 	sunDir: Vec3;
 	rMax: number;
-	/** Coverage LUT (8-bit) uploaded to the profile texture; null before the first frame. */
-	profile: Uint8Array | null;
+	/** Coverage LUT (0..1 floats) uploaded to the profile texture; null before the first frame. */
+	profile: Float32Array | null;
 	/** Bumped whenever `profile` changes so the texture is re-uploaded. */
 	profileVersion: number;
 	/** Gates the first render. */
@@ -63,8 +63,14 @@ uniform vec3 u_sunDir;                // unit direction to the Sun (Earth-fixed 
 uniform vec3 u_center;                // shadow axis anchor on the sphere (unit)
 uniform vec3 u_axis;                  // unit shadow-axis direction (toward the Moon)
 uniform float u_rMax;                 // penumbra radius (coverage → 0), Earth radii
-uniform sampler2D u_profile;          // 1D coverage LUT (N×1, R channel)
+uniform sampler2D u_profile;          // 1D coverage LUT (N×1, R channel, float)
 out vec4 fragColor;
+
+// Interleaved-gradient noise (Jimenez) → ±0.5/255 dither, to break the 8-bit output banding on the
+// big smooth day→night gradient. Screen-space, so it stays fixed while the globe holds still.
+float ign(vec2 p) {
+  return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715))));
+}
 
 void main() {
   vec3 surfaceDir = normalize(v_surfaceDir);
@@ -82,9 +88,10 @@ void main() {
   // The eclipse dims the sunlight further (from space, ground brightness ≈ 1 − coverage).
   float brightness = sunBrightness * (1.0 - coverage);
 
-  float alpha = clamp(1.0 - brightness, 0.0, 1.0); // overlay opacity over the tiles
+  float alpha = clamp(1.0 - brightness, 0.0, 1.0) * 0.95; // overlay opacity over the tiles
+  alpha += (ign(gl_FragCoord.xy) - 0.5) / 255.0; // dither away 8-bit banding
   if (alpha < 0.004) discard; // bright, uneclipsed noon: leave tiles
-  fragColor = vec4(vec3(0.0, 0.0, 0.0), alpha * 0.95);
+  fragColor = vec4(0.0, 0.0, 0.0, clamp(alpha, 0.0, 1.0));
 }`;
 
 // Vertex shader is assembled per projection variant so it can call MapLibre's own `projectTile`.
@@ -199,7 +206,8 @@ export function createMoonShadowLayer(shadowState: ShadowState): CustomLayerInte
 			this.poleFlagBuffer = createBuffer(gl, gl.ARRAY_BUFFER, new Float32Array(mesh.poleFlags));
 			this.indexBuffer = createBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(mesh.indices));
 
-			// 1D coverage LUT as an N×1 R8 texture (linear-filterable → smooth penumbra).
+			// 1D coverage LUT as an N×1 R16F float texture (linear-filterable in WebGL2 → smooth penumbra,
+			// no 8-bit stepping in the gradient).
 			this.profileTexture = gl.createTexture()!;
 			gl.bindTexture(gl.TEXTURE_2D, this.profileTexture);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -268,12 +276,12 @@ export function createMoonShadowLayer(shadowState: ShadowState): CustomLayerInte
 				gl2.texImage2D(
 					gl2.TEXTURE_2D,
 					0,
-					gl2.R8,
+					gl2.R16F,
 					shadowState.profile.length,
 					1,
 					0,
 					gl2.RED,
-					gl2.UNSIGNED_BYTE,
+					gl2.FLOAT,
 					shadowState.profile
 				);
 				this.uploadedProfileVersion = shadowState.profileVersion;
