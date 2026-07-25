@@ -27,6 +27,6 @@ export const SKY_PALETTE = {
 	sky: '#8fb4e0', // upper sky
 	horizon: '#f4c48a', // horizon glow
 	fog: '#e6c39a', // atmospheric fog
-	buildings: '#d7c9b6', // 3D building fill
 	sun: '#ffedb8' // eclipsed Sun disc
+	// note: 3D buildings inherit the map's own land/background colour (read from the style) — not set here
 } as const;

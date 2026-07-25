@@ -12,6 +12,7 @@
 	import { discOverlapFraction } from '$lib/shadow-globe/shadowProfile';
 	import { destPoint } from '$lib/shadow-globe/vec3';
 	import { createSunLayer, type SunState } from '$lib/skyview/sunLayer';
+	import { environment, DUSK_HEX } from '$lib/skyview/environment';
 	import { SKY_PALETTE, ECLIPSE_DATE } from '$lib/config';
 	import { hexToRgb } from '$lib/brand';
 	import {
@@ -35,6 +36,7 @@
 	let note = $state('');
 	let frameIndex = $state(0);
 	let frameMax = $state(1);
+	let duskOpacity = $state(0); // twilight veil over the whole scene, grows with the obscuration
 	let setFrame: (i: number) => void = () => {};
 
 	onMount(() => {
@@ -64,6 +66,11 @@
 			style.layers = style.layers.filter((l) => l.type !== 'symbol'); // labels off
 			style.sources.dem = { type: 'raster-dem', tiles: [ELEV], tileSize: 512, encoding: 'terrarium' };
 
+			// 3D buildings share the map's own land/background colour → their lit faces match the ground.
+			const bgPaint = style.layers.find((l) => l.id === 'background')?.paint as
+				{ 'background-color'?: string } | undefined;
+			const landColor = bgPaint?.['background-color'] ?? '#f9f4ee';
+
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				center: [LON, LAT],
@@ -88,11 +95,20 @@
 						'horizon-fog-blend': 0.6
 					});
 				} catch {
-					/* older sky spec — ignore */
+					/* older sky spec — ignore (the dusk veil still dims the scene) */
 				}
 				const firstSymbol = m.getStyle().layers.find((l) => l.type === 'symbol')?.id;
 				m.addLayer(
-					{ id: 'hillshade', type: 'hillshade', source: 'dem', paint: { 'hillshade-exaggeration': 0.35 } },
+					{
+						id: 'hillshade',
+						type: 'hillshade',
+						source: 'dem',
+						paint: {
+							'hillshade-exaggeration': 0.5,
+							'hillshade-illumination-anchor': 'map', // so the direction below tracks the Sun's azimuth
+							'hillshade-illumination-direction': 90
+						}
+					},
 					firstSymbol
 				);
 				for (const id of ['building', 'building:outline']) if (m.getLayer(id)) m.removeLayer(id);
@@ -104,10 +120,11 @@
 						'source-layer': 'buildings',
 						filter: ['!=', ['get', 'hide_3d'], true],
 						paint: {
-							'fill-extrusion-color': SKY_PALETTE.buildings,
+							'fill-extrusion-color': landColor,
 							'fill-extrusion-height': ['coalesce', ['get', 'height'], 3],
 							'fill-extrusion-base': ['coalesce', ['get', 'min_height'], 0],
-							'fill-extrusion-opacity': 0.96
+							//'fill-extrusion-opacity': 0.3,
+							'fill-extrusion-vertical-gradient': true
 						}
 					},
 					firstSymbol
@@ -177,6 +194,23 @@
 					}
 
 					const obsc = discOverlapFraction(sunAngR, moonAngR, Math.hypot(dx, dy));
+
+					// keep the map in sync with the simulated Sun: direction from (az, alt), brightness/colour
+					// from the obscuration (same numbers that drive the Sun billboard).
+					const env = environment(obsc);
+					duskOpacity = env.veil; // dims the whole scene incl. the flat vector base map
+					m.setLight({
+						anchor: 'map',
+						position: [1.15, s.az, 90 - s.alt] as [number, number, number],
+						color: env.light,
+						intensity: env.intensity
+					});
+					m.setPaintProperty(
+						'hillshade',
+						'hillshade-illumination-direction',
+						Math.round(((s.az % 360) + 360) % 360)
+					);
+
 					clock = get(fmt).time(date);
 					altTxt = s.alt.toFixed(1) + '°';
 					azTxt = s.az.toFixed(0) + '°';
@@ -217,6 +251,7 @@
 
 	<div class="stage bleed">
 		<div class="stage-canvas" bind:this={mapContainer}></div>
+		<div class="dusk" aria-hidden="true" style:background={DUSK_HEX} style:opacity={duskOpacity}></div>
 		{#if !ready}<div class="stage-loading">{$t('b3.loading')}</div>{/if}
 	</div>
 
@@ -246,6 +281,13 @@
 	/* media height for the shared global .stage-canvas */
 	.stage {
 		--stage-h: min(60vh, 440px);
+	}
+	/* twilight veil — dims the whole scene (sky, terrain, buildings, flat base map) with the eclipse */
+	.dusk {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		transition: opacity 150ms linear;
 	}
 	.chips {
 		display: flex;
