@@ -32,11 +32,11 @@
 	} from '$lib/shadow-globe/isoLinesLayer';
 	import { corridorEdges } from '$lib/shadow-globe/corridorBand';
 
-	type Brand = { bg: string; path: string; ring: string };
+	type BrandColor = { hex: string; rgb: [number, number, number] }; // RGB in 0..1 for WebGL
+	type Brand = { bg: BrandColor; accent: BrandColor; accent2: BrandColor };
 
 	const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
 	const INITIAL_VIEW = { center: [-18, 50] as [number, number], zoom: 1.21 };
-	const TERMINATOR_RGB: [number, number, number] = [0.361, 0.784, 1]; // #5cc8ff (day/night line)
 
 	// Coverage rings drawn live around the current shadow. `level` = obscuration threshold (0..1),
 	// `percent` drives both the map opacity and the legend label.
@@ -121,14 +121,13 @@
 	onMount(() => {
 		let map: MlMap | undefined;
 		let disposed = false;
+		const brand = readBrandColors();
 
 		(async () => {
 			const maplibregl = (await import('maplibre-gl')).default;
 			if (disposed) return;
 
-			const brand = readBrandColors();
-			ringRgb = hexToRgb(brand.ring);
-			corridorBand = fillStripPrimitive(corridorEdges.north, corridorEdges.south, hexToRgb(brand.path), 0.18);
+			corridorBand = fillStripPrimitive(corridorEdges.north, corridorEdges.south, brand.accent.rgb, 0.18);
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				...INITIAL_VIEW,
@@ -146,7 +145,7 @@
 						}
 					},
 					layers: [
-						{ id: 'bg', type: 'background', paint: { 'background-color': brand.bg } },
+						{ id: 'bg', type: 'background', paint: { 'background-color': brand.bg.hex } },
 						{ id: 'sat', type: 'raster', source: 'sat', paint: { 'raster-brightness-max': 0.9 } }
 					]
 				}
@@ -208,19 +207,57 @@
 			labelMarkers.forEach((mk) => mk.remove());
 			map?.remove();
 		};
+
+		/** Advance everything to the timeline frame at `index`. */
+		function renderFrame(map: MlMap, index: number) {
+			const frame = shadowFrames[index];
+			const date = new Date(frame.time);
+			const model = computeShadowModel(sunMoonECEF(date));
+
+			// feed the shadow shader (axis + coverage profile)
+			shadowState.center = model.center;
+			shadowState.axis = model.axis;
+			shadowState.sunDir = model.sunDir;
+			shadowState.rMax = model.rMax;
+			shadowState.profile = model.coverage;
+			shadowState.profileVersion++;
+			shadowState.ready = true;
+			map.triggerRepaint();
+
+			// Reference overlay → LinePrimitives for the pole- & antimeridian-correct custom layer. Order:
+			// day/night terminator (bottom), corridor band, then the iso rings on top.
+			const lines: LinePrimitive[] = [];
+			lines.push(
+				linePrimitiveFromSegments(terminatorLine(model.sunDir).geometry.coordinates, brand.accent2.rgb, 0.35)
+			);
+			if (corridorBand) lines.push(corridorBand);
+			for (const ring of ISO_RINGS) {
+				const radius = radiusForCoverage(model, ring.level);
+				if (radius == null) continue;
+				lines.push(linePrimitiveFromSegments(isoRing(model, radius).geometry.coordinates, ringRgb, ring.opacity));
+			}
+			isoLinesState.lines = lines;
+			isoLinesState.version++;
+			isoLinesState.ready = true;
+
+			currentModel = model;
+			refreshLabels(map); // percent labels, placed along the current viewport-down direction
+			clockUtc = formatUtc(frame.time);
+		}
 	});
 
 	/** Pull brand colours from the central design tokens so the canvas honours them too. */
 	function readBrandColors(): Brand {
 		const css = getComputedStyle(document.documentElement);
-		const token = (name: string, fallback: string) => {
+		const token = (name: string): BrandColor => {
 			const v = css.getPropertyValue(name).trim();
-			return !v || v.includes('var(') ? fallback : v;
+			if (!v || v.includes('var(')) throw new Error(`Missing design token ${name}`);
+			return { hex: v, rgb: hexToRgb(v) };
 		};
 		return {
-			bg: token('--bg', '#05070d'),
-			path: token('--accent', '#e8a33d'),
-			ring: token('--accent-2', '#ffd27f')
+			bg: token('--bg'),
+			accent: token('--accent'),
+			accent2: token('--accent-2')
 		};
 	}
 
@@ -230,41 +267,6 @@
 		const full = h.length === 3 ? [...h].map((c) => c + c).join('') : h;
 		const n = parseInt(full, 16);
 		return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
-	}
-
-	/** Advance everything to the timeline frame at `index`. */
-	function renderFrame(map: MlMap, index: number) {
-		const frame = shadowFrames[index];
-		const date = new Date(frame.time);
-		const model = computeShadowModel(sunMoonECEF(date));
-
-		// feed the shadow shader (axis + coverage profile)
-		shadowState.center = model.center;
-		shadowState.axis = model.axis;
-		shadowState.sunDir = model.sunDir;
-		shadowState.rMax = model.rMax;
-		shadowState.profile = model.coverage;
-		shadowState.profileVersion++;
-		shadowState.ready = true;
-		map.triggerRepaint();
-
-		// Reference overlay → LinePrimitives for the pole- & antimeridian-correct custom layer. Order:
-		// day/night terminator (bottom), corridor band, then the iso rings on top.
-		const lines: LinePrimitive[] = [];
-		lines.push(linePrimitiveFromSegments(terminatorLine(model.sunDir).geometry.coordinates, TERMINATOR_RGB, 0.35));
-		if (corridorBand) lines.push(corridorBand);
-		for (const ring of ISO_RINGS) {
-			const radius = radiusForCoverage(model, ring.level);
-			if (radius == null) continue;
-			lines.push(linePrimitiveFromSegments(isoRing(model, radius).geometry.coordinates, ringRgb, ring.opacity));
-		}
-		isoLinesState.lines = lines;
-		isoLinesState.version++;
-		isoLinesState.ready = true;
-
-		currentModel = model;
-		refreshLabels(map); // percent labels, placed along the current viewport-down direction
-		clockUtc = formatUtc(frame.time);
 	}
 
 	/** Re-place the percent labels: each ring is anchored where a ray from the umbra centre in the
@@ -472,7 +474,7 @@
 			700 11px/1 system-ui,
 			-apple-system,
 			sans-serif;
-		color: var(--accent-2);
+		color: var(--accent);
 		white-space: nowrap;
 		pointer-events: none;
 		text-shadow:

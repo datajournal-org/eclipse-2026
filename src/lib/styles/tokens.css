@@ -16,6 +16,7 @@
 	/* palette */
 	--amber-500: #e8a33d; /* the Sun / primary accent */
 	--amber-300: #ffd27f; /* live shadow rings / hover */
+	--blue-500: #3c92e8; /* the Moon / secondary accent */
 	--night-900: #05070d; /* page ground */
 	--night-800: #0a0e16; /* raised ground */
 	--sky-700: #16233b; /* top-of-page glow */
@@ -50,7 +51,7 @@
 	--muted: var(--ink-a66);
 	--faint: var(--ink-a42);
 	--accent: var(--amber-500);
-	--accent-2: var(--amber-300);
+	--accent-2: var(--blue-500);
 	--warn: var(--danger-500);
 	--good: var(--success-500);
 
