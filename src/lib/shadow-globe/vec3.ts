@@ -1,9 +1,7 @@
 // Small shared 3-vector + geographic helpers used across the shadow-globe geometry modules — kept in
 // one place so isoRing / corridorCompute / shadowProfile don't each carry their own copy.
 import type { Vec3 } from '$lib/types';
-
-const RAD_TO_DEG = 180 / Math.PI;
-const DEG_TO_RAD = Math.PI / 180;
+import { RAD_TO_DEG, DEG_TO_RAD, EARTH_RADIUS_M } from '$lib/constants';
 
 export function dot(a: Vec3, b: Vec3): number {
 	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -52,7 +50,7 @@ export function latLonToUnitVector(latDeg: number, lonDeg: number): Vec3 {
 }
 /** Great-circle destination [lon, lat] (deg) from (lat, lon) going `distM` metres along `bearingDeg`. */
 export function destPoint(lat: number, lon: number, bearingDeg: number, distM: number): [number, number] {
-	const R = 6371000,
+	const R = EARTH_RADIUS_M,
 		d = distM / R,
 		br = bearingDeg * DEG_TO_RAD,
 		la = lat * DEG_TO_RAD,

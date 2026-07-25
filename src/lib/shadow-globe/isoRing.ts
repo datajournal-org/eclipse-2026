@@ -18,11 +18,11 @@ import type { Feature, MultiLineString } from 'geojson';
 import type { Vec3 } from '$lib/types';
 import type { ShadowModel } from './shadowProfile';
 import { clamp, cross, dot, length, normalize } from './vec3';
+import { RAD_TO_DEG } from '$lib/constants';
 
 type Point = [number, number]; // [lon, lat]
 
 const TAU = 2 * Math.PI;
-const RAD_TO_DEG = 180 / Math.PI;
 
 /**
  * @param model

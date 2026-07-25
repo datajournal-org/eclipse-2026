@@ -10,10 +10,9 @@
 import type { Vec3 } from '$lib/types';
 import type { SunMoon } from '$lib/eclipse';
 import { clamp } from './vec3';
+import { SUN_RADIUS_KM, EARTH_RADIUS_KM } from '$lib/constants';
 
 const MOON_RADIUS_IN_EARTH_RADII = 0.27271;
-const SUN_RADIUS_KM = 696000;
-const EARTH_RADIUS_KM = 6371;
 
 /** Number of samples in the coverage profile / LUT texture width. */
 export const PROFILE_SIZE = 512;

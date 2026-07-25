@@ -14,14 +14,17 @@
 	import { createSunLayer, type SunState } from '$lib/skyview/sunLayer';
 	import { SKY_PALETTE } from '$lib/config';
 	import { hexToRgb } from '$lib/brand';
+	import {
+		DEG_TO_RAD as D2R,
+		RAD_TO_DEG as R2D,
+		norm180,
+		AU_KM as AU,
+		SUN_RADIUS_KM as RSUN,
+		MOON_RADIUS_KM as RMOON,
+		EARTH_RADIUS_M
+	} from '$lib/constants';
 
 	const ELEV = 'https://tiles.versatiles.org/tiles/elevation/{z}/{x}/{y}';
-	const D2R = Math.PI / 180,
-		R2D = 180 / Math.PI;
-	const AU = 149597870.7,
-		RSUN = 696000,
-		RMOON = 1737.4;
-	const norm180 = (d: number) => ((d + 540) % 360) - 180;
 
 	let mapContainer: HTMLDivElement;
 	let ready = $state(false);
@@ -122,7 +125,7 @@
 						const [lng2, lat2] = destPoint(LAT, LON, az, d);
 						const e = m.queryTerrainElevation([lng2, lat2]);
 						if (e == null) continue;
-						const drop = (d * d) / (2 * 6371000); // horizon dip from curvature
+						const drop = (d * d) / (2 * EARTH_RADIUS_M); // horizon dip from curvature
 						const ang = Math.atan2(e - drop - eyeAlt, d) * R2D;
 						if (ang > maxAng) maxAng = ang;
 					}

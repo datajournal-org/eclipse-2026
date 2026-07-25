@@ -2,22 +2,18 @@
 import * as A from 'astronomy-engine';
 import type { Vec3 } from '$lib/types';
 import { ECLIPSE_DATE } from '$lib/config';
+import { DEG_TO_RAD as D2R, RAD_TO_DEG as R2D, norm180, AU_KM, SUN_RADIUS_KM, EARTH_RADIUS_KM } from '$lib/constants';
 
 export { ECLIPSE_DATE }; // re-exported for convenience; defined centrally in config.ts
 
 export type GeoPoint = { lat: number; lon: number };
 export type SunMoon = { sun: Vec3; moon: Vec3; sunAngR: number };
 
-const AU_KM = 149597870.7;
-// WGS84
+// WGS84 (specific to the ellipsoid intersection below)
 const ER_A = 6378.137; // equatorial radius, km
 const ER_F = 1 / 298.257223563; // flattening
 const ER_B = ER_A * (1 - ER_F); // polar radius
 const E2 = ER_F * (2 - ER_F); // eccentricity^2
-
-const D2R = Math.PI / 180,
-	R2D = 180 / Math.PI;
-const norm180 = (d: number) => ((d + 540) % 360) - 180;
 
 /**
  * Ground point of the Moon's shadow axis at a given instant.
@@ -71,14 +67,14 @@ export function sunMoonECEF(date: Date): SunMoon {
 		const e = A.RotateVector(rot, v);
 		return { x: e.x * cg + e.y * sg, y: -e.x * sg + e.y * cg, z: e.z };
 	};
-	const ER = 6371;
+	const ER = EARTH_RADIUS_KM;
 	const sunE = toECEF(A.GeoVector(A.Body.Sun, time, true));
 	const moonE = toECEF(A.GeoVector(A.Body.Moon, time, true));
 	const sunLen = Math.hypot(sunE.x, sunE.y, sunE.z);
 	return {
 		sun: [sunE.x / sunLen, sunE.y / sunLen, sunE.z / sunLen],
 		moon: [(moonE.x * AU_KM) / ER, (moonE.y * AU_KM) / ER, (moonE.z * AU_KM) / ER],
-		sunAngR: Math.asin(696000 / (sunLen * AU_KM))
+		sunAngR: Math.asin(SUN_RADIUS_KM / (sunLen * AU_KM))
 	};
 }
 

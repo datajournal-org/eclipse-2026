@@ -6,6 +6,7 @@
 // Lines are 1px (WebGL line width is effectively capped at 1px anyway — which is exactly our design).
 
 import type { CustomLayerInterface, CustomRenderMethodInput } from 'maplibre-gl';
+import { DEG_TO_RAD, RAD_TO_DEG } from '$lib/constants';
 
 /** One coloured primitive; `positions` is interleaved web-mercator x,y. `mode` picks LINE_STRIP
  *  (thin line, the default) or TRIANGLE_STRIP (a filled band). */
@@ -21,14 +22,12 @@ export type LinePrimitive = {
  *  UI hide the whole overlay (corridor + rings) without tearing the layer down. */
 export type IsoLinesState = { lines: LinePrimitive[]; version: number; ready: boolean; visible: boolean };
 
-const DEG_TO_RAD = Math.PI / 180;
-
 /** Geodetic lon/lat (deg) → global web-mercator [0,1] (y leaves [0,1] beyond ±85°, which is fine —
  *  `projectTile`'s inverse handles it and places the vertex at the right latitude on the globe). */
 export function lngLatToMercator(lon: number, lat: number): [number, number] {
 	const x = (lon + 180) / 360;
 	const clamped = Math.max(-89.9999, Math.min(89.9999, lat));
-	const y = (180 - (180 / Math.PI) * Math.log(Math.tan(Math.PI / 4 + (clamped * DEG_TO_RAD) / 2))) / 360;
+	const y = (180 - RAD_TO_DEG * Math.log(Math.tan(Math.PI / 4 + (clamped * DEG_TO_RAD) / 2))) / 360;
 	return [x, y];
 }
 
