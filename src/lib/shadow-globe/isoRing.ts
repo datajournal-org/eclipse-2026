@@ -153,6 +153,64 @@ export function terminatorLine(sunDir: Vec3, steps = 256): Feature<MultiLineStri
 	};
 }
 
+/** Umbra ground point (shadow axis ∩ near-side sphere) as [lon, lat], or null if the umbra misses Earth. */
+export function umbraGroundPoint(model: ShadowModel): Point | null {
+	const foot = model.center,
+		axis = model.axis;
+	const footLen = length(foot);
+	if (footLen >= 1) return null;
+	const w0 = Math.sqrt(1 - footLen * footLen);
+	const C: Vec3 = [foot[0] + w0 * axis[0], foot[1] + w0 * axis[1], foot[2] + w0 * axis[2]];
+	return [Math.atan2(C[1], C[0]) * RAD_TO_DEG, Math.asin(clamp(C[2], -1, 1)) * RAD_TO_DEG];
+}
+
+const LABEL_ITERS = 14; // bisection steps → ~2⁻¹⁴ rad (sub-km); ample for placing a label on the line
+
+/**
+ * Where a ray from the umbra centre in tangent direction `dir` crosses the iso-ring of the given
+ * cylinder radius — a stable anchor for that ring's percent label. `dir` must be a unit tangent at the
+ * centre; the caller passes the current viewport-down direction, so the labels stack straight down the
+ * screen and slide smoothly with the shadow instead of jumping. Returns [lon, lat] (deg), or null when
+ * the umbra misses Earth or the crossing is on the night side.
+ */
+export function labelPoint(model: ShadowModel, radius: number, dir: Vec3): Point | null {
+	const foot = model.center,
+		axis = model.axis,
+		sunDir = model.sunDir;
+	const footLen = length(foot);
+	if (footLen >= 1) return null;
+	const w0 = Math.sqrt(1 - footLen * footLen);
+	const C: Vec3 = [foot[0] + w0 * axis[0], foot[1] + w0 * axis[1], foot[2] + w0 * axis[2]]; // umbra ground point (unit)
+
+	// perpDist to the axis grows monotonically going out from C (which is on the axis, perpDist 0);
+	// bisect the angle where it equals the ring radius.
+	const perpDist = (P: Vec3): number => {
+		const dx = P[0] - foot[0],
+			dy = P[1] - foot[1],
+			dz = P[2] - foot[2];
+		const along = dx * axis[0] + dy * axis[1] + dz * axis[2];
+		return Math.hypot(dx - along * axis[0], dy - along * axis[1], dz - along * axis[2]);
+	};
+	const at = (delta: number): Vec3 => {
+		const c = Math.cos(delta),
+			s = Math.sin(delta);
+		return [C[0] * c + dir[0] * s, C[1] * c + dir[1] * s, C[2] * c + dir[2] * s];
+	};
+
+	const DMAX = 1.2; // rad (~68°) — generous reach of the penumbra
+	if (perpDist(at(DMAX)) < radius) return null; // ring doesn't reach that far
+	let lo = 0,
+		hi = DMAX;
+	for (let k = 0; k < LABEL_ITERS; k++) {
+		const mid = (lo + hi) / 2;
+		if (perpDist(at(mid)) < radius) lo = mid;
+		else hi = mid;
+	}
+	const P = at(hi);
+	if (P[0] * sunDir[0] + P[1] * sunDir[1] + P[2] * sunDir[2] <= 0) return null; // night side
+	return [Math.atan2(P[1], P[0]) * RAD_TO_DEG, Math.asin(clamp(P[2], -1, 1)) * RAD_TO_DEG];
+}
+
 /**
  * Make longitudes continuous across the ±180° seam (letting |lon| exceed 180), so a line drawn on the
  * globe runs THROUGH the antimeridian instead of being cut into two pieces with a gap. MapLibre's

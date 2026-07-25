@@ -12,11 +12,17 @@
 	import { get } from 'svelte/store';
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import { t } from '$lib/i18n';
-	import type { Map as MlMap, IControl } from 'maplibre-gl';
+	import type { Map as MlMap, IControl, GeoJSONSource } from 'maplibre-gl';
+	import type { Feature } from 'geojson';
 	import { sunMoonECEF, shadowCenter } from '$lib/eclipse';
 	import { shadowFrames, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
-	import { computeShadowModel, radiusForCoverage } from '$lib/shadow-globe/shadowProfile';
-	import { isoRing, terminatorLine } from '$lib/shadow-globe/isoRing';
+	import {
+		computeShadowModel,
+		radiusForCoverage,
+		latLonToUnitVector,
+		type ShadowModel
+	} from '$lib/shadow-globe/shadowProfile';
+	import { isoRing, terminatorLine, labelPoint, umbraGroundPoint } from '$lib/shadow-globe/isoRing';
 	import { createMoonShadowLayer, type ShadowState } from '$lib/shadow-globe/moonShadowLayer';
 	import {
 		createIsoLinesLayer,
@@ -60,6 +66,7 @@
 	const isoLinesState: IsoLinesState = { lines: [], version: 0, ready: false, visible: true };
 	let ringRgb: [number, number, number] = [1, 0.82, 0.5]; // --accent-2; set from tokens on mount
 	let corridorBand: LinePrimitive | null = null; // the static totality corridor (set on mount)
+	let currentModel: ShadowModel | null = null; // last frame's shadow model — re-place labels on view change
 
 	// Eye / eye-off icons for the overlay toggle (Feather icons, currentColor).
 	const EYE_ICON =
@@ -126,9 +133,11 @@
 				container: mapContainer,
 				...INITIAL_VIEW,
 				scrollZoom: true, // wheel zoom (over the map it takes the scroll; use fullscreen for full control)
+				fadeDuration: 0, // no label cross-fade → percent labels snap with the iso lines, not lag
 				attributionControl: { compact: false },
 				style: {
 					version: 8,
+					glyphs: 'https://tiles.versatiles.org/assets/glyphs/{fontstack}/{range}.pbf',
 					sources: {
 						sat: {
 							type: 'raster',
@@ -157,6 +166,8 @@
 				onToggle: () => {
 					overlayVisible = !overlayVisible;
 					isoLinesState.visible = overlayVisible; // corridor + rings + terminator all live here now
+					if (m.getLayer('iso-labels'))
+						m.setLayoutProperty('iso-labels', 'visibility', overlayVisible ? 'visible' : 'none');
 					m.triggerRepaint();
 					overlayControl.setActive(overlayVisible);
 				}
@@ -167,6 +178,33 @@
 				m.setProjection({ type: 'globe' });
 				m.addLayer(createMoonShadowLayer(shadowState)); // darkening, under the reference lines
 				m.addLayer(createIsoLinesLayer(isoLinesState)); // corridor + iso rings + terminator, pole- & antimeridian-correct
+
+				// Percent labels, re-placed by refreshLabels along the current viewport-down direction (see
+				// labelPoint). Empty until the first frame.
+				m.addSource('iso-labels', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+				m.addLayer({
+					id: 'iso-labels',
+					type: 'symbol',
+					source: 'iso-labels',
+					layout: {
+						'text-field': '{percent} %',
+						'text-font': ['noto_sans_bold'],
+						'text-size': 11,
+						'text-anchor': 'top',
+						'text-offset': [0, 0.3],
+						'text-rotation-alignment': 'viewport',
+						'text-pitch-alignment': 'viewport',
+						'text-allow-overlap': true
+					},
+					paint: {
+						'text-color': brand.ring,
+						'text-opacity': ['get', 'opacity'],
+						'text-halo-color': 'rgba(5, 7, 13, 0.9)',
+						'text-halo-width': 1.2
+					}
+				});
+
+				m.on('move', () => refreshLabels(m)); // labels track viewport-down as the globe turns/zooms
 				showFrame = (index) => renderFrame(m, index);
 				showFrame(frameIndex);
 				mapReady = true;
@@ -231,10 +269,50 @@
 		isoLinesState.version++;
 		isoLinesState.ready = true;
 
+		currentModel = model;
+		refreshLabels(map); // percent labels, placed along the current viewport-down direction
+
 		// header readout — umbra ground point if it reaches Earth, else "—"
 		const umbra = shadowCenter(date);
 		clockUtc = formatUtc(frame.time);
 		umbraCenterText = umbra ? `${umbra.lat.toFixed(2)}°, ${umbra.lon.toFixed(2)}°` : '—';
+	}
+
+	/** Re-place the percent labels: each ring is anchored where a ray from the umbra centre in the
+	 *  current viewport-down direction crosses it. Runs on frame change and on every map move. */
+	function refreshLabels(map: MlMap) {
+		const source = map.getSource('iso-labels') as GeoJSONSource | undefined;
+		if (!source) return;
+		const features: Feature[] = [];
+		const umbra = currentModel ? umbraGroundPoint(currentModel) : null;
+		const down = umbra ? viewportDownDir(map, umbra) : null;
+		if (currentModel && down) {
+			for (const ring of ISO_RINGS) {
+				const radius = radiusForCoverage(currentModel, ring.level);
+				if (radius == null) continue;
+				const at = labelPoint(currentModel, radius, down);
+				if (at)
+					features.push({
+						type: 'Feature',
+						geometry: { type: 'Point', coordinates: at },
+						properties: { percent: ring.percent, opacity: ring.opacity }
+					});
+			}
+		}
+		source.setData({ type: 'FeatureCollection', features });
+	}
+
+	/** The unit tangent at the umbra centre that points straight DOWN in the current viewport. */
+	function viewportDownDir(map: MlMap, umbra: [number, number]): [number, number, number] | null {
+		const p = map.project(umbra);
+		const below = map.unproject([p.x, p.y + 40]);
+		const u = latLonToUnitVector(umbra[1], umbra[0]);
+		const b = latLonToUnitVector(below.lat, below.lng);
+		const proj = b[0] * u[0] + b[1] * u[1] + b[2] * u[2];
+		const t: [number, number, number] = [b[0] - proj * u[0], b[1] - proj * u[1], b[2] - proj * u[2]];
+		const len = Math.hypot(t[0], t[1], t[2]);
+		if (len < 1e-9) return null;
+		return [t[0] / len, t[1] / len, t[2] / len];
 	}
 
 	function onScrub(event: Event) {
