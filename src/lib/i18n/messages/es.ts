@@ -1,0 +1,55 @@
+import type { Messages } from './de';
+
+// Typed against the German reference: a missing or misspelled key is a compile error.
+const messages: Messages = {
+	app: { title: 'Eclipse 2026', tagline: '12 de agosto de 2026' },
+	nav: { about: 'Acerca de', language: 'Idioma' },
+	countdown: {
+		to_totality: 'para el eclipse solar total',
+		since: 'El primer eclipse solar total sobre Europa desde 1999.',
+		happening: 'El eclipse está ocurriendo ahora.',
+		past: 'El eclipse ha terminado.',
+		d: 'd',
+		h: 'h',
+		m: 'min',
+		s: 's'
+	},
+	a2: {
+		title: 'Recorrido de la sombra',
+		subtitle:
+			'La sombra de la Luna recorre la Tierra — la franja de totalidad como banda, la sombra actual es en vivo desde la línea de tiempo.',
+		current_shadow: 'Sombra actual',
+		path: 'Trayectoria',
+		core: 'Umbra',
+		loading: 'Cargando globo …',
+		toggle_overlay: 'Mostrar/ocultar líneas y corredor'
+	},
+	a3: {
+		title: '¿Cómo se ve?',
+		note: 'Tres lugares, el mismo evento, una experiencia completamente distinta.'
+	},
+	a4: {
+		title: '¿Qué verás desde donde estás?',
+		geo: 'Usar mi ubicación',
+		search: 'Buscar un lugar',
+		map: 'Tocar en el mapa',
+		manual_hint: 'o introduce coordenadas (lat, lon)',
+		use: 'Fijar',
+		geo_error: 'Ubicación no disponible. Busca un lugar o introduce coordenadas.',
+		soon: 'próximamente'
+	},
+	b: { your_sky: 'Tu cielo', change: 'cambiar', clear: 'Quitar ubicación' },
+	placeholder: {
+		b1: 'Tarjeta de veredicto',
+		b1_note: 'Ocultación, tiempos de contacto y veredicto de seguridad ocular para tu ubicación — próximamente.',
+		b2: 'Línea de tiempo personal',
+		b2_note: 'Primer contacto → máximo → puesta de sol con horas locales — próximamente.',
+		b3: 'Horizonte 3D',
+		b3_note: 'El Sol eclipsado sobre tu entorno con montañas y edificios — próximamente.',
+		b6: 'Lista y cuenta atrás',
+		b6_note: 'Gafas de eclipse, vista despejada al oeste, exportar al calendario — próximamente.'
+	},
+	safety: 'Nunca mires al Sol sin gafas de eclipse certificadas (ISO 12312-2).'
+};
+
+export default messages;

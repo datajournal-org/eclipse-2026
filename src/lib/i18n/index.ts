@@ -1,13 +1,12 @@
-// Lightweight, dependency-free i18n: JSON message files + Svelte stores + native Intl.
+// Lightweight, dependency-free i18n: typed message modules + Svelte stores + native Intl.
 import { derived, writable, type Readable } from 'svelte/store';
 import { browser } from '$app/environment';
-import de from './messages/de.json';
-import en from './messages/en.json';
-import es from './messages/es.json';
+import de, { type Messages } from './messages/de';
+import en from './messages/en';
+import es from './messages/es';
 
 export const LOCALES = ['de', 'en', 'es'] as const;
 export type Locale = (typeof LOCALES)[number];
-type Messages = typeof de;
 
 const DICTS: Record<Locale, Messages> = { de, en, es };
 export const LOCALE_NAMES: Record<Locale, string> = { de: 'Deutsch', en: 'English', es: 'Español' };
