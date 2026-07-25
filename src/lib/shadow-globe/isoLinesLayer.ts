@@ -103,19 +103,31 @@ interface IsoLinesLayer extends CustomLayerInterface {
 	_upload(gl: WebGL2RenderingContext, lines: LinePrimitive[]): void;
 }
 
+// projectTile's z-clip keeps a small tolerance, so far-side geometry near the limb leaks through and
+// looks like it floats inside the globe. We cut it precisely per-fragment: the vertex shader measures
+// the signed distance to MapLibre's own horizon plane (< 0 on the hidden hemisphere) and the fragment
+// discards there. `projectToSphere` gives the ground point in MapLibre's globe frame, so the plane test
+// is exact.
 const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 uniform vec4 u_color;
+in float v_horizon;
 out vec4 fragColor;
-void main() { fragColor = u_color; }`;
+void main() {
+  if (v_horizon < 0.0) discard; // hidden (far) hemisphere
+  fragColor = u_color;
+}`;
 
 function vertexShaderSource(shaderData: ShaderData): string {
 	return `#version 300 es
 ${shaderData.vertexShaderPrelude}
 ${shaderData.define}
 in vec2 a_pos;
+out float v_horizon;      // signed distance to the horizon plane (< 0 = far side)
 void main() {
-  gl_Position = projectTile(a_pos, vec2(0.0)); // globe variant also applies horizon clipping via z
+  gl_Position = projectTile(a_pos, vec2(0.0));
+  vec3 spherePos = projectToSphere(a_pos);
+  v_horizon = dot(spherePos, u_projection_clipping_plane.xyz) + u_projection_clipping_plane.w;
 }`;
 }
 
