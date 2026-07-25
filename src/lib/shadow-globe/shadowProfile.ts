@@ -9,6 +9,7 @@
 
 import type { Vec3 } from '$lib/types';
 import type { SunMoon } from '$lib/eclipse';
+import { clamp } from './vec3';
 
 const MOON_RADIUS_IN_EARTH_RADII = 0.27271;
 const SUN_RADIUS_KM = 696000;
@@ -68,14 +69,6 @@ export function discOverlapFraction(sunRadius: number, moonRadius: number, separ
 	return lensArea / (Math.PI * sunRadius * sunRadius);
 }
 
-/** Geodetic lat/lon (deg) → unit vector in the Earth-fixed frame used by the shader. */
-export function latLonToUnitVector(latDeg: number, lonDeg: number): Vec3 {
-	const lat = latDeg * (Math.PI / 180),
-		lon = lonDeg * (Math.PI / 180);
-	const cosLat = Math.cos(lat);
-	return [cosLat * Math.cos(lon), cosLat * Math.sin(lon), Math.sin(lat)];
-}
-
 /**
  * Build the shadow axis + brightness profile for one instant. Uses only the Sun/Moon geometry, so
  * it's defined whether or not the umbra reaches Earth (unlike anchoring on the surface intersection).
@@ -131,8 +124,4 @@ export function radiusForCoverage(model: ShadowModel, level: number): number | n
 		}
 	}
 	return rMax;
-}
-
-function clamp(x: number, lo: number, hi: number): number {
-	return x < lo ? lo : x > hi ? hi : x;
 }

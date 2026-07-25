@@ -17,6 +17,7 @@
 import type { Feature, MultiLineString } from 'geojson';
 import type { Vec3 } from '$lib/types';
 import type { ShadowModel } from './shadowProfile';
+import { clamp, cross, dot, length, normalize } from './vec3';
 
 type Point = [number, number]; // [lon, lat]
 
@@ -227,22 +228,4 @@ function unwrapLongitudes(points: Point[]): Point[] {
 		out.push([lon, points[i][1]]);
 	}
 	return out;
-}
-
-// --- tiny vec3 helpers ---
-function dot(a: Vec3, b: Vec3): number {
-	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-function length(a: Vec3): number {
-	return Math.hypot(a[0], a[1], a[2]);
-}
-function normalize(a: Vec3): Vec3 {
-	const l = length(a) || 1;
-	return [a[0] / l, a[1] / l, a[2] / l];
-}
-function cross(a: Vec3, b: Vec3): Vec3 {
-	return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-}
-function clamp(x: number, lo: number, hi: number): number {
-	return x < lo ? lo : x > hi ? hi : x;
 }

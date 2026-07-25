@@ -19,6 +19,7 @@ import { sunMoonECEF } from '$lib/eclipse';
 import { computeShadowModel, radiusForCoverage } from './shadowProfile';
 import { TIMELINE_START, TIMELINE_END } from '$lib/config';
 import type { Vec3 } from '$lib/types';
+import { clamp, cross, dot, length, lerp, negate, normalize, offset, sub, toLonLat } from './vec3';
 
 export type CorridorEdges = { north: [number, number][]; south: [number, number][] };
 
@@ -28,7 +29,6 @@ const RESAMPLE_SPACING = 0.004; // arc-length spacing of the central line (rad �
 const UNION_WINDOW_MS = 300_000; // ± window over which a point may be swept by the umbra (union test)
 const MAX_HALF_WIDTH = 0.06; // rad — upper bound for the cross-track search (~380 km)
 const BISECT_ITERS = 28;
-const RAD_TO_DEG = 180 / Math.PI;
 
 type Frame = { t: number; foot: Vec3; axis: Vec3; sunDir: Vec3; radius: number };
 type CenterPt = { t: number; C: Vec3 };
@@ -165,40 +165,4 @@ function resampleByArc(pts: CenterPt[], spacing: number): CenterPt[] {
 		startT = pts[j].t;
 	}
 	return out;
-}
-
-/** Geodesic offset of unit `C` by angle `rho` toward unit `dir` (dir ⊥ C). */
-function offset(C: Vec3, dir: Vec3, rho: number): Vec3 {
-	const c = Math.cos(rho),
-		s = Math.sin(rho);
-	return [C[0] * c + dir[0] * s, C[1] * c + dir[1] * s, C[2] * c + dir[2] * s];
-}
-
-function toLonLat(v: Vec3): [number, number] {
-	return [Math.atan2(v[1], v[0]) * RAD_TO_DEG, Math.asin(clamp(v[2], -1, 1)) * RAD_TO_DEG];
-}
-function lerp(a: Vec3, b: Vec3, f: number): Vec3 {
-	return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
-}
-function sub(a: Vec3, b: Vec3): Vec3 {
-	return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
-function negate(a: Vec3): Vec3 {
-	return [-a[0], -a[1], -a[2]];
-}
-function dot(a: Vec3, b: Vec3): number {
-	return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-}
-function cross(a: Vec3, b: Vec3): Vec3 {
-	return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-}
-function length(a: Vec3): number {
-	return Math.hypot(a[0], a[1], a[2]);
-}
-function normalize(a: Vec3): Vec3 {
-	const l = length(a) || 1;
-	return [a[0] / l, a[1] / l, a[2] / l];
-}
-function clamp(x: number, lo: number, hi: number): number {
-	return x < lo ? lo : x > hi ? hi : x;
 }
