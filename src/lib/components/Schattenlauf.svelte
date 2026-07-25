@@ -66,7 +66,7 @@
 	let ringRgb: [number, number, number] = [1, 0.82, 0.5]; // --accent-2; set from tokens on mount
 	let corridorBand: LinePrimitive | null = null; // the static totality corridor (set on mount)
 	let currentModel: ShadowModel | null = null; // last frame's shadow model — re-place labels on view change
-	let labelMarkers: Marker[] = []; // one DOM percent label per ring (no ±85° clamp, no async lag)
+	let labelMarkers: { marker: Marker; span: HTMLSpanElement }[] = []; // one DOM percent label per ring (no ±85° clamp, no async lag)
 	let labelsVisible = true;
 
 	// Eye / eye-off icons for the overlay toggle (Feather icons, currentColor).
@@ -181,11 +181,13 @@
 				labelMarkers = ISO_RINGS.map((ring) => {
 					const el = document.createElement('div');
 					el.className = 'iso-label';
-					el.textContent = `${ring.percent} %`;
 					el.style.display = 'none';
-					return new maplibregl.Marker({
+
+					const span = document.createElement('span');
+					span.textContent = `${ring.percent} %`;
+					el.appendChild(span);
+					const marker = new maplibregl.Marker({
 						element: el,
-						opacity: ring.opacity,
 						anchor: 'top',
 						offset: [0, 3],
 						rotationAlignment: 'viewport',
@@ -193,6 +195,7 @@
 					})
 						.setLngLat(INITIAL_VIEW.center)
 						.addTo(m);
+					return { marker, span };
 				});
 
 				m.on('move', () => refreshLabels(m)); // labels track viewport-down as the globe turns/zooms
@@ -204,7 +207,7 @@
 
 		return () => {
 			disposed = true;
-			labelMarkers.forEach((mk) => mk.remove());
+			labelMarkers.forEach((mk) => mk.marker.remove());
 			map?.remove();
 		};
 
@@ -275,16 +278,21 @@
 		if (!labelMarkers.length) return;
 		const umbra = currentModel ? umbraGroundPoint(currentModel) : null;
 		const down = umbra && currentModel ? viewportDownDir(map, umbra) : null;
+		const labelSize = Math.min(12, Math.pow(2, map.getZoom()) * 2.5);
+		const opacity = Math.max(0, Math.min(1, (labelSize - 5) / 2));
 		ISO_RINGS.forEach((ring, i) => {
-			const marker = labelMarkers[i];
+			const { marker, span } = labelMarkers[i];
 			const radius = currentModel ? radiusForCoverage(currentModel, ring.level) : null;
 			const at =
 				labelsVisible && currentModel && down && radius != null ? labelPoint(currentModel, radius, down) : null;
-			if (at) {
+			const el = marker.getElement() as HTMLDivElement;
+			if (at && opacity > 0) {
 				marker.setLngLat(at);
-				marker.getElement().style.display = '';
+				el.style.display = '';
+				el.style.fontSize = labelSize + 'px';
+				span.style.opacity = (opacity * ring.opacity).toString();
 			} else {
-				marker.getElement().style.display = 'none';
+				el.style.display = 'none';
 			}
 		});
 	}
