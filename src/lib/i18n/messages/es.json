@@ -17,7 +17,8 @@
 		"current_shadow": "Sombra actual",
 		"path": "Trayectoria",
 		"core": "Umbra",
-		"loading": "Cargando globo …"
+		"loading": "Cargando globo …",
+		"toggle_overlay": "Mostrar/ocultar líneas y corredor"
 	},
 	"a3": {
 		"title": "¿Cómo se ve?",

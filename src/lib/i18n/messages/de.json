@@ -17,7 +17,8 @@
 		"current_shadow": "Aktueller Schatten",
 		"path": "Pfad",
 		"core": "Kernschatten",
-		"loading": "Globus wird geladen …"
+		"loading": "Globus wird geladen …",
+		"toggle_overlay": "Linien & Korridor ein/aus"
 	},
 	"a3": {
 		"title": "Wie sieht das aus?",

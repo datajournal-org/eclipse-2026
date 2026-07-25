@@ -17,8 +17,9 @@ export type LinePrimitive = {
 	mode?: 'line' | 'fill';
 };
 
-/** Shared state: the component swaps in fresh lines each frame and bumps `version`. */
-export type IsoLinesState = { lines: LinePrimitive[]; version: number; ready: boolean };
+/** Shared state: the component swaps in fresh lines each frame and bumps `version`. `visible` lets the
+ *  UI hide the whole overlay (corridor + rings) without tearing the layer down. */
+export type IsoLinesState = { lines: LinePrimitive[]; version: number; ready: boolean; visible: boolean };
 
 const DEG_TO_RAD = Math.PI / 180;
 
@@ -196,7 +197,7 @@ export function createIsoLinesLayer(state: IsoLinesState): CustomLayerInterface 
 		},
 
 		render(gl, options) {
-			if (!state.ready || state.lines.length === 0) return;
+			if (!state.ready || !state.visible || state.lines.length === 0) return;
 			const gl2 = gl as WebGL2RenderingContext;
 			const prog = this._programFor(gl2, options.shaderData);
 			const projection = options.defaultProjectionData;

@@ -9,9 +9,10 @@
 -->
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import { t } from '$lib/i18n';
-	import type { Map as MlMap, GeoJSONSource } from 'maplibre-gl';
+	import type { Map as MlMap, GeoJSONSource, IControl } from 'maplibre-gl';
 	import { sunMoonECEF, shadowCenter } from '$lib/eclipse';
 	import { shadowFrames, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
 	import { computeShadowModel, radiusForCoverage } from '$lib/shadow-globe/shadowProfile';
@@ -53,9 +54,48 @@
 
 	// The totality corridor (band) + the iso rings render through a custom layer (projectTile) so they
 	// stay correct over the poles (GeoJSON line/fill layers clamp at ±85°).
-	const isoLinesState: IsoLinesState = { lines: [], version: 0, ready: false };
+	const isoLinesState: IsoLinesState = { lines: [], version: 0, ready: false, visible: true };
 	let ringRgb: [number, number, number] = [1, 0.82, 0.5]; // --accent-2; set from tokens on mount
 	let corridorBand: LinePrimitive | null = null; // the static totality corridor (set on mount)
+
+	// Eye / eye-off icons for the overlay toggle (Feather icons, currentColor).
+	const EYE_ICON =
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+	const EYE_OFF_ICON =
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+	/** A MapLibre control that toggles the reference overlay (corridor + rings + terminator). */
+	class OverlayToggleControl implements IControl {
+		button?: HTMLButtonElement;
+		container?: HTMLDivElement;
+		opts: { label: string; active: boolean; onToggle: () => void };
+		constructor(opts: { label: string; active: boolean; onToggle: () => void }) {
+			this.opts = opts;
+		}
+		onAdd(): HTMLElement {
+			this.container = document.createElement('div');
+			this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+			const button = document.createElement('button');
+			button.type = 'button';
+			button.className = 'a2-overlay-toggle';
+			button.title = this.opts.label;
+			button.setAttribute('aria-label', this.opts.label);
+			button.addEventListener('click', () => this.opts.onToggle());
+			this.button = button;
+			this.container.appendChild(button);
+			this.setActive(this.opts.active);
+			return this.container;
+		}
+		setActive(active: boolean) {
+			if (!this.button) return;
+			this.button.innerHTML = active ? EYE_ICON : EYE_OFF_ICON;
+			this.button.classList.toggle('is-off', !active);
+			this.button.setAttribute('aria-pressed', String(active));
+		}
+		onRemove() {
+			this.container?.remove();
+		}
+	}
 
 	// ---- reactive UI state ----
 	const START_INDEX = Math.floor(shadowFrames.length / 2);
@@ -105,6 +145,22 @@
 			if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { __map: m });
 			m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 			m.addControl(new maplibregl.FullscreenControl({ container: stage }), 'top-right');
+
+			// Toggle the reference overlay (corridor + iso rings + terminator) on/off.
+			let overlayVisible = true;
+			const overlayControl = new OverlayToggleControl({
+				label: get(t)('a2.toggle_overlay'),
+				active: overlayVisible,
+				onToggle: () => {
+					overlayVisible = !overlayVisible;
+					isoLinesState.visible = overlayVisible;
+					if (m.getLayer('terminator'))
+						m.setLayoutProperty('terminator', 'visibility', overlayVisible ? 'visible' : 'none');
+					m.triggerRepaint();
+					overlayControl.setActive(overlayVisible);
+				}
+			});
+			m.addControl(overlayControl, 'top-right');
 
 			m.on('load', () => {
 				m.setProjection({ type: 'globe' });
@@ -348,6 +404,24 @@
 	:global(.a2 .maplibregl-ctrl-group button:focus-visible) {
 		outline: 2px solid var(--accent);
 		outline-offset: -2px;
+	}
+	/* overlay-toggle button uses an inline (light) SVG rather than an inverted background image */
+	:global(.a2 .a2-overlay-toggle) {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #eef2f8;
+	}
+	:global(.a2 .a2-overlay-toggle svg) {
+		width: 17px;
+		height: 17px;
+		opacity: 0.75;
+	}
+	:global(.a2 .a2-overlay-toggle:hover svg) {
+		opacity: 1;
+	}
+	:global(.a2 .a2-overlay-toggle.is-off svg) {
+		opacity: 0.5;
 	}
 	/* icons are dark SVG background-images — invert them to read on the dark buttons */
 	:global(.a2 .maplibregl-ctrl-group button .maplibregl-ctrl-icon) {

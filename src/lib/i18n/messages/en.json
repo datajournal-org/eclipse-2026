@@ -17,7 +17,8 @@
 		"current_shadow": "Current shadow",
 		"path": "Path",
 		"core": "Umbra",
-		"loading": "Loading globe …"
+		"loading": "Loading globe …",
+		"toggle_overlay": "Toggle lines & corridor"
 	},
 	"a3": {
 		"title": "What does it look like?",
