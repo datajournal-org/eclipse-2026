@@ -38,6 +38,49 @@ const messages = {
 		soon: 'folgt'
 	},
 	b: { your_sky: 'Dein Himmel', change: 'ändern', clear: 'Ort entfernen' },
+
+	b1: {
+		total: 'Totale Sonnenfinsternis',
+		partial: 'Partielle Sonnenfinsternis',
+		not_visible: 'Von hier aus nicht sichtbar',
+		not_visible_note: 'Beim Maximum steht die Sonne schon unter dem Horizont.',
+		obscured: '{pct}\u2009% der Sonne bedeckt',
+		max_at: 'Maximum um {time}',
+		sun_alt: 'Sonne {alt}° über dem Horizont',
+		sun_below: 'Sonne unter dem Horizont',
+		safe_total: 'Nur während der Totalität ({from}–{to}) ohne Brille — sonst immer Schutzbrille.',
+		safe_partial: 'Durchgehend zertifizierte Finsternisbrille (ISO 12312-2) nötig.'
+	},
+	b2: {
+		title: 'Dein Ablauf',
+		first_contact: '1. Kontakt',
+		total_begin: 'Totalität',
+		maximum: 'Maximum',
+		total_end: 'Totalität endet',
+		last_contact: 'Letzter Kontakt',
+		sunset: 'Sonnenuntergang',
+		below_horizon: 'unter Horizont',
+		tz_note: 'Alle Zeiten in deiner Zeitzone.'
+	},
+	b3: {
+		title: 'Deine Sicht zur Sonne',
+		subtitle: 'Blick Richtung Sonne mit Gelände und Gebäuden — achte auf freie Sicht.',
+		altitude: 'Höhe',
+		azimuth: 'Azimut',
+		coverage: 'Bedeckung',
+		behind_horizon: 'Sonne hinter Horizont/Gelände',
+		loading: 'Gelände wird geladen …'
+	},
+	b6: {
+		title: 'Deine Checkliste',
+		until_max: 'bis zum Maximum',
+		past: 'Das Maximum ist vorüber.',
+		glasses: 'Zertifizierte Sonnenfinsternisbrille (ISO 12312-2)',
+		view: 'Freie Sicht nach Westen (Azimut {az}°)',
+		weather: 'Wettervorhersage prüfen',
+		add_calendar: '📅 Zum Kalender hinzufügen',
+		event_title: 'Sonnenfinsternis 2026'
+	},
 	placeholder: {
 		b1: 'Verdikt-Karte',
 		b1_note: 'Bedeckungsgrad, Kontaktzeiten und Augenschutz-Verdikt für deinen Ort — folgt.',

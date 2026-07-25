@@ -38,6 +38,7 @@
 		"vite": "^6.0.0"
 	},
 	"dependencies": {
+		"@versatiles/style": "^5.13.0",
 		"astronomy-engine": "^2.1.19",
 		"maplibre-gl": "^5.0.0",
 		"open-props": "^1.7.23"

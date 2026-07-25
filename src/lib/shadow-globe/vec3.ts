@@ -50,3 +50,14 @@ export function latLonToUnitVector(latDeg: number, lonDeg: number): Vec3 {
 	const cosLat = Math.cos(lat);
 	return [cosLat * Math.cos(lon), cosLat * Math.sin(lon), Math.sin(lat)];
 }
+/** Great-circle destination [lon, lat] (deg) from (lat, lon) going `distM` metres along `bearingDeg`. */
+export function destPoint(lat: number, lon: number, bearingDeg: number, distM: number): [number, number] {
+	const R = 6371000,
+		d = distM / R,
+		br = bearingDeg * DEG_TO_RAD,
+		la = lat * DEG_TO_RAD,
+		lo = lon * DEG_TO_RAD;
+	const la2 = Math.asin(Math.sin(la) * Math.cos(d) + Math.cos(la) * Math.sin(d) * Math.cos(br));
+	const lo2 = lo + Math.atan2(Math.sin(br) * Math.sin(d) * Math.cos(la), Math.cos(d) - Math.sin(la) * Math.sin(la2));
+	return [lo2 * RAD_TO_DEG, la2 * RAD_TO_DEG];
+}

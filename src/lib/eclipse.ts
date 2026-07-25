@@ -132,3 +132,11 @@ export function localCircumstances(lat: number, lon: number, elevation = 0) {
 		partialEnd: ev(e.partial_end)
 	};
 }
+
+/** Local sunset instant on eclipse day for an observer, or null if the Sun doesn't set that day. */
+export function sunset(lat: number, lon: number, elevation = 0): Date | null {
+	const obs = new A.Observer(lat, lon, elevation);
+	const start = A.MakeTime(new Date(ECLIPSE_DATE + 'T00:00:00Z'));
+	const set = A.SearchRiseSet(A.Body.Sun, obs, -1, start, 1); // direction -1 = set
+	return set ? set.date : null;
+}

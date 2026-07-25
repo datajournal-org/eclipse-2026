@@ -39,6 +39,50 @@ const messages: Messages = {
 		soon: 'coming soon'
 	},
 	b: { your_sky: 'Your sky', change: 'change', clear: 'Remove location' },
+
+	b1: {
+		total: 'Total solar eclipse',
+		partial: 'Partial solar eclipse',
+		not_visible: 'Not visible from here',
+		not_visible_note: 'At maximum the Sun is already below the horizon.',
+		obscured: '{pct}\u2009% of the Sun covered',
+		max_at: 'Maximum at {time}',
+		sun_alt: 'Sun {alt}° above the horizon',
+		sun_below: 'Sun below the horizon',
+		safe_total:
+			'Only during totality ({from}–{to}) may you look without glasses — otherwise always wear eclipse glasses.',
+		safe_partial: 'Certified eclipse glasses (ISO 12312-2) required the whole time.'
+	},
+	b2: {
+		title: 'Your timeline',
+		first_contact: 'First contact',
+		total_begin: 'Totality',
+		maximum: 'Maximum',
+		total_end: 'Totality ends',
+		last_contact: 'Last contact',
+		sunset: 'Sunset',
+		below_horizon: 'below horizon',
+		tz_note: 'All times in your timezone.'
+	},
+	b3: {
+		title: 'Your view of the Sun',
+		subtitle: 'Looking toward the Sun with terrain and buildings — make sure the view is clear.',
+		altitude: 'Altitude',
+		azimuth: 'Azimuth',
+		coverage: 'Coverage',
+		behind_horizon: 'Sun behind horizon/terrain',
+		loading: 'Loading terrain …'
+	},
+	b6: {
+		title: 'Your checklist',
+		until_max: 'until maximum',
+		past: 'Maximum has passed.',
+		glasses: 'Certified eclipse glasses (ISO 12312-2)',
+		view: 'Clear view to the west (azimuth {az}°)',
+		weather: 'Check the weather forecast',
+		add_calendar: '📅 Add to calendar',
+		event_title: 'Solar eclipse 2026'
+	},
 	placeholder: {
 		b1: 'Verdict card',
 		b1_note: 'Obscuration, contact times and eye-safety verdict for your location — coming soon.',
