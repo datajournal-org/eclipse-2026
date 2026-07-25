@@ -122,6 +122,54 @@ button {
 	margin-inline: calc(-1 * var(--edge));
 }
 
+/* Section subtitle under a .block-head. */
+.sub {
+	color: var(--muted);
+	font-size: 0.9rem;
+	margin: 2px 0 12px;
+}
+
+/* Media stage — a full-bleed map/canvas frame with an optional loading overlay.
+   Shared by the A2/B3 map screens; pair with .bleed. Height is set per-screen
+   via the --stage-h custom property. */
+.stage {
+	position: relative;
+	overflow: hidden;
+	background: var(--bg);
+}
+.stage-canvas {
+	height: var(--stage-h, min(62vh, 460px));
+	background: var(--bg);
+}
+.stage-loading {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	color: var(--muted);
+	pointer-events: none;
+}
+
+/* Time scrubber — the clock + range-slider row shared by the A2/B3 map screens. */
+.scrubber {
+	margin-top: 12px;
+
+	& .row {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+	& .clock {
+		font-weight: 700;
+		font-size: 1.1rem;
+		white-space: nowrap;
+	}
+	& input[type='range'] {
+		flex: 1;
+		accent-color: var(--accent);
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	* {
 		animation-duration: 0.001ms !important;

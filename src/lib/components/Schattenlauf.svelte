@@ -206,12 +206,12 @@
 	<p class="sub">{$t('a2.subtitle')}</p>
 
 	<div class="a2-stage" bind:this={stage}>
-		<div class="map-wrap bleed">
-			<div class="map" bind:this={mapContainer}></div>
-			{#if !mapReady}<div class="map-loading">{$t('a2.loading')}</div>{/if}
+		<div class="stage bleed">
+			<div class="stage-canvas" bind:this={mapContainer}></div>
+			{#if !mapReady}<div class="stage-loading">{$t('a2.loading')}</div>{/if}
 		</div>
 
-		<div class="panel">
+		<div class="scrubber">
 			<div class="row">
 				<div class="clock tnum">{clockUtc} <small>UTC</small></div>
 				<input
@@ -229,21 +229,11 @@
 </section>
 
 <style>
-	.sub {
-		color: var(--muted);
-		font-size: 0.9rem;
-		margin: 2px 0 14px;
+	/* media height for the shared global .stage-canvas */
+	.stage {
+		--stage-h: min(64vh, 480px);
 	}
-	.map-wrap {
-		position: relative;
-		overflow: hidden;
-		background: var(--bg);
-	}
-	.map {
-		height: min(64vh, 480px);
-		background: var(--bg);
-	}
-	/* Fullscreen wraps map + panel so the time slider stays visible. */
+	/* Fullscreen wraps map + scrubber so the time slider stays visible. */
 	.a2-stage:fullscreen {
 		display: flex;
 		flex-direction: column;
@@ -251,50 +241,26 @@
 		height: 100%;
 		background: #000;
 
-		& .map-wrap {
+		& .stage {
 			margin-inline: 0;
 			flex: 1;
 			min-height: 0;
 		}
-		& .map {
+		& .stage-canvas {
 			height: 100%;
 			background: #000;
 		}
-		& .panel {
+		& .scrubber {
 			margin: 0;
 			align-self: center;
 			width: min(760px, 100%);
 			padding: 12px var(--edge) 16px;
 		}
 	}
-	.map-loading {
-		position: absolute;
-		inset: 0;
-		display: grid;
-		place-items: center;
-		color: var(--muted);
-		pointer-events: none;
-	}
-	.panel {
-		margin-top: 12px;
-	}
-	.row {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-	.clock {
-		font-weight: 700;
-		font-size: 1.1rem;
-
-		& small {
-			font-weight: 400;
-			opacity: 0.6;
-		}
-	}
-	input[type='range'] {
-		flex: 1;
-		accent-color: var(--accent);
+	/* the clock carries a small "UTC" note (A2 only) */
+	.clock small {
+		font-weight: 400;
+		opacity: 0.6;
 	}
 	/* Everything below targets MapLibre's own DOM (added outside the component tree),
 	   so it lives in one :global block, nested under the map's .a2 root. */

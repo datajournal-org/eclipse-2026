@@ -210,12 +210,12 @@
 	</div>
 	<p class="sub">{$t('b3.subtitle')}</p>
 
-	<div class="sky-wrap bleed">
-		<div class="sky" bind:this={mapContainer}></div>
-		{#if !ready}<div class="loading">{$t('b3.loading')}</div>{/if}
+	<div class="stage bleed">
+		<div class="stage-canvas" bind:this={mapContainer}></div>
+		{#if !ready}<div class="stage-loading">{$t('b3.loading')}</div>{/if}
 	</div>
 
-	<div class="panel">
+	<div class="scrubber">
 		<div class="row">
 			<div class="clock tnum">{clock}</div>
 			<input
@@ -238,44 +238,9 @@
 </section>
 
 <style>
-	.sub {
-		color: var(--muted);
-		font-size: 0.9rem;
-		margin: 2px 0 12px;
-	}
-	.sky-wrap {
-		position: relative;
-		overflow: hidden;
-		background: var(--bg);
-	}
-	.sky {
-		height: min(60vh, 440px);
-		background: var(--bg);
-	}
-	.loading {
-		position: absolute;
-		inset: 0;
-		display: grid;
-		place-items: center;
-		color: var(--muted);
-		pointer-events: none;
-	}
-	.panel {
-		margin-top: 12px;
-	}
-	.row {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-	.clock {
-		font-weight: 700;
-		font-size: 1.1rem;
-		white-space: nowrap;
-	}
-	input[type='range'] {
-		flex: 1;
-		accent-color: var(--accent);
+	/* media height for the shared global .stage-canvas */
+	.stage {
+		--stage-h: min(60vh, 440px);
 	}
 	.chips {
 		display: flex;
