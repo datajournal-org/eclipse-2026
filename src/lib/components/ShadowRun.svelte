@@ -13,8 +13,9 @@
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
 	import 'maplibre-gl/dist/maplibre-gl.css';
-	import type { Map as MlMap } from 'maplibre-gl';
+	import type { Map as MlMap, Marker as MlMarker } from 'maplibre-gl';
 	import { t } from '$lib/i18n';
+	import { userLocation } from '$lib/stores/location';
 	import { readBrandColors } from '$lib/brand';
 	import { sunMoonECEF } from '$lib/eclipse';
 	import { shadowFrames, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
@@ -76,6 +77,11 @@
 	let mapReady = $state(false);
 	/** Set once the map has loaded; renders the frame at `index`. */
 	let showFrame: (index: number) => void = () => {};
+
+	// User-location pin — managed reactively by the $effect below, independent of the overlay toggle.
+	let mapInstance: MlMap | undefined;
+	let MarkerCtor: typeof import('maplibre-gl').Marker | undefined;
+	let userMarker: MlMarker | null = null;
 
 	onMount(() => {
 		let map: MlMap | undefined;
@@ -180,6 +186,8 @@
 				m.on('move', () => isoLabels.update(m, currentModel, labelsVisible)); // labels track viewport-down
 				showFrame = (index) => renderFrame(m, index);
 				showFrame(frameIndex);
+				mapInstance = m;
+				MarkerCtor = maplibregl.Marker;
 				mapReady = true;
 			});
 		})();
@@ -187,8 +195,29 @@
 		return () => {
 			disposed = true;
 			isoLabels.destroy();
+			userMarker?.remove();
+			userMarker = null;
 			map?.remove();
 		};
+	});
+
+	// Pin the user's chosen location on the globe: create it, move it when it changes, remove it when cleared.
+	$effect(() => {
+		const loc = $userLocation;
+		if (!mapReady || !mapInstance || !MarkerCtor) return;
+		if (!loc) {
+			userMarker?.remove();
+			userMarker = null;
+			return;
+		}
+		if (!userMarker) {
+			const el = document.createElement('div');
+			el.className = 'user-pin';
+			userMarker = new MarkerCtor({ element: el }).setLngLat([loc.lon, loc.lat]).addTo(mapInstance);
+		} else {
+			userMarker.setLngLat([loc.lon, loc.lat]);
+		}
+		userMarker.getElement().title = loc.name ?? '';
 	});
 
 	function onScrub(event: Event) {
@@ -351,6 +380,37 @@
 					0 0 2px color-mix(in oklab, var(--bg) 90%, transparent);
 				/* own compositor layer → moving the marker while rotating is composited, not repainted */
 				will-change: transform;
+			}
+
+			/* the user's chosen location (a DOM marker, like the labels) */
+			.user-pin {
+				width: 12px;
+				height: 12px;
+				border-radius: 50%;
+				background: var(--accent-2);
+				box-shadow:
+					0 0 0 2px #fff,
+					0 1px 5px rgba(0, 0, 0, 0.6);
+				pointer-events: none;
+			}
+			.user-pin::before {
+				content: '';
+				position: absolute;
+				inset: -7px;
+				border-radius: 50%;
+				border: 2px solid var(--accent-2);
+				animation: a2-pin-pulse 2s ease-out infinite;
+			}
+		}
+
+		@keyframes a2-pin-pulse {
+			from {
+				transform: scale(0.5);
+				opacity: 0.7;
+			}
+			to {
+				transform: scale(1.5);
+				opacity: 0;
 			}
 		}
 	}
