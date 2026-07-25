@@ -127,7 +127,7 @@
 			const maplibregl = (await import('maplibre-gl')).default;
 			if (disposed) return;
 
-			corridorBand = fillStripPrimitive(corridorEdges.north, corridorEdges.south, brand.accent.rgb, 0.18);
+			corridorBand = fillStripPrimitive(corridorEdges.north, corridorEdges.south, brand.accent.rgb, 0.1);
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				...INITIAL_VIEW,
