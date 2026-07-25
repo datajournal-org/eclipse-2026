@@ -96,8 +96,8 @@ export function isoRing(model: ShadowModel, radius: number, steps = 512): Featur
 		const thetaOf = (i: number) => (i / steps) * TAU;
 		const adjacent = (invalidIdx: number, validIdx: number): [number, number] => {
 			// bring the two angles within one step
-			let ti = thetaOf(invalidIdx),
-				tv = thetaOf(validIdx);
+			let ti = thetaOf(invalidIdx);
+			const tv = thetaOf(validIdx);
 			if (ti - tv > Math.PI) ti -= TAU;
 			else if (tv - ti > Math.PI) ti += TAU;
 			return [ti, tv];

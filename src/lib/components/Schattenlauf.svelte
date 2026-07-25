@@ -13,7 +13,7 @@
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import { t } from '$lib/i18n';
 	import type { Map as MlMap, IControl, Marker } from 'maplibre-gl';
-	import { sunMoonECEF, shadowCenter } from '$lib/eclipse';
+	import { sunMoonECEF } from '$lib/eclipse';
 	import { shadowFrames, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
 	import {
 		computeShadowModel,
@@ -264,8 +264,6 @@
 
 		currentModel = model;
 		refreshLabels(map); // percent labels, placed along the current viewport-down direction
-
-		// header readout — umbra ground point if it reaches Earth, else "—"
 		clockUtc = formatUtc(frame.time);
 	}
 
