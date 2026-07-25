@@ -184,10 +184,10 @@
 					const el = document.createElement('div');
 					el.className = 'iso-label';
 					el.textContent = `${ring.percent} %`;
-					el.style.opacity = String(ring.opacity);
 					el.style.display = 'none';
 					return new maplibregl.Marker({
 						element: el,
+						opacity: ring.opacity,
 						anchor: 'top',
 						offset: [0, 3],
 						rotationAlignment: 'viewport',
