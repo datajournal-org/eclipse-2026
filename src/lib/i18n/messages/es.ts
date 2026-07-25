@@ -85,13 +85,7 @@ const messages: Messages = {
 	},
 	placeholder: {
 		b1: 'Tarjeta de veredicto',
-		b1_note: 'Ocultación, tiempos de contacto y veredicto de seguridad ocular para tu ubicación — próximamente.',
-		b2: 'Línea de tiempo personal',
-		b2_note: 'Primer contacto → máximo → puesta de sol con horas locales — próximamente.',
-		b3: 'Horizonte 3D',
-		b3_note: 'El Sol eclipsado sobre tu entorno con montañas y edificios — próximamente.',
-		b6: 'Lista y cuenta atrás',
-		b6_note: 'Gafas de eclipse, vista despejada al oeste, exportar al calendario — próximamente.'
+		b1_note: 'Ocultación, tiempos de contacto y veredicto de seguridad ocular para tu ubicación — próximamente.'
 	},
 	safety: 'Nunca mires al Sol sin gafas de eclipse certificadas (ISO 12312-2).'
 };

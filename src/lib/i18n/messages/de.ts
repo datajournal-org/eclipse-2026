@@ -83,13 +83,7 @@ const messages = {
 	},
 	placeholder: {
 		b1: 'Verdikt-Karte',
-		b1_note: 'Bedeckungsgrad, Kontaktzeiten und Augenschutz-Verdikt für deinen Ort — folgt.',
-		b2: 'Persönliche Zeitleiste',
-		b2_note: '1. Kontakt → Maximum → Sonnenuntergang mit lokalen Zeiten — folgt.',
-		b3: '3D-Horizont',
-		b3_note: 'Die verfinsterte Sonne über deiner Umgebung mit Bergen und Gebäuden — folgt.',
-		b6: 'Checkliste & Countdown',
-		b6_note: 'Finsternisbrille, freie Westsicht, Kalender-Export — folgt.'
+		b1_note: 'Bedeckungsgrad, Kontaktzeiten und Augenschutz-Verdikt für deinen Ort — folgt.'
 	},
 	safety: 'Nie ohne geprüfte Finsternisbrille (ISO 12312-2) in die Sonne schauen.'
 };

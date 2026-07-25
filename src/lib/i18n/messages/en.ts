@@ -85,13 +85,7 @@ const messages: Messages = {
 	},
 	placeholder: {
 		b1: 'Verdict card',
-		b1_note: 'Obscuration, contact times and eye-safety verdict for your location — coming soon.',
-		b2: 'Personal timeline',
-		b2_note: 'First contact → maximum → sunset with local times — coming soon.',
-		b3: '3D horizon',
-		b3_note: 'The eclipsed Sun over your surroundings with mountains and buildings — coming soon.',
-		b6: 'Checklist & countdown',
-		b6_note: 'Eclipse glasses, a clear western view, calendar export — coming soon.'
+		b1_note: 'Obscuration, contact times and eye-safety verdict for your location — coming soon.'
 	},
 	safety: 'Never look at the Sun without certified eclipse glasses (ISO 12312-2).'
 };
