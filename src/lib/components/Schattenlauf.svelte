@@ -114,7 +114,6 @@
 	let stage: HTMLDivElement; // map + panel wrapper — what goes fullscreen (so the slider stays visible)
 	let frameIndex = $state(START_INDEX);
 	let clockUtc = $state(formatUtc(shadowFrames[START_INDEX].time));
-	let umbraCenterText = $state('');
 	let mapReady = $state(false);
 	/** Set once the map has loaded; renders the frame at `index`. */
 	let showFrame: (index: number) => void = () => {};
@@ -267,9 +266,7 @@
 		refreshLabels(map); // percent labels, placed along the current viewport-down direction
 
 		// header readout — umbra ground point if it reaches Earth, else "—"
-		const umbra = shadowCenter(date);
 		clockUtc = formatUtc(frame.time);
-		umbraCenterText = umbra ? `${umbra.lat.toFixed(2)}°, ${umbra.lon.toFixed(2)}°` : '—';
 	}
 
 	/** Re-place the percent labels: each ring is anchored where a ray from the umbra centre in the
@@ -337,13 +334,6 @@
 					oninput={onScrub}
 					aria-label="{$t('a2.title')} — {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC"
 				/>
-			</div>
-			<div class="legend">
-				<span class="lbl">{$t('a2.current_shadow')}:</span>
-				{#each ISO_RINGS as ring (ring.percent)}
-					<span style="color:var(--accent-2);opacity:{ring.opacity}"><i></i>{ring.percent} %</span>
-				{/each}
-				<span style="color:var(--accent);opacity:.7"><i></i>{$t('a2.path')}</span>
 			</div>
 		</div>
 	</div>
@@ -414,28 +404,6 @@
 	input[type='range'] {
 		flex: 1;
 		accent-color: var(--accent);
-	}
-	.legend {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 12px;
-		align-items: center;
-		margin-top: 8px;
-		font-size: 0.8rem;
-	}
-	.legend .lbl {
-		color: var(--muted);
-	}
-	.legend span {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-	.legend i {
-		width: 20px;
-		height: 0;
-		border-top: 2px solid currentColor;
-		display: inline-block;
 	}
 	/* ---- MapLibre controls, restyled for the dark map ---- */
 	:global(.a2 .maplibregl-ctrl-group) {
