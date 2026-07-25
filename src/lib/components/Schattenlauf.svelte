@@ -35,7 +35,7 @@
 	type Brand = { bg: string; path: string; ring: string };
 
 	const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
-	const INITIAL_VIEW = { center: [-18, 50] as [number, number], zoom: 0.5 };
+	const INITIAL_VIEW = { center: [-18, 50] as [number, number], zoom: 1.21 };
 	const TERMINATOR_RGB: [number, number, number] = [0.361, 0.784, 1]; // #5cc8ff (day/night line)
 
 	// Coverage rings drawn live around the current shadow. `level` = obscuration threshold (0..1),
