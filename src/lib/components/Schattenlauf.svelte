@@ -12,8 +12,7 @@
 	import { get } from 'svelte/store';
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import { t } from '$lib/i18n';
-	import type { Map as MlMap, IControl, GeoJSONSource } from 'maplibre-gl';
-	import type { Feature } from 'geojson';
+	import type { Map as MlMap, IControl, Marker } from 'maplibre-gl';
 	import { sunMoonECEF, shadowCenter } from '$lib/eclipse';
 	import { shadowFrames, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
 	import {
@@ -67,6 +66,8 @@
 	let ringRgb: [number, number, number] = [1, 0.82, 0.5]; // --accent-2; set from tokens on mount
 	let corridorBand: LinePrimitive | null = null; // the static totality corridor (set on mount)
 	let currentModel: ShadowModel | null = null; // last frame's shadow model — re-place labels on view change
+	let labelMarkers: Marker[] = []; // one DOM percent label per ring (no ±85° clamp, no async lag)
+	let labelsVisible = true;
 
 	// Eye / eye-off icons for the overlay toggle (Feather icons, currentColor).
 	const EYE_ICON =
@@ -133,11 +134,9 @@
 				container: mapContainer,
 				...INITIAL_VIEW,
 				scrollZoom: true, // wheel zoom (over the map it takes the scroll; use fullscreen for full control)
-				fadeDuration: 0, // no label cross-fade → percent labels snap with the iso lines, not lag
 				attributionControl: { compact: false },
 				style: {
 					version: 8,
-					glyphs: 'https://tiles.versatiles.org/assets/glyphs/{fontstack}/{range}.pbf',
 					sources: {
 						sat: {
 							type: 'raster',
@@ -166,8 +165,8 @@
 				onToggle: () => {
 					overlayVisible = !overlayVisible;
 					isoLinesState.visible = overlayVisible; // corridor + rings + terminator all live here now
-					if (m.getLayer('iso-labels'))
-						m.setLayoutProperty('iso-labels', 'visibility', overlayVisible ? 'visible' : 'none');
+					labelsVisible = overlayVisible;
+					refreshLabels(m);
 					m.triggerRepaint();
 					overlayControl.setActive(overlayVisible);
 				}
@@ -179,29 +178,23 @@
 				m.addLayer(createMoonShadowLayer(shadowState)); // darkening, under the reference lines
 				m.addLayer(createIsoLinesLayer(isoLinesState)); // corridor + iso rings + terminator, pole- & antimeridian-correct
 
-				// Percent labels, re-placed by refreshLabels along the current viewport-down direction (see
-				// labelPoint). Empty until the first frame.
-				m.addSource('iso-labels', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-				m.addLayer({
-					id: 'iso-labels',
-					type: 'symbol',
-					source: 'iso-labels',
-					layout: {
-						'text-field': '{percent} %',
-						'text-font': ['noto_sans_bold'],
-						'text-size': 11,
-						'text-anchor': 'top',
-						'text-offset': [0, 0.3],
-						'text-rotation-alignment': 'viewport',
-						'text-pitch-alignment': 'viewport',
-						'text-allow-overlap': true
-					},
-					paint: {
-						'text-color': brand.ring,
-						'text-opacity': ['get', 'opacity'],
-						'text-halo-color': 'rgba(5, 7, 13, 0.9)',
-						'text-halo-width': 1.2
-					}
+				// One DOM marker per ring for the percent label — positioned synchronously (no async lag)
+				// and not clamped at ±85° like a GeoJSON symbol source, so labels stay put near the pole too.
+				labelMarkers = ISO_RINGS.map((ring) => {
+					const el = document.createElement('div');
+					el.className = 'iso-label';
+					el.textContent = `${ring.percent} %`;
+					el.style.opacity = String(ring.opacity);
+					el.style.display = 'none';
+					return new maplibregl.Marker({
+						element: el,
+						anchor: 'top',
+						offset: [0, 3],
+						rotationAlignment: 'viewport',
+						pitchAlignment: 'viewport'
+					})
+						.setLngLat(INITIAL_VIEW.center)
+						.addTo(m);
 				});
 
 				m.on('move', () => refreshLabels(m)); // labels track viewport-down as the globe turns/zooms
@@ -213,6 +206,7 @@
 
 		return () => {
 			disposed = true;
+			labelMarkers.forEach((mk) => mk.remove());
 			map?.remove();
 		};
 	});
@@ -281,25 +275,21 @@
 	/** Re-place the percent labels: each ring is anchored where a ray from the umbra centre in the
 	 *  current viewport-down direction crosses it. Runs on frame change and on every map move. */
 	function refreshLabels(map: MlMap) {
-		const source = map.getSource('iso-labels') as GeoJSONSource | undefined;
-		if (!source) return;
-		const features: Feature[] = [];
+		if (!labelMarkers.length) return;
 		const umbra = currentModel ? umbraGroundPoint(currentModel) : null;
-		const down = umbra ? viewportDownDir(map, umbra) : null;
-		if (currentModel && down) {
-			for (const ring of ISO_RINGS) {
-				const radius = radiusForCoverage(currentModel, ring.level);
-				if (radius == null) continue;
-				const at = labelPoint(currentModel, radius, down);
-				if (at)
-					features.push({
-						type: 'Feature',
-						geometry: { type: 'Point', coordinates: at },
-						properties: { percent: ring.percent, opacity: ring.opacity }
-					});
+		const down = umbra && currentModel ? viewportDownDir(map, umbra) : null;
+		ISO_RINGS.forEach((ring, i) => {
+			const marker = labelMarkers[i];
+			const radius = currentModel ? radiusForCoverage(currentModel, ring.level) : null;
+			const at =
+				labelsVisible && currentModel && down && radius != null ? labelPoint(currentModel, radius, down) : null;
+			if (at) {
+				marker.setLngLat(at);
+				marker.getElement().style.display = '';
+			} else {
+				marker.getElement().style.display = 'none';
 			}
-		}
-		source.setData({ type: 'FeatureCollection', features });
+		});
 	}
 
 	/** The unit tangent at the umbra centre that points straight DOWN in the current viewport. */
@@ -509,5 +499,18 @@
 	}
 	:global(.a2 .maplibregl-ctrl-attrib-button) {
 		filter: invert(1) opacity(0.6);
+	}
+	/* percent labels are DOM markers (added outside the component tree) → :global */
+	:global(.a2 .iso-label) {
+		font:
+			700 11px/1 system-ui,
+			-apple-system,
+			sans-serif;
+		color: var(--accent-2);
+		white-space: nowrap;
+		pointer-events: none;
+		text-shadow:
+			0 0 2px rgba(5, 7, 13, 0.9),
+			0 0 2px rgba(5, 7, 13, 0.9);
 	}
 </style>
