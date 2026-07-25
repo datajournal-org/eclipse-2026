@@ -20,13 +20,6 @@ import type { ShadowModel } from './shadowProfile';
 
 type Point = [number, number]; // [lon, lat]
 
-/** Empty ring geometry, for initialising a MapLibre source before the first frame. */
-export const EMPTY_LINES: Feature<MultiLineString> = {
-	type: 'Feature',
-	geometry: { type: 'MultiLineString', coordinates: [] },
-	properties: null
-};
-
 const TAU = 2 * Math.PI;
 const RAD_TO_DEG = 180 / Math.PI;
 
@@ -92,7 +85,8 @@ export function isoRing(model: ShadowModel, radius: number, steps = 512): Featur
 
 	const segments: Point[][] = [];
 	const emit = (points: Point[]) => {
-		for (const seg of splitAtAntimeridian(points)) if (seg.length > 1) segments.push(seg);
+		const seg = unwrapLongitudes(points);
+		if (seg.length > 1) segments.push(seg);
 	};
 
 	if (valid.every(Boolean)) {
@@ -154,23 +148,27 @@ export function terminatorLine(sunDir: Vec3, steps = 256): Feature<MultiLineStri
 	}
 	return {
 		type: 'Feature',
-		geometry: { type: 'MultiLineString', coordinates: splitAtAntimeridian(points) },
+		geometry: { type: 'MultiLineString', coordinates: [unwrapLongitudes(points)] },
 		properties: null
 	};
 }
 
-/** Split a point run wherever consecutive longitudes jump the antimeridian. */
-function splitAtAntimeridian(points: Point[]): Point[][] {
-	const runs: Point[][] = [];
-	let current: Point[] = [points[0]];
+/**
+ * Make longitudes continuous across the ±180° seam (letting |lon| exceed 180), so a line drawn on the
+ * globe runs THROUGH the antimeridian instead of being cut into two pieces with a gap. MapLibre's
+ * `projectTile` maps the out-of-range longitudes back onto the sphere correctly.
+ */
+function unwrapLongitudes(points: Point[]): Point[] {
+	if (points.length === 0) return points;
+	const out: Point[] = [points[0]];
 	for (let i = 1; i < points.length; i++) {
-		if (Math.abs(points[i][0] - points[i - 1][0]) > 180) {
-			runs.push(current);
-			current = [points[i]];
-		} else current.push(points[i]);
+		let lon = points[i][0];
+		const prev = out[i - 1][0];
+		while (lon - prev > 180) lon -= 360;
+		while (lon - prev < -180) lon += 360;
+		out.push([lon, points[i][1]]);
 	}
-	runs.push(current);
-	return runs;
+	return out;
 }
 
 // --- tiny vec3 helpers ---

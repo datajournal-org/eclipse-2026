@@ -12,11 +12,11 @@
 	import { get } from 'svelte/store';
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import { t } from '$lib/i18n';
-	import type { Map as MlMap, GeoJSONSource, IControl } from 'maplibre-gl';
+	import type { Map as MlMap, IControl } from 'maplibre-gl';
 	import { sunMoonECEF, shadowCenter } from '$lib/eclipse';
 	import { shadowFrames, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
 	import { computeShadowModel, radiusForCoverage } from '$lib/shadow-globe/shadowProfile';
-	import { isoRing, terminatorLine, EMPTY_LINES } from '$lib/shadow-globe/isoRing';
+	import { isoRing, terminatorLine } from '$lib/shadow-globe/isoRing';
 	import { createMoonShadowLayer, type ShadowState } from '$lib/shadow-globe/moonShadowLayer';
 	import {
 		createIsoLinesLayer,
@@ -31,6 +31,7 @@
 
 	const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
 	const INITIAL_VIEW = { center: [-18, 58] as [number, number], zoom: 2.1 };
+	const TERMINATOR_RGB: [number, number, number] = [0.361, 0.784, 1]; // #5cc8ff (day/night line)
 
 	// Coverage rings drawn live around the current shadow. `level` = obscuration threshold (0..1),
 	// `percent` drives both the map opacity and the legend label.
@@ -153,9 +154,7 @@
 				active: overlayVisible,
 				onToggle: () => {
 					overlayVisible = !overlayVisible;
-					isoLinesState.visible = overlayVisible;
-					if (m.getLayer('terminator'))
-						m.setLayoutProperty('terminator', 'visibility', overlayVisible ? 'visible' : 'none');
+					isoLinesState.visible = overlayVisible; // corridor + rings + terminator all live here now
 					m.triggerRepaint();
 					overlayControl.setActive(overlayVisible);
 				}
@@ -165,8 +164,7 @@
 			m.on('load', () => {
 				m.setProjection({ type: 'globe' });
 				m.addLayer(createMoonShadowLayer(shadowState)); // darkening, under the reference lines
-				addTerminatorLayer(m);
-				m.addLayer(createIsoLinesLayer(isoLinesState)); // path + iso rings via projectTile — pole-correct
+				m.addLayer(createIsoLinesLayer(isoLinesState)); // corridor + iso rings + terminator, pole- & antimeridian-correct
 				showFrame = (index) => renderFrame(m, index);
 				showFrame(frameIndex);
 				mapReady = true;
@@ -201,18 +199,6 @@
 		return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 	}
 
-	/** Day/night terminator as a GeoJSON line — it stays below 85°, so it doesn't need the custom
-	 *  layer. The path and iso rings are drawn by the pole-correct custom iso-lines layer instead. */
-	function addTerminatorLayer(map: MlMap) {
-		map.addSource('terminator', { type: 'geojson', data: EMPTY_LINES });
-		map.addLayer({
-			id: 'terminator',
-			type: 'line',
-			source: 'terminator',
-			paint: { 'line-color': '#5cc8ff', 'line-width': 1, 'line-opacity': 0.2 }
-		});
-	}
-
 	/** Advance everything to the timeline frame at `index`. */
 	function renderFrame(map: MlMap, index: number) {
 		const frame = shadowFrames[index];
@@ -229,8 +215,10 @@
 		shadowState.ready = true;
 		map.triggerRepaint();
 
-		// corridor band + analytic iso-rings → LinePrimitives for the pole-correct custom layer
+		// Reference overlay → LinePrimitives for the pole- & antimeridian-correct custom layer. Order:
+		// day/night terminator (bottom), corridor band, then the iso rings on top.
 		const lines: LinePrimitive[] = [];
+		lines.push(linePrimitiveFromSegments(terminatorLine(model.sunDir).geometry.coordinates, TERMINATOR_RGB, 0.35));
 		if (corridorBand) lines.push(corridorBand);
 		for (const ring of ISO_RINGS) {
 			const radius = radiusForCoverage(model, ring.level);
@@ -240,9 +228,6 @@
 		isoLinesState.lines = lines;
 		isoLinesState.version++;
 		isoLinesState.ready = true;
-
-		// day/night great circle
-		(map.getSource('terminator') as GeoJSONSource | undefined)?.setData(terminatorLine(model.sunDir));
 
 		// header readout — umbra ground point if it reaches Earth, else "—"
 		const umbra = shadowCenter(date);
