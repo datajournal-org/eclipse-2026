@@ -52,8 +52,10 @@
 			if (disposed) return;
 
 			const lc = localCircumstances(LAT, LON);
-			const tStart = (lc?.partialBegin?.time ?? new Date(ECLIPSE_DATE + 'T16:30:00Z')).getTime();
-			const tEnd = (lc?.partialEnd?.time ?? new Date(ECLIPSE_DATE + 'T19:00:00Z')).getTime();
+			// 30 min of padding on each side of first/last contact, so the slider shows the run-up and wind-down.
+			const PAD = 30 * 60 * 1000;
+			const tStart = (lc?.partialBegin?.time ?? new Date(ECLIPSE_DATE + 'T16:30:00Z')).getTime() - PAD;
+			const tEnd = (lc?.partialEnd?.time ?? new Date(ECLIPSE_DATE + 'T19:00:00Z')).getTime() + PAD;
 			const N = 240;
 			const times = Array.from({ length: N + 1 }, (_, i) => tStart + ((tEnd - tStart) * i) / N);
 			frameMax = N;
