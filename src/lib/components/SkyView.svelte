@@ -37,7 +37,6 @@
 	let note = $state('');
 	let frameIndex = $state(0);
 	let frameMax = $state(1);
-	let duskOpacity = $state(0); // twilight veil over the whole scene, grows with the obscuration
 	let setFrame: (i: number) => void = () => {};
 
 	onMount(() => {
@@ -192,10 +191,19 @@
 					);
 				}
 
+				// twilight veil — dims the whole rendered scene (sky, terrain, buildings, base map) as the
+				// eclipse deepens. It lives INSIDE the map's canvas container, appended just BEFORE the marker,
+				// so the marker (a UI element, like the A2 globe's) sits above it at full brightness rather than
+				// being dimmed with the scene. update() drives its opacity from the obscuration.
+				const duskEl = document.createElement('div');
+				duskEl.className = 'b3-dusk';
+				duskEl.style.background = DUSK_HEX;
+				m.getCanvasContainer().appendChild(duskEl);
+
 				// location marker — a DOM marker, exactly like the A2 globe. MapLibre keeps it on the terrain
 				// surface at [LON,LAT] every frame; now that the camera height no longer bobs, it holds its
 				// screen position as the camera orbits. Dark-red dot + white ring (no pulse), styled by the
-				// .b3-user-pin rule below, sharing the globe's --marker token.
+				// .b3-user-pin rule below, sharing the globe's --marker token. Added after the veil → above it.
 				const pin = document.createElement('div');
 				pin.className = 'b3-user-pin';
 				new maplibregl.Marker({ element: pin }).setLngLat([LON, LAT]).addTo(m);
@@ -307,7 +315,7 @@
 					// keep the map in sync with the simulated Sun: direction from (az, alt), brightness/colour
 					// from the obscuration (same numbers that drive the Sun billboard).
 					const env = environment(obsc);
-					duskOpacity = env.veil; // dims the whole scene incl. the flat vector base map
+					duskEl.style.opacity = String(env.veil); // dims the whole rendered scene, not the marker
 					m.setLight({
 						anchor: 'map',
 						position: [1.15, s.az, 90 - s.alt] as [number, number, number],
@@ -364,7 +372,6 @@
 
 	<div class="stage bleed">
 		<div class="stage-canvas" bind:this={mapContainer}></div>
-		<div class="dusk" aria-hidden="true" style:background={DUSK_HEX} style:opacity={duskOpacity}></div>
 		{#if !ready}<div class="stage-loading">{$t('b3.loading')}</div>{/if}
 	</div>
 
@@ -395,13 +402,6 @@
 	.stage {
 		--stage-h: min(60vh, 440px);
 	}
-	/* twilight veil — dims the whole scene (sky, terrain, buildings, flat base map) with the eclipse */
-	.dusk {
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-		transition: opacity 150ms linear;
-	}
 	.chips {
 		display: flex;
 		flex-wrap: wrap;
@@ -418,9 +418,18 @@
 		}
 	}
 
-	/* the user's location — a DOM marker on MapLibre's own DOM (added outside the component tree), so it
-	   lives in a :global block under .b3. Same dot as the A2 globe's .user-pin, without the pulse. */
+	/* MapLibre's own DOM (canvas container, markers) is added outside the component tree, so these live in
+	   a :global block under .b3. */
 	:global {
+		/* twilight veil — inside the map's canvas container, under the marker: dims the rendered scene but
+		   not the location marker above it. */
+		.b3 .b3-dusk {
+			position: absolute;
+			inset: 0;
+			pointer-events: none;
+			transition: opacity 150ms linear;
+		}
+		/* the user's location — same dot as the A2 globe's .user-pin, without the pulse. */
 		.b3 .b3-user-pin {
 			width: 16px;
 			height: 16px;
