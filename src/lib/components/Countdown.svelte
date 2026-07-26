@@ -17,25 +17,25 @@
 	{#if phase === 'before'}
 		<div class="units" aria-live="off">
 			<div class="u">
-				<span class="n tnum">{parts.d}</span><span class="l">{$t('countdown.d')}</span>
+				<span class="n tnum stat">{parts.d}</span><span class="l">{$t('countdown.d')}</span>
 			</div>
 			<div class="u">
-				<span class="n tnum">{pad2(parts.h)}</span><span class="l">{$t('countdown.h')}</span>
+				<span class="n tnum stat">{pad2(parts.h)}</span><span class="l">{$t('countdown.h')}</span>
 			</div>
 			<div class="u">
-				<span class="n tnum">{pad2(parts.m)}</span><span class="l">{$t('countdown.m')}</span>
+				<span class="n tnum stat">{pad2(parts.m)}</span><span class="l">{$t('countdown.m')}</span>
 			</div>
 			<div class="u">
-				<span class="n tnum">{pad2(parts.s)}</span><span class="l">{$t('countdown.s')}</span>
+				<span class="n tnum stat">{pad2(parts.s)}</span><span class="l">{$t('countdown.s')}</span>
 			</div>
 		</div>
 		<p class="cap">{$t('countdown.to_totality')}</p>
 	{:else if phase === 'now'}
-		<p class="head">{$t('countdown.happening')}</p>
+		<p class="head stat">{$t('countdown.happening')}</p>
 	{:else}
-		<p class="head">{$t('countdown.past')}</p>
+		<p class="head stat">{$t('countdown.past')}</p>
 	{/if}
-	<p class="since">{$t('countdown.since')}</p>
+	<p class="since note">{$t('countdown.since')}</p>
 </section>
 
 <style>
@@ -58,9 +58,7 @@
 
 		& .n {
 			font-size: clamp(1.8rem, 8vw, 2.6rem);
-			font-weight: 800;
 			line-height: 1;
-			color: var(--accent);
 		}
 		& .l {
 			font-size: 0.7rem;
@@ -76,12 +74,8 @@
 	}
 	.head {
 		font-size: 1.4rem;
-		font-weight: 800;
-		color: var(--accent);
 	}
 	.since {
 		margin-top: 6px;
-		color: var(--muted);
-		font-size: 0.92rem;
 	}
 </style>

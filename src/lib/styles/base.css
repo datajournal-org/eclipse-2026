@@ -129,6 +129,18 @@ button {
 	margin: 2px 0 12px;
 }
 
+/* Muted caption / annotation text; add margins at the use site if needed. */
+.note {
+	color: var(--muted);
+	font-size: 0.9rem;
+}
+
+/* Bold accent figure — a large number or emphasis; the element keeps its own font-size. */
+.stat {
+	font-weight: 800;
+	color: var(--accent);
+}
+
 /* Media stage — a full-bleed map/canvas frame with an optional loading overlay.
    Shared by the A2/B3 map screens; pair with .bleed. Height is set per-screen
    via the --stage-h custom property. */

@@ -68,11 +68,11 @@
 
 		{#if remaining > 0}
 			<div class="count tnum" aria-live="off">
-				{#if parts.d > 0}<span class="seg"><b>{parts.d}</b>{$t('countdown.d')}</span>{/if}
-				<span class="seg"><b>{pad2(parts.h)}</b>{$t('countdown.h')}</span>
-				<span class="seg"><b>{pad2(parts.m)}</b>{$t('countdown.m')}</span>
-				<span class="seg"><b>{pad2(parts.s)}</b>{$t('countdown.s')}</span>
-				<span class="until">{$t('b6.until_max')}</span>
+				{#if parts.d > 0}<span class="seg"><b class="stat">{parts.d}</b>{$t('countdown.d')}</span>{/if}
+				<span class="seg"><b class="stat">{pad2(parts.h)}</b>{$t('countdown.h')}</span>
+				<span class="seg"><b class="stat">{pad2(parts.m)}</b>{$t('countdown.m')}</span>
+				<span class="seg"><b class="stat">{pad2(parts.s)}</b>{$t('countdown.s')}</span>
+				<span class="note">{$t('b6.until_max')}</span>
 			</div>
 		{:else}
 			<p class="past">{$t('b6.past')}</p>
@@ -102,14 +102,8 @@
 
 		& b {
 			font-size: 1.6rem;
-			font-weight: 800;
-			color: var(--accent);
 			margin-right: 2px;
 		}
-	}
-	.until {
-		font-size: 0.9rem;
-		color: var(--muted);
 	}
 	.past {
 		font-weight: 600;

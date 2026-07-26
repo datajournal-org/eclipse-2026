@@ -14,8 +14,4 @@
 	.ph {
 		opacity: 0.72;
 	}
-	.note {
-		color: var(--muted);
-		font-size: 0.9rem;
-	}
 </style>

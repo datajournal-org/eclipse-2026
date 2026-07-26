@@ -20,8 +20,8 @@
 	</div>
 
 	{#if lc && peak && visible}
-		<p class="obsc">{$t('b1.obscured', { pct })}</p>
-		<p class="meta tnum">
+		<p class="obsc stat">{$t('b1.obscured', { pct })}</p>
+		<p class="note tnum">
 			{$t('b1.max_at', { time: $fmt.time(peak.time) })} ·
 			{peakAlt > 0 ? $t('b1.sun_alt', { alt: Math.round(peakAlt) }) : $t('b1.sun_below')}
 		</p>
@@ -33,25 +33,19 @@
 			{/if}
 		</p>
 	{:else}
-		<p class="meta">{$t('b1.not_visible_note')}</p>
+		<p class="note">{$t('b1.not_visible_note')}</p>
 	{/if}
 </section>
 
 <style>
 	.obsc {
 		font-size: clamp(1.6rem, 7vw, 2.2rem);
-		font-weight: 800;
-		color: var(--accent);
 		line-height: 1.1;
 		margin: 4px 0 2px;
 
 		.b1.total & {
 			color: var(--accent-2, var(--accent));
 		}
-	}
-	.meta {
-		color: var(--muted);
-		font-size: 0.92rem;
 	}
 	.safety {
 		margin-top: 12px;
