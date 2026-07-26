@@ -8,7 +8,6 @@
 	import Verdict from '$lib/components/Verdict.svelte';
 	import SkyView from '$lib/components/SkyView.svelte';
 	import Checklist from '$lib/components/Checklist.svelte';
-	import Placeholder from '$lib/components/Placeholder.svelte';
 	import SafetyFooter from '$lib/components/SafetyFooter.svelte';
 
 	const label = (p: Place) => p.name ?? `${p.lat.toFixed(3)}°, ${p.lon.toFixed(3)}°`;
