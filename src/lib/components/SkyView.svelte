@@ -1,6 +1,6 @@
 <!-- B3 — first-person "your view of the Sun": a tilted 3D map (VersaTiles terrain + buildings) aimed at
      the Sun's azimuth, with the eclipsed Sun drawn as a depth-tested billboard so hills/buildings occlude
-     it. Time slider over the local eclipse window. Ported from prototype/b3.html. -->
+     it. Time slider over the local eclipse window. Ported from an early standalone HTML prototype. -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';

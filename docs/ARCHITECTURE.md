@@ -161,43 +161,6 @@ and Espenak; numbers visible in the UI → realism is verifiable, not asserted.
 
 ---
 
-## Prototypes (vertical slice A2 + B3)
-
-In the [`prototype/`](../prototype/) folder — runnable via `npx serve .` or
-`python3 -m http.server`, then `index.html`.
-
-- `eclipse.mjs` — shared eclipse maths, runs in Node **and** the browser (an import map resolves
-  `astronomy-engine` via esm.sh).
-- `a2.html` — globe, whole path **dashed** (precomputed), **live umbral shadow** in real time
-  from the slider (`shadowCenter()` per frame).
-- `b3.html` — first-person 3D facing west, VersaTiles terrain + buildings, **Sun as a custom
-  WebGL layer** with a geometrically oriented crescent; camera currently high pitch instead of
-  FreeCamera.
-- `validate.mjs` — `node validate.mjs` checks the maths against known values.
-
-**Solved / verified:**
-
-- The shadow centre agrees **to 0.0 km** with `SearchGlobalSolarEclipse` — the key: the Sun
-  vector **with aberration** (`GeoVector(Sun, t, true)`).
-- Crescent geometry (our own disc-overlap formula) matches astronomy-engine's obscuration to ~1%.
-
-**Still open:** A2 partiality rings; polish (check crescent orientation against a reference,
-calibrate Sun size/fade).
-
-**Verified & fixed via Playwright screenshots:**
-
-- B3 renders the vector ground (colorful), 3D buildings, first-person camera, crescent; terrain
-  occludes the Sun (Innsbruck: a 6° mountain horizon hides the 1.7° Sun).
-- **Pitfall 1:** `@versatiles/style` needs an explicit `baseUrl` in the browser
-  (`colorful({ baseUrl: 'https://tiles.versatiles.org' })`) — otherwise 404s against
-  `location.origin`.
-- **Pitfall 2:** the custom WebGL Sun was clipped by the far plane → in the vertex shader
-  `clip.z = min(clip.z, clip.w*0.9999)`.
-- **Pitfall 3:** aiming the camera at the Sun's altitude → pitch clamp for a high Sun →
-  foreground flickers/buildings disappear. Fix: a fixed downward target angle (camera stable
-  regardless of time).
-- Labels are off by default in B3 (`style.layers.filter(l => l.type !== 'symbol')`).
-
 ## Validated reference values (astronomy-engine, UTC)
 
 | Location                       | Kind    | Obscuration | Maximum  | Sun altitude | Azimuth  |

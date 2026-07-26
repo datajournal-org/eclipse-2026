@@ -1,5 +1,4 @@
 node_modules/
-prototype/node_modules/
 
 # SvelteKit
 /.svelte-kit/

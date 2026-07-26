@@ -3,7 +3,6 @@
 node_modules
 package-lock.json
 package.json
-/prototype
 
 # auto-generated data
 src/lib/shadow-globe/corridor.generated.ts
