@@ -5,6 +5,7 @@
 	import ShadowRun from '$lib/components/ShadowRun.svelte';
 	import LocationCall from '$lib/components/LocationCall.svelte';
 	import LocationDialog from '$lib/components/LocationDialog.svelte';
+	import TimeZoneNote from '$lib/components/TimeZoneNote.svelte';
 	import Verdict from '$lib/components/Verdict.svelte';
 	import SkyView from '$lib/components/SkyView.svelte';
 	import Checklist from '$lib/components/Checklist.svelte';
@@ -18,6 +19,7 @@
 	<!-- A — always visible (event overview) -->
 	<Countdown />
 	<ShadowRun />
+	<TimeZoneNote />
 
 	{#if $userLocation}
 		<!-- B — appended once a location is chosen -->

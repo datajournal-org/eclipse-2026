@@ -87,5 +87,12 @@ export const fmt = derived(locale, ($l) => ({
 		new Intl.DateTimeFormat($l, { hour: '2-digit', minute: '2-digit', ...opts }).format(d),
 	date: (d: Date | number, opts?: Intl.DateTimeFormatOptions) =>
 		new Intl.DateTimeFormat($l, { dateStyle: 'long', ...opts }).format(d),
-	num: (n: number, opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat($l, opts).format(n)
+	num: (n: number, opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat($l, opts).format(n),
+	/** Short name of the browser's time zone at the given instant, e.g. "MESZ" / "GMT+2" (summer vs winter aware). */
+	zone: (d: Date | number) =>
+		new Intl.DateTimeFormat($l, { timeZoneName: 'short', hour: '2-digit' })
+			.formatToParts(d)
+			.find((p) => p.type === 'timeZoneName')?.value ?? '',
+	/** The IANA time-zone name resolved from the browser, e.g. "Europe/Berlin". */
+	zoneName: () => Intl.DateTimeFormat().resolvedOptions().timeZone
 }));

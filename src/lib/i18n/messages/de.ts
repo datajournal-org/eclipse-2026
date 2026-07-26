@@ -83,6 +83,10 @@ const messages = {
 		add_calendar: '📅 Zum Kalender hinzufügen',
 		event_title: 'Sonnenfinsternis 2026'
 	},
+	tz: {
+		all_in: 'Alle Zeiten in deiner Zeitzone: {zone}',
+		note: 'Zeitzone deines Geräts – nicht unbedingt die des Beobachtungsorts.'
+	},
 	placeholder: {
 		b1: 'Verdikt-Karte',
 		b1_note: 'Bedeckungsgrad, Kontaktzeiten und Augenschutz-Verdikt für deinen Ort — folgt.'

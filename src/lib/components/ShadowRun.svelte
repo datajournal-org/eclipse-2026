@@ -14,11 +14,11 @@
 	import { get } from 'svelte/store';
 	import 'maplibre-gl/dist/maplibre-gl.css';
 	import type { Map as MlMap, Marker as MlMarker } from 'maplibre-gl';
-	import { t } from '$lib/i18n';
+	import { t, fmt } from '$lib/i18n';
 	import { userLocation } from '$lib/stores/location';
 	import { readBrandColors } from '$lib/brand';
 	import { sunMoonECEF } from '$lib/eclipse';
-	import { shadowFrames, timelineStart, timelineEnd, formatUtc } from '$lib/shadow-globe/shadowPath';
+	import { shadowFrames, timelineStart, timelineEnd } from '$lib/shadow-globe/shadowPath';
 	import { computeShadowModel, radiusForCoverage, type ShadowModel } from '$lib/shadow-globe/shadowProfile';
 	import { isoRing, terminatorLine } from '$lib/shadow-globe/isoRing';
 	import { createMoonShadowLayer, type ShadowState } from '$lib/shadow-globe/moonShadowLayer';
@@ -73,18 +73,22 @@
 
 	// ---- reactive UI state ----
 	const START_INDEX = Math.floor(shadowFrames.length / 2);
-	// regular UTC time marks on the slider (17:00, 17:30, …) — tap to jump to that instant
-	const timeTicks = buildTimeGrid({
-		start: timelineStart,
-		end: timelineEnd,
-		len: shadowFrames.length,
-		stepMin: 30,
-		label: formatUtc
-	});
+	// regular time marks on the slider (every 30 min) — labelled in the viewer's local time zone; tap to jump.
+	// Reactive so the clock and the ticks always share the same resolved locale (12h/24h) and time zone.
+	const timeTicks = $derived(
+		buildTimeGrid({
+			start: timelineStart,
+			end: timelineEnd,
+			len: shadowFrames.length,
+			stepMin: 30,
+			label: (ms) => $fmt.time(ms)
+		})
+	);
 	let mapContainer: HTMLDivElement;
 	let stage: HTMLDivElement; // map + panel wrapper — what goes fullscreen (so the slider stays visible)
 	let frameIndex = $state(START_INDEX);
-	let clockUtc = $state(formatUtc(shadowFrames[START_INDEX].time));
+	// Clock label for the current frame — derived, so it re-formats on both scrub and locale change.
+	const clock = $derived($fmt.time(shadowFrames[frameIndex].time));
 	let mapReady = $state(false);
 	let loadError = $state(false); // dynamic-import / map init failed → show a message instead of a stuck loader
 	/** Set once the map has loaded; renders the frame at `index`. */
@@ -139,7 +143,6 @@
 
 			currentModel = model;
 			isoLabels.update(m, currentModel, labelsVisible);
-			clockUtc = formatUtc(frame.time);
 		}
 
 		(async () => {
@@ -267,12 +270,14 @@
 
 		<div class="timebar">
 			<div class="readout tnum">
-				<span class="clock">{clockUtc} <small>UTC</small></span>
+				<span class="clock">{clock} <small>{$fmt.zone(timelineStart)}</small></span>
 			</div>
 			<TimeScrubber
 				value={frameIndex}
 				max={shadowFrames.length - 1}
-				ariaLabel="{$t('a2.title')} — {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC"
+				ariaLabel="{$t('a2.title')} — {$fmt.time(timelineStart)}–{$fmt.time(timelineEnd)} {$fmt.zone(
+					timelineStart
+				)}"
 				ticks={timeTicks}
 				onscrub={(i) => {
 					frameIndex = i;
@@ -312,7 +317,7 @@
 			padding: 12px var(--edge) 16px;
 		}
 	}
-	/* the clock carries a small "UTC" note (A2 only) */
+	/* the clock carries a small local time-zone note, e.g. "MESZ" (A2 only) */
 	.clock small {
 		font-weight: 400;
 		opacity: 0.6;

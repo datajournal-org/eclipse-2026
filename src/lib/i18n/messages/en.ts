@@ -85,6 +85,10 @@ const messages: Messages = {
 		add_calendar: '📅 Add to calendar',
 		event_title: 'Solar eclipse 2026'
 	},
+	tz: {
+		all_in: 'All times in your time zone: {zone}',
+		note: "Your device's time zone — not necessarily the one at the viewing site."
+	},
 	placeholder: {
 		b1: 'Verdict card',
 		b1_note: 'Obscuration, contact times and eye-safety verdict for your location — coming soon.'

@@ -85,6 +85,10 @@ const messages: Messages = {
 		add_calendar: '📅 Añadir al calendario',
 		event_title: 'Eclipse solar 2026'
 	},
+	tz: {
+		all_in: 'Todas las horas en tu zona horaria: {zone}',
+		note: 'La zona horaria de tu dispositivo, no necesariamente la del lugar de observación.'
+	},
 	placeholder: {
 		b1: 'Tarjeta de veredicto',
 		b1_note: 'Ocultación, tiempos de contacto y veredicto de seguridad ocular para tu ubicación — próximamente.'
