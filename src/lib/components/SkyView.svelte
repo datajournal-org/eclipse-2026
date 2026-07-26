@@ -1,6 +1,7 @@
-<!-- B3 — first-person "your view of the Sun": a tilted 3D map (VersaTiles terrain + buildings) aimed at
-     the Sun's azimuth, with the eclipsed Sun drawn as a depth-tested billboard so hills/buildings occlude
-     it. Time slider over the local eclipse window. Ported from an early standalone HTML prototype. -->
+<!-- B3 — "your view of the Sun": a third-person 3D map (VersaTiles terrain + buildings) framed from behind a
+     marker at your location toward the Sun's azimuth, with the eclipsed Sun drawn at its real angular size on
+     top of the scene. Time slider over the local eclipse window. Ported from an early standalone HTML
+     prototype. -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { get } from 'svelte/store';
@@ -65,10 +66,9 @@
 				moon: [0, 0],
 				moonR: 1,
 				angRad: 0,
-				visible: false,
-				opacity: 1
+				visible: false
 			};
-			const SUN_DIST = 30000; // metres: far enough that buildings (<1 km) occlude it
+			const SUN_DIST = 30000; // metres: far out in the sky (parallax negligible; the Sun reads at infinity)
 
 			const style = colorful({ baseUrl: 'https://tiles.versatiles.org' });
 			style.layers = style.layers.filter((l) => l.type !== 'symbol'); // labels off
@@ -303,7 +303,6 @@
 					// ignored — we don't know the observer's height (street level vs. a rooftop), so a hill that
 					// would block the Sun from the ground might not from a roof. Hide it only once it is below
 					// the true (sea-level) horizon.
-					sun.opacity = 1;
 					sun.visible = s.alt > 0;
 
 					const obsc = discOverlapFraction(sunAngR, moonAngR, Math.hypot(dx, dy));

@@ -104,40 +104,35 @@ offline after the first visit (and once a location is set).
 
 ## Realistic rendering of the Sun (B3) — core problem solved
 
-Three guarantees. "Realistic" = geometrically correctly placed and visually plausibly occluded.
+Two guarantees. "Realistic" = geometrically correctly placed, at its true angular size.
 
 **1. Correct place in the sky.**
 `astronomy-engine` → exact (azimuth, altitude). The Sun is placed as an object in the same 3D
 world, not as an overlay: a **`CustomLayerInterface` WebGL layer** that reuses MapLibre's
-projection matrix. Position = observer + direction vector (az, alt) at a large distance → it
-shares the space with terrain and buildings.
+projection matrix. Position = observer + direction vector (az, alt) at a large distance, so it
+reads as being at infinity.
 
-**2. Correct camera (first-person view).**
-MapLibre **v5 no longer has `FreeCameraOptions`**. Instead
-**`map.calculateCameraOptionsFromTo(eye, eyeHeight, target, targetHeight)`** → computes the
-first-person camera from the observer's eye point and a target point along the Sun's azimuth.
-The target sits at a **fixed slight downward angle (~6°)**, _not_ at the Sun's altitude —
-otherwise a high Sun demands a pitch > maxPitch, the clamp produces a degenerate camera and the
-foreground flickers/disappears. This keeps the pitch stable at ~84°; the low Sun appears in the
-upper part of the frame.
+**2. Correct camera (third-person orbit).**
+MapLibre **v5 has no `FreeCameraOptions`**, so the camera is built with
+**`map.calculateCameraOptionsFromTo(from, fromAlt, to, toAlt)`**: it sits ~200 m behind a marker
+at the location, at a **constant sea-level altitude** (`setCenterClampedToGround(false)`, so it
+does not bob as the view centre moves over terrain), framed by `skyview/framing.ts` (a wide
+`setVerticalFieldOfView` + centre azimuth) to show the whole Sun arc with the marker in the lower
+third. Horizontal drag **orbits** the camera around the marker (bearing only, height fixed → the
+pitch stays < 90°); a reset control returns to the Sun-facing framing.
 
-**3. Plausible occlusion (purely visual, no textual claim).**
-Buildings (`fill-extrusion`) write to the depth buffer → the WebGL Sun is correctly occluded
-behind houses via the depth test. For **terrain** (whose depth buffer MapLibre doesn't reliably
-expose to custom layers), the **terrain horizon is sampled along the Sun's azimuth**
-(`queryTerrainElevation`, including the Earth-curvature dip); the Sun is hidden/faded once it
-drops below it — so it disappears behind mountains and at sunset. The user sees in the 3D scene
-itself whether anything is in the way. **Deliberately no computed claim** like "Sun occluded
-from 20:40" — a reliable ray sampling of terrain and buildings is not feasible in the frontend
-(elevation only z12, buildings only near field, expensive tile sampling). The only hard textual
-time is **sunset** (geometric, from `astronomy-engine` — no terrain needed).
-
-**Appearance (crescent, size).**
-Obscuration/magnitude from `astronomy-engine` → crescent geometry (Sun/Moon disc, radii ~0.25°,
-offset from magnitude) as a shader/quad. **Honest trade-off:** the real Sun is ~0.5° across, a
-tiny dot in the ~37° field of view → a **moderate magnification (2–4×)** as a clearly labelled
-presentation aid, while the **exact numbers stay shown numerically**. Atmospheric tint optional
-via MapLibre's `sky`.
+**Appearance — real size, no occlusion.**
+The Sun/Moon discs come from `astronomy-engine` (angular radii ~0.25°, Moon offset from the
+geometry) as a shader/quad, drawn at their **real angular size**: the billboard radius is mapped
+through the vertical FOV each frame (`skyview/sunLayer.ts`), and the Moon is drawn in Sun-radius
+units so it scales with the Sun. So the eclipsed Sun is a small, accurate disc, not an enlarged
+one. It is drawn **on top** (depth test off) and hidden only below the true (sea-level) horizon;
+**terrain occlusion is intentionally not modelled** — the observer's height (street level vs. a
+rooftop) is unknown, so a hill that would block the Sun from the ground might not from a roof.
+The only hard textual time is **sunset** (geometric, from `astronomy-engine`). Sky/light comes
+from `skyview/environment.ts`: a dusk veil (a DOM overlay inside the map canvas, under the marker)
+dims the whole scene with the obscuration, plus a constant directional light for the buildings'
+3D shape.
 
 **Safeguard:** cross-check the rendered az/altitude and contact times against `astronomy-engine`
 and Espenak; numbers visible in the UI → realism is verifiable, not asserted.
@@ -148,13 +143,11 @@ and Espenak; numbers visible in the UI → realism is verifiable, not asserted.
 
 - **Elevation z12** coarse in the near field — check whether mountains on the horizon look
   visually convincing; the near field is carried by the buildings.
-- **First-person camera + terrain:** `calculateCameraOptionsFromTo` at eye height; watch for
-  camera clipping into the terrain (on very steep terrain right at the location).
-- **Terrain occlusion of the Sun:** solved via horizon sampling (fade below the terrain
-  horizon). Limitation: binary/faded for the whole disc, no partial clipping by a ridge.
+- **Camera over steep terrain:** the camera sits ~200 m behind the marker at a constant altitude
+  (`setCenterClampedToGround(false)`); on very steep ground near the location, verify the framing
+  doesn't clip.
 - **Live shadow (A2):** compute the umbra ellipse at the slider time from Besselian elements /
   `astronomy-engine` in real time — check scrubbing performance.
-- **Sun size:** the magnification factor (2–4×) is a UX decision — calibrate with real renders.
 - **Crescent orientation:** derive the crescent's position angle correctly from the geometry
   (don't guess), otherwise it's "the wrong way round".
 - **Geocoder limits/attribution** from VersaTiles to be checked.

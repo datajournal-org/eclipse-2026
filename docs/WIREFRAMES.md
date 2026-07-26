@@ -84,10 +84,11 @@ tappable with "what do I look for, when may the glasses come off?":
 
 Header line: "At maximum: Sun **8° high, towards 292° WNW** (≈ a fist above the horizon)."
 Below it a **3D view of the surroundings** of the location with **mountains and buildings**, over
-it the Sun's path and the eclipsed Sun. A **time slider** (19:36 – 20:47) runs through the
-sequence; live alongside: ☀ altitude · ◐ obscuration · time. Whether mountains or buildings hide
-the low-lying Sun is seen **directly in the 3D scene** — the app deliberately makes no computed
-claim about it. As a hard time, **sunset** is given.
+it the Sun's path and the eclipsed Sun at its real size. A **time slider** (19:36 – 20:47) runs
+through the sequence; live alongside: ☀ altitude · ◐ obscuration · time. The surroundings give the
+lay of the land; the Sun is drawn on top and stays visible until it sets (terrain occlusion is
+intentionally not modelled — the observer's height is unknown). As a hard time, **sunset** is
+given.
 
 ### B6 — Checklist & countdown
 

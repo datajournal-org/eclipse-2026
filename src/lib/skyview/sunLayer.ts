@@ -10,7 +10,6 @@ export type SunState = {
 	moonR: number; // Moon angular radius / Sun angular radius
 	angRad: number; // the Sun's angular radius (rad) → billboard drawn at its real angular size
 	visible: boolean;
-	opacity: number; // faded out as the Sun drops below the terrain/curvature horizon
 };
 
 const VERTEX = `
@@ -19,22 +18,20 @@ uniform mat4 u_matrix; uniform vec4 u_center; uniform vec2 u_pix;
 varying vec2 v_uv;
 void main() {
   vec4 clip = u_matrix * u_center;
-  // keep the far-away Sun just inside the far plane (never depth-clipped) while still sitting behind
-  // nearer buildings for the depth test
-  clip.z = min(clip.z, clip.w * 0.9999);
+  clip.z = min(clip.z, clip.w * 0.9999); // keep the far-away Sun just inside the far plane (never clipped)
   gl_Position = clip + vec4(a_corner * u_pix * clip.w, 0.0, 0.0);
   v_uv = a_corner;
 }`;
 
 const FRAGMENT = `
 precision highp float; varying vec2 v_uv;
-uniform vec2 u_moon; uniform float u_moonR; uniform float u_opacity; uniform vec3 u_sun;
+uniform vec2 u_moon; uniform float u_moonR; uniform vec3 u_sun;
 void main() {
   float rs = length(v_uv); if (rs > 1.0) discard;              // outside the Sun disc
   float rm = length(v_uv - u_moon);
   float moon = smoothstep(u_moonR - 0.03, u_moonR + 0.01, rm); // 0 inside the Moon, 1 outside
   float limb = smoothstep(1.0, 0.90, rs);
-  float a = moon * limb * u_opacity; if (a < 0.01) discard;
+  float a = moon * limb; if (a < 0.01) discard;
   gl_FragColor = vec4(u_sun, a);
 }`;
 
@@ -67,7 +64,7 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 			gl.linkProgram(prog);
 			if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) ?? 'link error');
 			aCorner = gl.getAttribLocation(prog, 'a_corner');
-			for (const n of ['u_matrix', 'u_center', 'u_pix', 'u_moon', 'u_moonR', 'u_opacity', 'u_sun'])
+			for (const n of ['u_matrix', 'u_center', 'u_pix', 'u_moon', 'u_moonR', 'u_sun'])
 				u[n] = gl.getUniformLocation(prog, n);
 			buffer = gl.createBuffer()!;
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -75,7 +72,7 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 		},
 
 		render(gl, options: CustomRenderMethodInput) {
-			if (!sun.visible || sun.opacity <= 0.01) return;
+			if (!sun.visible) return;
 			gl.useProgram(prog);
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 			gl.enableVertexAttribArray(aCorner);
@@ -90,7 +87,6 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 			gl.uniform2f(u.u_pix, ux, uy);
 			gl.uniform2f(u.u_moon, sun.moon[0], sun.moon[1]);
 			gl.uniform1f(u.u_moonR, sun.moonR);
-			gl.uniform1f(u.u_opacity, sun.opacity);
 			gl.uniform3f(u.u_sun, color[0], color[1], color[2]);
 			gl.disable(gl.DEPTH_TEST); // always on top — terrain occlusion is ignored (observer height unknown)
 			gl.enable(gl.BLEND);
