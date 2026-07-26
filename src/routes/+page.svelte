@@ -6,6 +6,7 @@
 	import LocationCall from '$lib/components/LocationCall.svelte';
 	import LocationDialog from '$lib/components/LocationDialog.svelte';
 	import TimeZoneNote from '$lib/components/TimeZoneNote.svelte';
+	import SectionDivider from '$lib/components/SectionDivider.svelte';
 	import Verdict from '$lib/components/Verdict.svelte';
 	import SkyView from '$lib/components/SkyView.svelte';
 	import Checklist from '$lib/components/Checklist.svelte';
@@ -22,16 +23,16 @@
 	<TimeZoneNote />
 
 	{#if $userLocation}
-		<!-- B — appended once a location is chosen -->
+		<!-- B — the personal briefing, opened by a clear section break -->
+		<SectionDivider label={$t('b.your_sky')} />
 		<div class="place block">
-			<div class="place-id">
-				<span class="eyebrow">{$t('b.your_sky')}</span>
-				<div class="pname">📍 {label($userLocation)}</div>
-			</div>
+			<div class="pname">📍 {label($userLocation)}</div>
 			<button onclick={() => (pickerOpen = true)}>{$t('b.change')}</button>
 		</div>
 		<Verdict />
 		<SkyView />
+
+		<SectionDivider label={$t('b.prep')} />
 		<Checklist />
 	{:else}
 		<LocationCall onchoose={() => (pickerOpen = true)} />

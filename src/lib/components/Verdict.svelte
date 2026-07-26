@@ -16,7 +16,6 @@
 <section class="block b1" class:total={isTotal}>
 	<div class="block-head">
 		<h2>{visible ? (isTotal ? $t('b1.total') : $t('b1.partial')) : $t('b1.not_visible')}</h2>
-		<span class="eyebrow">B1</span>
 	</div>
 
 	{#if lc && peak && visible}

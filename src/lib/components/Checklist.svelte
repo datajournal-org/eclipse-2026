@@ -63,7 +63,6 @@
 	<section class="block b6">
 		<div class="block-head">
 			<h2>{$t('b6.title')}</h2>
-			<span class="eyebrow">B6</span>
 		</div>
 
 		{#if remaining > 0}

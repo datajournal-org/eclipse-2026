@@ -228,7 +228,6 @@
 <section class="block b3">
 	<div class="block-head">
 		<h2>{$t('b3.title')}</h2>
-		<span class="eyebrow">B3</span>
 	</div>
 	<p class="sub">{$t('b3.subtitle')}</p>
 
