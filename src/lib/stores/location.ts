@@ -7,8 +7,14 @@ const KEY = 'eclipse.location';
 
 export type Place = { lat: number; lon: number; name: string | null };
 
-/** Start null so SSR and first client render agree; initLocation() hydrates the real value. */
-export const userLocation = writable<Place | null>(null);
+/**
+ * On the client the value is read SYNCHRONOUSLY (URL, then localStorage) at module load, so the very first
+ * client render already shows the located "B" state. Deferring this to onMount flipped the layout a tick
+ * after hydration, which grew the page after the browser had already restored the scroll position on a
+ * reload — so the page jumped to the top. During prerender (no browser) it starts null (the un-located
+ * state that ships in the static HTML).
+ */
+export const userLocation = writable<Place | null>(browser ? (fromUrl() ?? fromStorage()) : null);
 
 function fromUrl(): Place | null {
 	const u = new URLSearchParams(location.search);
@@ -33,13 +39,6 @@ function fromStorage(): Place | null {
 		/* ignore */
 	}
 	return null;
-}
-
-/** Call once on the client (root layout onMount). URL wins over storage. */
-export function initLocation() {
-	if (!browser) return;
-	const loc = fromUrl() ?? fromStorage();
-	if (loc) userLocation.set(loc);
 }
 
 export function setLocation(loc: Place) {
