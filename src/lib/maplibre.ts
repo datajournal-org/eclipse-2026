@@ -14,7 +14,11 @@ let configured = false;
 export async function loadMaplibre() {
 	const mod = await import('maplibre-gl');
 	if (!configured) {
-		mod.setWorkerUrl(workerUrl);
+		// Only override in the production build: there maplibre's own worker URL 404s (see above), and our
+		// `?worker&url` worker is a self-contained bundle that loads fine. In dev, Vite serves the worker as
+		// an ES module with imports, which maplibre would load as a classic worker ("Cannot use import
+		// statement outside a module") — so leave dev to maplibre's own (working) worker loading.
+		if (import.meta.env.PROD) mod.setWorkerUrl(workerUrl);
 		configured = true;
 	}
 	return mod;
