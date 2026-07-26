@@ -74,7 +74,7 @@ export function buildTimeAxis(opts: {
 	let sunsetFrac: number | null = null;
 	let sunsetNote: string | null = null;
 	if (sunset) {
-		sunsetNote = `${t('b2.sunset')} · ${fmtTime(sunset)}`;
+		sunsetNote = `${t('b3.sunset')} · ${fmtTime(sunset)}`;
 		const s0 = sunset.getTime();
 		if (s0 >= evStart && s0 <= evEnd) sunsetFrac = frac(sunset);
 	}

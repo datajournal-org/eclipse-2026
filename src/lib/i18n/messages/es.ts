@@ -53,17 +53,6 @@ const messages: Messages = {
 			'Solo durante la totalidad ({from}–{to}) puedes mirar sin gafas — el resto del tiempo usa siempre gafas de eclipse.',
 		safe_partial: 'Se necesitan gafas de eclipse certificadas (ISO 12312-2) todo el tiempo.'
 	},
-	b2: {
-		title: 'Tu cronología',
-		first_contact: 'Primer contacto',
-		total_begin: 'Totalidad',
-		maximum: 'Máximo',
-		total_end: 'Fin de la totalidad',
-		last_contact: 'Último contacto',
-		sunset: 'Puesta de sol',
-		below_horizon: 'bajo el horizonte',
-		tz_note: 'Todas las horas en tu zona horaria.'
-	},
 	b3: {
 		title: 'Tu vista del Sol',
 		subtitle: 'Tu ubicación y la trayectoria del Sol — arrastra para mirar alrededor, procura vista despejada.',
@@ -76,7 +65,8 @@ const messages: Messages = {
 		zoom_out: 'Alejar',
 		phase_start: 'Inicio',
 		phase_max: 'Máximo',
-		phase_end: 'Fin'
+		phase_end: 'Fin',
+		sunset: 'Puesta de sol'
 	},
 	b6: {
 		title: 'Tu lista',

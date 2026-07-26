@@ -53,17 +53,6 @@ const messages: Messages = {
 			'Only during totality ({from}–{to}) may you look without glasses — otherwise always wear eclipse glasses.',
 		safe_partial: 'Certified eclipse glasses (ISO 12312-2) required the whole time.'
 	},
-	b2: {
-		title: 'Your timeline',
-		first_contact: 'First contact',
-		total_begin: 'Totality',
-		maximum: 'Maximum',
-		total_end: 'Totality ends',
-		last_contact: 'Last contact',
-		sunset: 'Sunset',
-		below_horizon: 'below horizon',
-		tz_note: 'All times in your timezone.'
-	},
 	b3: {
 		title: 'Your view of the Sun',
 		subtitle: 'Your location and the Sun’s path — drag to look around, mind a clear view.',
@@ -76,7 +65,8 @@ const messages: Messages = {
 		zoom_out: 'Zoom out',
 		phase_start: 'Start',
 		phase_max: 'Maximum',
-		phase_end: 'End'
+		phase_end: 'End',
+		sunset: 'Sunset'
 	},
 	b6: {
 		title: 'Your checklist',

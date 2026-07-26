@@ -51,17 +51,6 @@ const messages = {
 		safe_total: 'Nur während der Totalität ({from}–{to}) ohne Brille — sonst immer Schutzbrille.',
 		safe_partial: 'Durchgehend zertifizierte Finsternisbrille (ISO 12312-2) nötig.'
 	},
-	b2: {
-		title: 'Dein Ablauf',
-		first_contact: '1. Kontakt',
-		total_begin: 'Totalität',
-		maximum: 'Maximum',
-		total_end: 'Totalität endet',
-		last_contact: 'Letzter Kontakt',
-		sunset: 'Sonnenuntergang',
-		below_horizon: 'unter Horizont',
-		tz_note: 'Alle Zeiten in deiner Zeitzone.'
-	},
 	b3: {
 		title: 'Deine Sicht zur Sonne',
 		subtitle: 'Dein Standort und die Bahn der Sonne — zieh zum Umschauen, achte auf freie Sicht.',
@@ -74,7 +63,8 @@ const messages = {
 		zoom_out: 'Verkleinern',
 		phase_start: 'Beginn',
 		phase_max: 'Maximum',
-		phase_end: 'Ende'
+		phase_end: 'Ende',
+		sunset: 'Sonnenuntergang'
 	},
 	b6: {
 		title: 'Deine Checkliste',
