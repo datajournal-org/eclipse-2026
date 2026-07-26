@@ -28,6 +28,18 @@
 
 	const ELEV = 'https://tiles.versatiles.org/tiles/elevation/{z}/{x}/{y}';
 
+	// loupe sky-colour helpers: blend the sky palette by altitude, then dim toward dusk like the veil does
+	type Rgb = [number, number, number];
+	const SKY_HI = hexToRgb(SKY_PALETTE.sky);
+	const SKY_LO = hexToRgb(SKY_PALETTE.horizon);
+	const DUSK_RGB = hexToRgb(DUSK_HEX);
+	const mix3 = (a: Rgb, b: Rgb, t: number): Rgb => [
+		a[0] + (b[0] - a[0]) * t,
+		a[1] + (b[1] - a[1]) * t,
+		a[2] + (b[2] - a[2]) * t
+	];
+	const cssRgb = (c: Rgb) => `rgb(${Math.round(c[0] * 255)} ${Math.round(c[1] * 255)} ${Math.round(c[2] * 255)})`;
+
 	let mapContainer: HTMLDivElement;
 	let ready = $state(false);
 	let clock = $state('--:--');
@@ -37,11 +49,14 @@
 	let frameIndex = $state(0);
 	let frameMax = $state(1);
 	// A) loupe inset crescent + B) Sun locator ring & leader line
-	const LOUPE_R = 42; // loupe Sun-disc radius in SVG units (must match the <circle r> in the template)
-	let pointerVisible = $state(false); // Sun above the horizon AND on-screen
+	const LOUPE_R = 32; // loupe Sun-disc radius in SVG units (viewBox is -50..50 → leaves sky margin around it)
+	let pointerVisible = $state(false); // Sun above the horizon AND on-screen (locator ring)
+	let tangentVisible = $state(false); // ...and far enough from the loupe to draw the tangent lines
 	let crescent = $state({ x: 0, y: 0, r: 0 }); // loupe Moon-disc (the crescent cut-out), SVG units
+	let loupeSky = $state<string>(SKY_PALETTE.sky); // loupe background = the sky colour behind the real Sun
 	let locatorEl: HTMLDivElement;
-	let leaderLineEl: SVGLineElement;
+	let leaderA: SVGLineElement;
+	let leaderB: SVGLineElement;
 	let setFrame: (i: number) => void = () => {};
 
 	onMount(() => {
@@ -336,6 +351,10 @@
 					obscTxt = (obsc * 100).toFixed(0) + '%';
 					// loupe crescent (changes only with time): Moon-disc offset/size in Sun-radius units × R
 					crescent = { x: sun.moon[0] * LOUPE_R, y: -sun.moon[1] * LOUPE_R, r: sun.moonR * LOUPE_R };
+					// loupe background = the sky behind the low Sun: blend horizon→sky by altitude, then dim toward
+					// dusk exactly as the veil dims the scene, so the loupe reads as a zoomed cutout of that sky.
+					const skyT = Math.max(0, Math.min(1, s.alt / 30));
+					loupeSky = cssRgb(mix3(mix3(SKY_LO, SKY_HI, skyT), DUSK_RGB, env.veil));
 					m.triggerRepaint();
 				}
 
@@ -346,22 +365,73 @@
 				// start at greatest eclipse
 				const peakT = (lc?.peak?.time ?? new Date(ECLIPSE_DATE + 'T18:08:00Z')).getTime();
 				frameIndex = Math.round(((peakT - tStart) / (tEnd - tStart)) * N);
-				// A + B overlay: keep the Sun locator ring + loupe leader line glued to the tiny real Sun each
-				// rendered frame (the camera can move without a scrub). The loupe crescent updates in update().
-				const LOUPE_ANCHOR: [number, number] = [86, 48]; // loupe right-middle in stage px (10 + 76, 10 + 38)
+				// A + B overlay: keep the Sun locator marker + the loupe's two connector lines glued to the tiny
+				// real Sun each rendered frame (the camera can move without a scrub). The loupe crescent updates
+				// in update(). Loupe and marker are squares; the two connectors are the convex-hull "bridge"
+				// edges between them (the polygon analogue of the external tangents between two circles).
+				const LOUPE_C: [number, number] = [58, 58]; // loupe centre in stage px (top/left 10 + 48)
+				const LOUPE_HALF = 48; // loupe half-size (96 px / 2)
+				const MARKER_HALF = 13; // locator square half-size (26 px / 2)
+				type Pt = { x: number; y: number; g: number }; // g: 0 = loupe corner, 1 = marker corner
+				const hull = (pts: Pt[]): Pt[] => {
+					const sorted = pts.slice().sort((a, b) => a.x - b.x || a.y - b.y);
+					const cross = (o: Pt, a: Pt, b: Pt) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+					const chain = (src: Pt[]) => {
+						const out: Pt[] = [];
+						for (const p of src) {
+							while (out.length >= 2 && cross(out[out.length - 2], out[out.length - 1], p) <= 0) out.pop();
+							out.push(p);
+						}
+						out.pop();
+						return out;
+					};
+					return chain(sorted).concat(chain(sorted.slice().reverse()));
+				};
 				m.on('render', () => {
 					const s = sun.screen;
 					const w = mapContainer.clientWidth,
 						h = mapContainer.clientHeight;
 					const onScreen = !!s && sun.visible && s[0] >= 0 && s[0] <= w && s[1] >= 0 && s[1] <= h;
 					pointerVisible = onScreen;
-					if (onScreen && s && locatorEl && leaderLineEl) {
-						locatorEl.style.transform = `translate(${s[0]}px, ${s[1]}px) translate(-50%, -50%)`;
-						leaderLineEl.setAttribute('x1', String(LOUPE_ANCHOR[0]));
-						leaderLineEl.setAttribute('y1', String(LOUPE_ANCHOR[1]));
-						leaderLineEl.setAttribute('x2', String(s[0]));
-						leaderLineEl.setAttribute('y2', String(s[1]));
+					if (!onScreen || !s) {
+						tangentVisible = false;
+						return;
 					}
+					if (locatorEl) locatorEl.style.transform = `translate(${s[0]}px, ${s[1]}px) translate(-50%, -50%)`;
+
+					// hide the connectors when the two squares overlap (no clean funnel)
+					const overlap =
+						Math.abs(s[0] - LOUPE_C[0]) < LOUPE_HALF + MARKER_HALF &&
+						Math.abs(s[1] - LOUPE_C[1]) < LOUPE_HALF + MARKER_HALF;
+					if (overlap || !leaderA || !leaderB) {
+						tangentVisible = false;
+						return;
+					}
+					const corners: Pt[] = [
+						{ x: LOUPE_C[0] - LOUPE_HALF, y: LOUPE_C[1] - LOUPE_HALF, g: 0 },
+						{ x: LOUPE_C[0] + LOUPE_HALF, y: LOUPE_C[1] - LOUPE_HALF, g: 0 },
+						{ x: LOUPE_C[0] + LOUPE_HALF, y: LOUPE_C[1] + LOUPE_HALF, g: 0 },
+						{ x: LOUPE_C[0] - LOUPE_HALF, y: LOUPE_C[1] + LOUPE_HALF, g: 0 },
+						{ x: s[0] - MARKER_HALF, y: s[1] - MARKER_HALF, g: 1 },
+						{ x: s[0] + MARKER_HALF, y: s[1] - MARKER_HALF, g: 1 },
+						{ x: s[0] + MARKER_HALF, y: s[1] + MARKER_HALF, g: 1 },
+						{ x: s[0] - MARKER_HALF, y: s[1] + MARKER_HALF, g: 1 }
+					];
+					const hp = hull(corners);
+					const lines = [leaderA, leaderB];
+					let li = 0;
+					for (let i = 0; i < hp.length && li < 2; i++) {
+						const a = hp[i],
+							b = hp[(i + 1) % hp.length];
+						if (a.g !== b.g) {
+							lines[li].setAttribute('x1', String(a.x));
+							lines[li].setAttribute('y1', String(a.y));
+							lines[li].setAttribute('x2', String(b.x));
+							lines[li].setAttribute('y2', String(b.y));
+							li++;
+						}
+					}
+					tangentVisible = li === 2;
 				});
 
 				// NOTE: no re-framing on 'idle' — the camera is set once here and never moves on its own
@@ -394,14 +464,21 @@
 	<div class="stage bleed">
 		<div class="stage-canvas" bind:this={mapContainer}></div>
 
-		<!-- B: leader line from the loupe to the tiny real Sun -->
-		<svg class="b3-leader" class:hidden={!pointerVisible} aria-hidden="true">
-			<line bind:this={leaderLineEl} />
+		<!-- B: two tangent lines connecting the loupe circle and the locator ring (a magnifier funnel) -->
+		<svg class="b3-leader" class:hidden={!tangentVisible} aria-hidden="true">
+			<line bind:this={leaderA} />
+			<line bind:this={leaderB} />
 		</svg>
 		<!-- B: locator ring around the real Sun -->
 		<div class="b3-locator" class:hidden={!pointerVisible} bind:this={locatorEl} aria-hidden="true"></div>
 		<!-- A: loupe inset — the eclipsed Sun's crescent, magnified -->
-		<div class="b3-loupe" class:hidden={!ready} aria-hidden="true" style:--loupe-sun={SKY_PALETTE.sun}>
+		<div
+			class="b3-loupe"
+			class:hidden={!ready}
+			aria-hidden="true"
+			style:--loupe-sun={SKY_PALETTE.sun}
+			style:--loupe-sky={loupeSky}
+		>
 			<svg viewBox="-50 -50 100 100">
 				<defs><clipPath id="b3-sundisc"><circle r={LOUPE_R} /></clipPath></defs>
 				<circle class="loupe-sun" r={LOUPE_R} />
@@ -454,70 +531,73 @@
 	/* B3-only MapLibre DOM (added outside the component tree). Shared map chrome (controls, attribution,
 	   the .user-pin marker) lives in styles/map.css; only the twilight veil is B3-specific. */
 	:global {
-		/* twilight veil — inside the map's canvas container, under the marker: dims the rendered scene but
+		.b3 {
+			/* twilight veil — inside the map's canvas container, under the marker: dims the rendered scene but
 		   not the location marker above it. */
-		.b3 .b3-dusk {
-			position: absolute;
-			inset: 0;
-			pointer-events: none;
-			transition: opacity 150ms linear;
-		}
+			.b3-dusk {
+				position: absolute;
+				inset: 0;
+				pointer-events: none;
+				transition: opacity 150ms linear;
+			}
 
-		/* A) loupe inset (magnified crescent) + B) Sun locator ring & leader line. These sit above the
+			/* A) loupe inset (magnified crescent) + B) Sun locator ring & leader line. These sit above the
 		   twilight veil, so they stay legible as the eclipse darkens the scene. */
-		.b3 .b3-loupe {
-			position: absolute;
-			top: 10px;
-			left: 10px;
-			box-sizing: border-box;
-			width: 76px;
-			height: 76px;
-			padding: 7px;
-			border-radius: 12px;
-			background: color-mix(in oklab, var(--bg-2) 88%, transparent);
-			border: 1px solid var(--border);
-			box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
-			backdrop-filter: blur(6px);
-			pointer-events: none;
-		}
-		.b3 .b3-loupe svg {
-			display: block;
-			width: 100%;
-			height: 100%;
-		}
-		.b3 .b3-loupe .loupe-sun {
-			fill: var(--loupe-sun);
-		}
-		.b3 .b3-loupe .loupe-moon {
-			fill: #12151d;
-		}
-		.b3 .b3-locator {
-			position: absolute;
-			top: 0;
-			left: 0;
-			width: 26px;
-			height: 26px;
-			border: 2px solid var(--accent);
-			border-radius: 50%;
-			box-shadow: 0 0 8px 1px color-mix(in oklab, var(--accent) 45%, transparent);
-			pointer-events: none;
-		}
-		.b3 .b3-leader {
-			position: absolute;
-			inset: 0;
-			width: 100%;
-			height: 100%;
-			overflow: visible;
-			pointer-events: none;
-		}
-		.b3 .b3-leader line {
-			stroke: var(--accent);
-			stroke-width: 1.5;
-			stroke-dasharray: 3 3;
-			opacity: 0.65;
-		}
-		.b3 :is(.b3-loupe, .b3-locator, .b3-leader).hidden {
-			display: none;
+			/* the loupe is a square (same shape as the locator marker), showing the crescent on the same sky
+		   colour that is behind the real Sun → reads as a straight magnification of the marked spot. */
+			.b3-loupe {
+				position: absolute;
+				top: 10px;
+				left: 10px;
+				box-sizing: border-box;
+				width: 96px;
+				height: 96px;
+				border-radius: 0;
+				overflow: hidden;
+				background: var(--loupe-sky, #8fb4e0);
+				border: 2px solid #fff;
+				box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+				pointer-events: none;
+
+				svg {
+					display: block;
+					width: 100%;
+					height: 100%;
+				}
+				.loupe-sun {
+					fill: var(--loupe-sun);
+				}
+				.loupe-moon {
+					fill: var(--loupe-sky, #8fb4e0); /* the Moon reveals the sky, same as in the scene */
+				}
+			}
+			/* same white rim + shadow as the loupe, only a bit thinner (the loupe is its magnification) */
+			.b3-locator {
+				position: absolute;
+				top: 0;
+				left: 0;
+				box-sizing: border-box;
+				width: 26px;
+				height: 26px;
+				border: 0.5px solid #fff;
+				border-radius: 0;
+				pointer-events: none;
+			}
+			.b3-leader {
+				position: absolute;
+				inset: 0;
+				width: 100%;
+				height: 100%;
+				overflow: visible;
+				pointer-events: none;
+				line {
+					stroke: #fff;
+					stroke-width: 0.2;
+				}
+			}
+			:is(.b3-loupe, .b3-locator, .b3-leader).hidden {
+				display: none;
+			}
 		}
 	}
 </style>
