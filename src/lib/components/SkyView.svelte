@@ -480,9 +480,8 @@
 			style:--loupe-sky={loupeSky}
 		>
 			<svg viewBox="-50 -50 100 100">
-				<defs><clipPath id="b3-sundisc"><circle r={LOUPE_R} /></clipPath></defs>
 				<circle class="loupe-sun" r={LOUPE_R} />
-				<circle class="loupe-moon" clip-path="url(#b3-sundisc)" cx={crescent.x} cy={crescent.y} r={crescent.r} />
+				<circle class="loupe-moon" cx={crescent.x} cy={crescent.y} r={crescent.r} />
 			</svg>
 		</div>
 
