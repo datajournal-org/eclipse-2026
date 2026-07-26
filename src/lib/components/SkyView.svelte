@@ -470,9 +470,30 @@
 					frameIndex = i;
 					update();
 				};
-				// start at greatest eclipse
+				// Start at greatest eclipse — but where it gets very deep (>90%) the peak is near-black, so open
+				// instead at the moment the coverage first reaches 90% (on the way in): a livelier first view.
 				const peakT = (lc?.peak?.time ?? new Date(ECLIPSE_DATE + 'T18:08:00Z')).getTime();
-				frameIndex = Math.round(((peakT - tStart) / (tEnd - tStart)) * N);
+				const peakFrame = Math.round(((peakT - tStart) / (tEnd - tStart)) * N);
+				const obscAt = (t: number): number => {
+					const sm = sunMoonHorizon(LAT, LON, new Date(t));
+					const s = sm.sun,
+						mo = sm.moon;
+					const sunAngR = Math.atan(RSUN / (s.distAu * AU)) * R2D;
+					const moonAngR = Math.atan(RMOON / (mo.distAu * AU)) * R2D;
+					const dx = norm180(mo.az - s.az) * Math.cos(s.alt * D2R);
+					const dy = mo.alt - s.alt;
+					return discOverlapFraction(sunAngR, moonAngR, Math.hypot(dx, dy));
+				};
+				const START_OBSC = 0.9;
+				frameIndex = peakFrame;
+				if ((lc?.obscuration ?? 0) > START_OBSC) {
+					for (let i = 0; i <= peakFrame; i++) {
+						if (obscAt(times[i]) >= START_OBSC) {
+							frameIndex = i;
+							break;
+						}
+					}
+				}
 				// A + B overlay: keep the Sun locator marker + the loupe's two connector lines glued to the tiny
 				// real Sun each rendered frame (the camera can move without a scrub). The loupe crescent updates
 				// in update(). Loupe and marker are squares; the two connectors are the convex-hull "bridge"
