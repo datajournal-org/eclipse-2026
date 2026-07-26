@@ -32,12 +32,15 @@ const messages: Messages = {
 	a4: {
 		title: '¿Qué verás desde donde estás?',
 		geo: 'Usar mi ubicación',
-		search: 'Buscar un lugar',
-		map: 'Tocar en el mapa',
-		manual_hint: 'o introduce coordenadas (lat, lon)',
-		use: 'Fijar',
-		geo_error: 'Ubicación no disponible. Busca un lugar o introduce coordenadas.',
-		soon: 'próximamente'
+		search: 'Buscar ciudad o dirección',
+		searching: 'Buscando …',
+		no_results: 'Nada encontrado',
+		geo_error: 'Ubicación no disponible. Busca un lugar o toca el mapa.',
+		adjust_hint: 'Arrastra el pin o toca el mapa para ajustar el punto.',
+		use_here: 'Usar esta ubicación',
+		verdict_total: 'Totalidad',
+		verdict_partial: 'parcial',
+		verdict_none: 'no visible'
 	},
 	b: { your_sky: 'Tu cielo', change: 'cambiar', clear: 'Quitar ubicación' },
 

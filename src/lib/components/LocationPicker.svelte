@@ -1,0 +1,127 @@
+<!-- A flat 2D map for choosing/adjusting a location: a draggable pin over the VersaTiles basemap, with the
+     totality corridor drawn on top so users can see whether their spot is in the path (and drag into it).
+     The parent owns the coordinate; this component reports moves via onmove and follows external changes. -->
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import type { Map as MlMap, Marker as MlMarker } from 'maplibre-gl';
+	import { loadMaplibre } from '$lib/maplibre';
+	import { readBrandColors } from '$lib/brand';
+	import { corridorEdges } from '$lib/shadow-globe/corridor';
+	import { t } from '$lib/i18n';
+
+	let { lat, lon, onmove }: { lat: number; lon: number; onmove: (lat: number, lon: number) => void } = $props();
+
+	let mapContainer: HTMLDivElement;
+	let ready = $state(false);
+	let map: MlMap | undefined;
+	let marker: MlMarker | undefined;
+
+	onMount(() => {
+		let disposed = false;
+
+		(async () => {
+			const [maplibregl, versatiles] = await Promise.all([loadMaplibre(), import('@versatiles/style')]).catch(
+				(err) => {
+					console.error('[picker] failed to load map libraries', err);
+					return [null, null] as const;
+				}
+			);
+			if (!maplibregl || !versatiles || disposed) return;
+
+			const brand = readBrandColors();
+			const style = versatiles.colorful({ baseUrl: 'https://tiles.versatiles.org' });
+
+			const m = new maplibregl.Map({
+				container: mapContainer,
+				style,
+				center: [lon, lat],
+				zoom: 6,
+				attributionControl: { compact: true }
+			});
+			map = m;
+			m.on('error', (e) => console.error('[picker] map error:', (e as { error?: unknown }).error ?? e));
+			m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+			m.on('load', () => {
+				// totality corridor band (north edge + reversed south edge → closed polygon)
+				const ring = [...corridorEdges.north, ...[...corridorEdges.south].reverse()];
+				if (ring.length) {
+					ring.push(ring[0]);
+					m.addSource('corridor', {
+						type: 'geojson',
+						data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] }, properties: {} }
+					});
+					m.addLayer({
+						id: 'corridor-fill',
+						type: 'fill',
+						source: 'corridor',
+						paint: { 'fill-color': brand.accent.hex, 'fill-opacity': 0.14 }
+					});
+					m.addLayer({
+						id: 'corridor-line',
+						type: 'line',
+						source: 'corridor',
+						paint: { 'line-color': brand.accent.hex, 'line-width': 1.5, 'line-opacity': 0.6 }
+					});
+				}
+
+				marker = new maplibregl.Marker({ draggable: true, color: brand.accent.hex }).setLngLat([lon, lat]).addTo(m);
+				marker.on('dragend', () => {
+					const p = marker!.getLngLat();
+					onmove(p.lat, p.lng);
+				});
+				m.on('click', (e) => {
+					marker!.setLngLat(e.lngLat);
+					onmove(e.lngLat.lat, e.lngLat.lng);
+				});
+				m.getCanvas().style.cursor = 'crosshair';
+				ready = true;
+			});
+		})().catch((err) => console.error('[picker] init failed', err));
+
+		return () => {
+			disposed = true;
+			map?.remove();
+		};
+	});
+
+	// Follow external coordinate changes (a search hit / GPS) without feeding our own moves back into a loop.
+	$effect(() => {
+		const la = lat,
+			lo = lon;
+		if (!map || !marker) return;
+		const cur = marker.getLngLat();
+		if (Math.abs(cur.lat - la) > 1e-6 || Math.abs(cur.lng - lo) > 1e-6) {
+			marker.setLngLat([lo, la]);
+			map.easeTo({ center: [lo, la], duration: 500 });
+		}
+	});
+</script>
+
+<div class="picker">
+	<div class="picker-map" bind:this={mapContainer}></div>
+	{#if !ready}<div class="picker-loading">{$t('a2.loading')}</div>{/if}
+</div>
+
+<style>
+	.picker {
+		position: relative;
+		height: min(46vh, 340px);
+		border-radius: var(--radius-sm);
+		overflow: hidden;
+		border: 1px solid var(--border);
+	}
+	.picker-map {
+		position: absolute;
+		inset: 0;
+	}
+	.picker-loading {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		color: var(--muted);
+		font-size: 0.9rem;
+		background: var(--bg);
+	}
+</style>

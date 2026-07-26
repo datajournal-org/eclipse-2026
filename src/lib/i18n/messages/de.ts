@@ -30,13 +30,16 @@ const messages = {
 	},
 	a4: {
 		title: 'Was siehst du von dir aus?',
-		geo: 'Standort verwenden',
-		search: 'Ort suchen',
-		map: 'Auf Karte tippen',
-		manual_hint: 'oder Koordinaten eingeben (Breite, Länge)',
-		use: 'Setzen',
-		geo_error: 'Standort nicht verfügbar. Bitte Ort suchen oder Koordinaten eingeben.',
-		soon: 'folgt'
+		geo: 'Meinen Standort verwenden',
+		search: 'Stadt oder Adresse suchen',
+		searching: 'Suche …',
+		no_results: 'Nichts gefunden',
+		geo_error: 'Standort nicht verfügbar. Bitte suche einen Ort oder tippe auf die Karte.',
+		adjust_hint: 'Pin ziehen oder auf die Karte tippen, um den Ort anzupassen.',
+		use_here: 'Diesen Ort verwenden',
+		verdict_total: 'Totalität',
+		verdict_partial: 'partiell',
+		verdict_none: 'nicht sichtbar'
 	},
 	b: { your_sky: 'Dein Himmel', change: 'ändern', clear: 'Ort entfernen' },
 

@@ -32,12 +32,15 @@ const messages: Messages = {
 	a4: {
 		title: 'What will you see from where you are?',
 		geo: 'Use my location',
-		search: 'Search a place',
-		map: 'Tap on the map',
-		manual_hint: 'or enter coordinates (lat, lon)',
-		use: 'Set',
-		geo_error: 'Location unavailable. Please search a place or enter coordinates.',
-		soon: 'coming soon'
+		search: 'Search a city or address',
+		searching: 'Searching …',
+		no_results: 'Nothing found',
+		geo_error: 'Location unavailable. Search a place or tap the map.',
+		adjust_hint: 'Drag the pin or tap the map to adjust the spot.',
+		use_here: 'Use this location',
+		verdict_total: 'Totality',
+		verdict_partial: 'partial',
+		verdict_none: 'not visible'
 	},
 	b: { your_sky: 'Your sky', change: 'change', clear: 'Remove location' },
 
