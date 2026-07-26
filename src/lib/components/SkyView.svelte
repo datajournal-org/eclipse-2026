@@ -60,7 +60,14 @@
 			const times = Array.from({ length: N + 1 }, (_, i) => tStart + ((tEnd - tStart) * i) / N);
 			frameMax = N;
 
-			const sun: SunState = { center: [0, 0, 0, 1], moon: [0, 0], moonR: 1, visible: false, opacity: 1 };
+			const sun: SunState = {
+				center: [0, 0, 0, 1],
+				moon: [0, 0],
+				moonR: 1,
+				angRad: 0,
+				visible: false,
+				opacity: 1
+			};
 			const SUN_DIST = 30000; // metres: far enough that buildings (<1 km) occlude it
 
 			const style = colorful({ baseUrl: 'https://tiles.versatiles.org' });
@@ -294,6 +301,7 @@
 					const dy = mo.alt - s.alt;
 					sun.moon = [dx / sunAngR, dy / sunAngR];
 					sun.moonR = moonAngR / sunAngR;
+					sun.angRad = sunAngR * D2R; // real angular radius (rad) → billboard drawn at true size
 
 					const ground = m.queryTerrainElevation([LON, LAT] as [number, number]) ?? 0;
 					const eyeAlt = ground + EYE;

@@ -2,17 +2,16 @@
 // Moon crescent cut out, drawn at a clip-space centre set each frame from the Sun's az/alt. It is
 // depth-tested so terrain and 3D buildings occlude it when the Sun is behind them. Ported from
 // prototype/b3.html — a WebGL layer in MapLibre's 3D custom-layer slot.
-import type { CustomLayerInterface, CustomRenderMethodInput } from 'maplibre-gl';
+import type { CustomLayerInterface, CustomRenderMethodInput, Map as MlMap } from 'maplibre-gl';
 
 export type SunState = {
 	center: [number, number, number, number]; // clip-space centre (mercator x, y, z, w)
 	moon: [number, number]; // Moon-centre offset from the Sun, in Sun-radius units (+x east, +y up)
 	moonR: number; // Moon angular radius / Sun angular radius
+	angRad: number; // the Sun's angular radius (rad) → billboard drawn at its real angular size
 	visible: boolean;
 	opacity: number; // faded out as the Sun drops below the terrain/curvature horizon
 };
-
-const SUN_PX = 46; // on-screen radius in px (enlarged for legibility)
 
 const VERTEX = `
 attribute vec2 a_corner;
@@ -44,6 +43,7 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 	let prog: WebGLProgram;
 	let buffer: WebGLBuffer;
 	let aCorner: number;
+	let map: MlMap;
 	const u: Record<string, WebGLUniformLocation | null> = {};
 
 	return {
@@ -51,7 +51,8 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 		type: 'custom',
 		renderingMode: '3d',
 
-		onAdd(_map, gl) {
+		onAdd(m, gl) {
+			map = m;
 			const compile = (type: number, src: string): WebGLShader => {
 				const sh = gl.createShader(type)!;
 				gl.shaderSource(sh, src);
@@ -81,7 +82,12 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 			gl.vertexAttribPointer(aCorner, 2, gl.FLOAT, false, 0, 0);
 			gl.uniformMatrix4fv(u.u_matrix, false, options.defaultProjectionData.mainMatrix);
 			gl.uniform4fv(u.u_center, sun.center);
-			gl.uniform2f(u.u_pix, (SUN_PX * 2) / gl.drawingBufferWidth, (SUN_PX * 2) / gl.drawingBufferHeight);
+			// real angular size: map the Sun's angular radius through the vertical FOV to a clip-space (NDC)
+			// half-extent. uy is the vertical half-size; ux keeps the disc circular in pixels despite aspect.
+			const fovV = (map.getVerticalFieldOfView() * Math.PI) / 180;
+			const uy = Math.tan(sun.angRad) / Math.tan(fovV / 2);
+			const ux = (uy * gl.drawingBufferHeight) / gl.drawingBufferWidth;
+			gl.uniform2f(u.u_pix, ux, uy);
 			gl.uniform2f(u.u_moon, sun.moon[0], sun.moon[1]);
 			gl.uniform1f(u.u_moonR, sun.moonR);
 			gl.uniform1f(u.u_opacity, sun.opacity);
