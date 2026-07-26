@@ -6,8 +6,8 @@ static files to bunny.net. All personalisation — chosen location, maps, countd
 ## Reference documents
 
 - [Glossary](./docs/GLOSSARY.md) — shared vocabulary (astronomy, UI elements, libraries); use these exact names.
-- [Architecture](./docs/ARCHITEKTUR.md) — structure and technical decisions.
-- [Concept](./docs/KONZEPT.md) — product concept and goals.
+- [Architecture](./docs/ARCHITECTURE.md) — structure and technical decisions.
+- [Concept](./docs/CONCEPT.md) — product concept and goals.
 - [Wireframes](./docs/WIREFRAMES.md) — screen layouts (source: `docs/wireframes.html`).
 
 ## Working notes
