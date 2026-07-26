@@ -30,7 +30,7 @@
 			if (!maplibregl || !versatiles || disposed) return;
 
 			const brand = readBrandColors();
-			const style = versatiles.colorful({ baseUrl: 'https://tiles.versatiles.org' });
+			const style = versatiles.eclipse({ baseUrl: 'https://tiles.versatiles.org', recolor: { saturate:-0.8 } });
 
 			const m = new maplibregl.Map({
 				container: mapContainer,
@@ -58,13 +58,13 @@
 						id: 'corridor-fill',
 						type: 'fill',
 						source: 'corridor',
-						paint: { 'fill-color': brand.accent.hex, 'fill-opacity': 0.16 }
+						paint: { 'fill-color': brand.accent.hex, 'fill-opacity': 0.05 }
 					});
 					m.addLayer({
 						id: 'corridor-line',
 						type: 'line',
 						source: 'corridor',
-						paint: { 'line-color': brand.accent.hex, 'line-width': 1.5, 'line-opacity': 0.65 }
+						paint: { 'line-color': brand.accent.hex, 'line-width': 1.5, 'line-opacity': 0.3 }
 					});
 				}
 
