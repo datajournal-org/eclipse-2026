@@ -50,5 +50,9 @@
 		"astronomy-engine": "^2.1.19",
 		"maplibre-gl": "^6.0.0",
 		"open-props": "^1.7.23"
+	},
+	"allowScripts": {
+		"esbuild": true,
+		"fsevents": true
 	}
 }
