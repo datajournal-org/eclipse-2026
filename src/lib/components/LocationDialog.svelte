@@ -233,8 +233,8 @@
 		background: transparent;
 
 		&::backdrop {
-			background: rgba(4, 6, 10, 0.62);
-			backdrop-filter: blur(3px);
+			background: color-mix(in oklab, var(--bg) 60%, transparent);
+			backdrop-filter: blur(8px);
 		}
 		&[open] {
 			display: grid;
@@ -251,7 +251,7 @@
 		flex-direction: column;
 		width: min(460px, 94vw);
 		height: min(660px, 88vh);
-		background: var(--surface);
+		background: var(--bg);
 		color: var(--text);
 		border: 1px solid var(--border);
 		border-radius: var(--radius-sm);
@@ -283,7 +283,7 @@
 		height: 32px;
 		border-radius: 8px;
 		border: 1px solid var(--border);
-		background: var(--bg-2, var(--surface));
+		background: var(--bg-2);
 		color: var(--text);
 		cursor: pointer;
 	}
@@ -305,7 +305,7 @@
 		align-items: center;
 		gap: 6px;
 		padding: 3px 5px 3px 10px;
-		background: var(--surface);
+		background: var(--bg-2);
 		border: 1px solid var(--border);
 		border-radius: var(--radius-sm);
 		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
@@ -332,10 +332,12 @@
 		height: 34px;
 		border-radius: 8px;
 		border: 1px solid var(--border);
-		background: var(--bg-2, var(--surface));
-		color: var(--accent);
+		background: var(--accent);
+		color: var(--bg);
 		cursor: pointer;
-		font-size: 1.05rem;
+		font-size: 30px;
+		padding: 0;
+		line-height: 1;
 
 		&:disabled {
 			opacity: 0.5;
@@ -356,7 +358,7 @@
 		margin: 0;
 		padding: 5px;
 		list-style: none;
-		background: var(--surface);
+		background: var(--bg-2);
 		border: 1px solid var(--border);
 		border-radius: var(--radius-sm);
 		box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
@@ -456,7 +458,7 @@
 			border-radius: var(--radius-sm);
 			border: 1px solid var(--accent);
 			background: var(--accent);
-			color: #1a1206;
+			color: var(--bg);
 
 			&:disabled {
 				opacity: 0.5;
