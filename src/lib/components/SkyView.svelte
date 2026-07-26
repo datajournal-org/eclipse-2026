@@ -22,6 +22,7 @@
 	import { environment, DUSK_HEX } from '$lib/skyview/environment';
 	import { computeFraming } from '$lib/skyview/framing';
 	import SkyLoupe from '$lib/components/SkyLoupe.svelte';
+	import { loadMaplibre } from '$lib/maplibre';
 	import { SKY_PALETTE } from '$lib/config';
 
 	let mapContainer: HTMLDivElement;
@@ -52,7 +53,7 @@
 		let detachDrag: (() => void) | undefined;
 
 		(async () => {
-			const mods = await Promise.all([import('maplibre-gl'), import('@versatiles/style')]).catch((err) => {
+			const mods = await Promise.all([loadMaplibre(), import('@versatiles/style')]).catch((err) => {
 				console.error('[B3] failed to load map libraries', err);
 				return null;
 			});
@@ -108,98 +109,107 @@
 			m.keyboard.disable();
 
 			m.on('load', () => {
-				addSceneLayers(m, { sun, landColor });
+				try {
+					addSceneLayers(m, { sun, landColor });
 
-				// ---- orientation framing: one fixed shot showing the whole Sun arc + the location marker ----
-				const { azMin, azMax, altMax } = sunArcEnvelope(LAT, LON, times, N, 8);
-				const aspect = (mapContainer.clientWidth || 1) / (mapContainer.clientHeight || 1);
-				const framing = computeFraming({ azMin, azMax, altMax }, aspect);
-				m.setVerticalFieldOfView(framing.fov);
+					// ---- orientation framing: one fixed shot showing the whole Sun arc + the location marker ----
+					const { azMin, azMax, altMax } = sunArcEnvelope(LAT, LON, times, N, 8);
+					const aspect = (mapContainer.clientWidth || 1) / (mapContainer.clientHeight || 1);
+					const framing = computeFraming({ azMin, azMax, altMax }, aspect);
+					m.setVerticalFieldOfView(framing.fov);
 
-				// Third-person camera rig + interaction (orbit / dolly-zoom / controls) — see cameraController.ts.
-				const cam = createCameraController({
-					maplibregl,
-					m,
-					lat: LAT,
-					lon: LON,
-					framing,
-					altMax,
-					label: (key) => get(t)(key)
-				});
-				detachDrag = cam.detach;
+					// Third-person camera rig + interaction (orbit / dolly-zoom / controls) — see cameraController.ts.
+					const cam = createCameraController({
+						maplibregl,
+						m,
+						lat: LAT,
+						lon: LON,
+						framing,
+						altMax,
+						label: (key) => get(t)(key)
+					});
+					detachDrag = cam.detach;
 
-				// twilight veil — dims the whole rendered scene (sky, terrain, buildings, base map) as the
-				// eclipse deepens. It lives INSIDE the map's canvas container, appended just BEFORE the marker,
-				// so the marker (a UI element, like the A2 globe's) sits above it at full brightness rather than
-				// being dimmed with the scene. update() drives its opacity from the obscuration.
-				const duskEl = document.createElement('div');
-				duskEl.className = 'b3-dusk';
-				duskEl.style.background = DUSK_HEX;
-				m.getCanvasContainer().appendChild(duskEl);
+					// twilight veil — dims the whole rendered scene (sky, terrain, buildings, base map) as the
+					// eclipse deepens. It lives INSIDE the map's canvas container, appended just BEFORE the marker,
+					// so the marker (a UI element, like the A2 globe's) sits above it at full brightness rather than
+					// being dimmed with the scene. update() drives its opacity from the obscuration.
+					const duskEl = document.createElement('div');
+					duskEl.className = 'b3-dusk';
+					duskEl.style.background = DUSK_HEX;
+					m.getCanvasContainer().appendChild(duskEl);
 
-				// location marker — a DOM marker, exactly like the A2 globe. MapLibre keeps it on the terrain
-				// surface at [LON,LAT] every frame; now that the camera height no longer bobs, it holds its
-				// screen position as the camera orbits. Shared .user-pin dot (styles/map.css), same as the A2
-				// globe. Added after the veil → above it.
-				const pin = document.createElement('div');
-				pin.className = 'user-pin';
-				new maplibregl.Marker({ element: pin }).setLngLat([LON, LAT]).addTo(m);
+					// location marker — a DOM marker, exactly like the A2 globe. MapLibre keeps it on the terrain
+					// surface at [LON,LAT] every frame; now that the camera height no longer bobs, it holds its
+					// screen position as the camera orbits. Shared .user-pin dot (styles/map.css), same as the A2
+					// globe. Added after the veil → above it.
+					const pin = document.createElement('div');
+					pin.className = 'user-pin';
+					new maplibregl.Marker({ element: pin }).setLngLat([LON, LAT]).addTo(m);
 
-				// Zoom (+/-) and reset controls — added after the veil/marker, same look as the A2 globe.
-				cam.addControls();
+					// Zoom (+/-) and reset controls — added after the veil/marker, same look as the A2 globe.
+					cam.addControls();
 
-				function update() {
-					const date = new Date(times[frameIndex]);
-					const geo = eclipseGeometry(LAT, LON, date);
-					const s = geo.sun;
-					placeSun(sun, geo, { maplibregl, m, lat: LAT, lon: LON });
+					function update() {
+						const date = new Date(times[frameIndex]);
+						const geo = eclipseGeometry(LAT, LON, date);
+						const s = geo.sun;
+						placeSun(sun, geo, { maplibregl, m, lat: LAT, lon: LON });
 
-					// keep the map in sync with the simulated Sun: brightness/colour from the obscuration (same
-					// numbers that drive the Sun billboard), light + hillshade from its (az, alt).
-					const env = environment(geo.obsc);
-					duskEl.style.opacity = String(env.veil); // dims the whole rendered scene, not the marker
-					const veilRgb = veilColour(geo.obsc);
-					duskEl.style.background = cssRgb(veilRgb);
-					syncMapLighting(m, s.az, s.alt, env);
+						// keep the map in sync with the simulated Sun: brightness/colour from the obscuration (same
+						// numbers that drive the Sun billboard), light + hillshade from its (az, alt).
+						const env = environment(geo.obsc);
+						duskEl.style.opacity = String(env.veil); // dims the whole rendered scene, not the marker
+						const veilRgb = veilColour(geo.obsc);
+						duskEl.style.background = cssRgb(veilRgb);
+						syncMapLighting(m, s.az, s.alt, env);
 
-					clock = get(fmt).time(date);
-					altTxt = s.alt.toFixed(1) + '°';
-					azTxt = s.az.toFixed(0) + '°';
-					obscTxt = (geo.obsc * 100).toFixed(0) + '%';
-					// loupe crescent (changes only with time): Moon-disc offset/size in Sun-radius units × R
-					crescent = { x: sun.moon[0] * LOUPE_R, y: -sun.moon[1] * LOUPE_R, r: sun.moonR * LOUPE_R };
-					loupeSky = loupeSkyCss(s.alt, veilRgb, env.veil);
-					// corona overlay (test): the image's Moon (270 of 512 px = radius 135) is mapped onto the loupe
-					// Moon disc, and only shown in true totality — obscuration reaches 1 (never at partial locations).
-					coronaSize = crescent.r * (512 / 135);
-					coronaOpacity = Math.max(0, Math.min(1, (geo.obsc - 0.985) / 0.015));
-					m.triggerRepaint();
-				}
+						clock = get(fmt).time(date);
+						altTxt = s.alt.toFixed(1) + '°';
+						azTxt = s.az.toFixed(0) + '°';
+						obscTxt = (geo.obsc * 100).toFixed(0) + '%';
+						// loupe crescent (changes only with time): Moon-disc offset/size in Sun-radius units × R
+						crescent = { x: sun.moon[0] * LOUPE_R, y: -sun.moon[1] * LOUPE_R, r: sun.moonR * LOUPE_R };
+						loupeSky = loupeSkyCss(s.alt, veilRgb, env.veil);
+						// loupe horizon: the Sun sits `s.alt`° above the horizon → the horizon line is that far below
+						// the centred Sun, in loupe units (loupeR units = one solar radius = geo.sunAngR°).
+						horizonY = (s.alt / geo.sunAngR) * LOUPE_R;
+						loupeGround = loupeGroundCss(landColor, veilRgb, env.veil);
+						// corona overlay (test): the image's Moon (270 of 512 px = radius 135) is mapped onto the loupe
+						// Moon disc, and only shown in true totality — obscuration reaches 1 (never at partial locations).
+						coronaSize = crescent.r * (512 / 135);
+						coronaOpacity = Math.max(0, Math.min(1, (geo.obsc - 0.985) / 0.015));
+						m.triggerRepaint();
+					}
 
-				setFrame = (i: number) => {
-					frameIndex = i;
-					update();
-				};
+					setFrame = (i: number) => {
+						frameIndex = i;
+						update();
+					};
 
-				// keep the loupe overlay glued to the tiny real Sun each rendered frame (the camera can move
-				// without a scrub); SkyLoupe.place() positions the locator + tangent lines from the screen point.
-				m.on('render', () => {
-					const s = sun.screen;
-					const w = mapContainer.clientWidth,
-						h = mapContainer.clientHeight;
-					const onScreen = !!s && sun.visible && s[0] >= 0 && s[0] <= w && s[1] >= 0 && s[1] <= h;
-					loupe?.place(onScreen ? s : null);
-				});
+					// keep the loupe overlay glued to the tiny real Sun each rendered frame (the camera can move
+					// without a scrub); SkyLoupe.place() positions the locator + tangent lines from the screen point.
+					m.on('render', () => {
+						const s = sun.screen;
+						const w = mapContainer.clientWidth,
+							h = mapContainer.clientHeight;
+						const onScreen = !!s && sun.visible && s[0] >= 0 && s[0] <= w && s[1] >= 0 && s[1] <= h;
+						loupe?.place(onScreen ? s : null);
+					});
 
-				// NOTE: no re-framing on 'idle' — the camera is set once here and never moves on its own
-				// again (a later jumpTo would fight the user's panning and appear to teleport the marker).
-				m.once('idle', () => {
+					// NOTE: no re-framing on 'idle' — the camera is set once here and never moves on its own
+					// again (a later jumpTo would fight the user's panning and appear to teleport the marker).
+					m.once('idle', () => {
+						cam.applyFraming();
+						update();
+					});
 					cam.applyFraming();
 					update();
-				});
-				cam.applyFraming();
-				update();
-				ready = true;
+					ready = true;
+				} catch (err) {
+					console.error('[B3] scene setup failed', err);
+					ready = true;
+				}
 			});
 		})().catch((err) => {
 			console.error('[B3] sky view init failed', err);

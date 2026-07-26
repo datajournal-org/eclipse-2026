@@ -34,6 +34,7 @@
 	import { IsoLabels } from '$lib/shadow-globe/isoLabels';
 	import TimeScrubber from '$lib/components/TimeScrubber.svelte';
 	import { buildTimeGrid } from '$lib/components/timeScrubber';
+	import { loadMaplibre } from '$lib/maplibre';
 
 	const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
 	const INITIAL_VIEW = { center: [-18, 50] as [number, number], zoom: 1.21 };
@@ -142,7 +143,7 @@
 		}
 
 		(async () => {
-			const maplibregl = await import('maplibre-gl').catch((err) => {
+			const maplibregl = await loadMaplibre().catch((err) => {
 				console.error('[A2] failed to load maplibre-gl', err);
 				loadError = true;
 				return null;
