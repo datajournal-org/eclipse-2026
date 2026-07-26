@@ -599,7 +599,7 @@
 				box-sizing: border-box;
 				width: 26px;
 				height: 26px;
-				border: 0.5px solid #fff;
+				border: 1px solid #fff;
 				border-radius: 0;
 				pointer-events: none;
 			}
@@ -612,7 +612,7 @@
 				pointer-events: none;
 				line {
 					stroke: #fff;
-					stroke-width: 0.2;
+					stroke-width: 0.5;
 				}
 			}
 			:is(.b3-loupe, .b3-locator, .b3-leader).hidden {
