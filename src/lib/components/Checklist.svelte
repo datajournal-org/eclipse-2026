@@ -100,7 +100,7 @@
 		font-size: 0.8rem;
 		color: var(--muted);
 
-		& b {
+		b {
 			font-size: 1.6rem;
 			margin-right: 2px;
 		}
@@ -117,7 +117,7 @@
 		flex-direction: column;
 		gap: 10px;
 
-		& li {
+		li {
 			position: relative;
 			padding-left: 26px;
 			font-size: 0.95rem;

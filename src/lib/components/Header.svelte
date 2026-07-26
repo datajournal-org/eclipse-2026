@@ -49,7 +49,7 @@
 		display: flex;
 		gap: 4px;
 
-		& button {
+		button {
 			padding: 4px 8px;
 			font-size: 0.78rem;
 			font-weight: 600;

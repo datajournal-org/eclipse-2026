@@ -101,14 +101,14 @@ button {
 .block {
 	padding-inline: var(--edge);
 
-	& > .block-head {
+	> .block-head {
 		display: flex;
 		align-items: baseline;
 		justify-content: space-between;
 		gap: var(--space-2xs);
 		margin-bottom: var(--space-2xs);
 	}
-	& .eyebrow {
+	.eyebrow {
 		font-size: var(--text-caption);
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
@@ -175,13 +175,13 @@ button {
 	font-size: 0.86rem;
 	color: var(--muted);
 
-	& .clock {
+	.clock {
 		font-weight: 700;
 		font-size: 1.1rem;
 		color: var(--fg);
 		white-space: nowrap;
 	}
-	& b {
+	b {
 		color: var(--accent);
 	}
 }

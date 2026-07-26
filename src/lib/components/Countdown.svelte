@@ -56,11 +56,11 @@
 		border-radius: var(--radius-sm);
 		padding: 10px 6px;
 
-		& .n {
+		.n {
 			font-size: clamp(1.8rem, 8vw, 2.6rem);
 			line-height: 1;
 		}
-		& .l {
+		.l {
 			font-size: 0.7rem;
 			letter-spacing: 0.1em;
 			text-transform: uppercase;

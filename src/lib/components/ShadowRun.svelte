@@ -296,16 +296,16 @@
 		height: 100%;
 		background: #000;
 
-		& .stage {
+		.stage {
 			margin-inline: 0;
 			flex: 1;
 			min-height: 0;
 		}
-		& .stage-canvas {
+		.stage-canvas {
 			height: 100%;
 			background: #000;
 		}
-		& .timebar {
+		.timebar {
 			margin: 0;
 			align-self: center;
 			width: min(760px, 100%);

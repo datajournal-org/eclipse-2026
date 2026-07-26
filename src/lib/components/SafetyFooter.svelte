@@ -16,7 +16,7 @@
 		background: color-mix(in oklab, var(--warn) 9%, transparent);
 		margin-top: 8px;
 
-		& .inner {
+		.inner {
 			display: flex;
 			align-items: flex-start;
 			gap: 10px;
@@ -26,7 +26,7 @@
 			font-size: 0.88rem;
 			font-weight: 600;
 		}
-		& .icon {
+		.icon {
 			color: var(--warn);
 			font-size: 1.1rem;
 			line-height: 1.4;
