@@ -11,15 +11,14 @@
 /** The blue-grey the scene fades toward near totality (the DOM veil colour). */
 export const DUSK_HEX = '#20263a';
 
-const FLOOR = 0.06; // residual brightness at totality (corona / horizon glow — never full black)
-const GAMMA = 0.35; // <1 keeps the scene bright through most of the partial phase, dropping near totality
-const MAX_VEIL = 0.82; // opacity of the dusk veil at totality
+const MAX_VEIL = 0.97; // opacity of the dusk veil at totality (near-black, once its colour darkens too)
+const VEIL_STEEP = 9; // higher → gentle dimming through the partial phase, then a sharp plunge near totality
 
 const LIGHT_COLOR = '#fff2dc'; // constant warm white of the directional building light
 const LIGHT_INTENSITY = 0.25; // constant contrast — the veil owns all eclipse dimming
 
 export type Environment = {
-	brightness: number; // 1 = full daylight, ~FLOOR at totality
+	brightness: number; // 1 = full daylight, 0 at totality
 	veil: number; // dusk-overlay opacity (0 → MAX_VEIL) — the single, uniform eclipse dimmer
 	light: string; // directional building-light colour (constant)
 	intensity: number; // directional building-light intensity (constant)
@@ -28,10 +27,12 @@ export type Environment = {
 /** Map appearance for a given eclipse obscuration (0..1). The veil is the one eclipse dimmer; the
  *  directional light stays constant so buildings and terrain dim together at the same rate. */
 export function environment(obsc: number): Environment {
-	const brightness = FLOOR + (1 - FLOOR) * Math.pow(Math.max(0, 1 - obsc), GAMMA);
+	const o = Math.max(0, Math.min(1, obsc));
+	// veil rises steeply only as totality approaches: gentle through the partial phase, near-total at o→1.
+	const veil = MAX_VEIL * Math.pow(o, VEIL_STEEP);
 	return {
-		brightness,
-		veil: (1 - brightness) * MAX_VEIL,
+		brightness: 1 - Math.pow(o, VEIL_STEEP),
+		veil,
 		light: LIGHT_COLOR,
 		intensity: LIGHT_INTENSITY
 	};

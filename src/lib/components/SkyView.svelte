@@ -33,6 +33,7 @@
 	const SKY_HI = hexToRgb(SKY_PALETTE.sky);
 	const SKY_LO = hexToRgb(SKY_PALETTE.horizon);
 	const DUSK_RGB = hexToRgb(DUSK_HEX);
+	const NIGHT_RGB = hexToRgb('#05070d'); // near-black the veil trends toward at totality
 	const mix3 = (a: Rgb, b: Rgb, t: number): Rgb => [
 		a[0] + (b[0] - a[0]) * t,
 		a[1] + (b[1] - a[1]) * t,
@@ -54,6 +55,8 @@
 	let tangentVisible = $state(false); // ...and far enough from the loupe to draw the tangent lines
 	let crescent = $state({ x: 0, y: 0, r: 0 }); // loupe Moon-disc (the crescent cut-out), SVG units
 	let loupeSky = $state<string>(SKY_PALETTE.sky); // loupe background = the sky colour behind the real Sun
+	let coronaSize = $state(0); // corona overlay size in loupe viewBox units (image Moon 270px → loupe Moon)
+	let coronaOpacity = $state(0); // corona fades in only at totality (obscuration → 1)
 	let locatorEl: HTMLDivElement;
 	let leaderA: SVGLineElement;
 	let leaderB: SVGLineElement;
@@ -333,6 +336,11 @@
 					// from the obscuration (same numbers that drive the Sun billboard).
 					const env = environment(obsc);
 					duskEl.style.opacity = String(env.veil); // dims the whole rendered scene, not the marker
+					// near totality, darken the veil colour from dusk-blue toward near-black, so the plunge reads
+					// as (almost) night rather than just "more blue"
+					const nightMix = Math.max(0, Math.min(1, (obsc - 0.9) / 0.1));
+					const veilRgb = mix3(DUSK_RGB, NIGHT_RGB, nightMix);
+					duskEl.style.background = cssRgb(veilRgb);
 					m.setLight({
 						anchor: 'map',
 						position: [1.15, s.az, 90 - s.alt] as [number, number, number],
@@ -354,7 +362,11 @@
 					// loupe background = the sky behind the low Sun: blend horizon→sky by altitude, then dim toward
 					// dusk exactly as the veil dims the scene, so the loupe reads as a zoomed cutout of that sky.
 					const skyT = Math.max(0, Math.min(1, s.alt / 30));
-					loupeSky = cssRgb(mix3(mix3(SKY_LO, SKY_HI, skyT), DUSK_RGB, env.veil));
+					loupeSky = cssRgb(mix3(mix3(SKY_LO, SKY_HI, skyT), veilRgb, env.veil));
+					// corona overlay (test): the image's Moon (270 of 512 px = radius 135) is mapped onto the loupe
+					// Moon disc, and only shown in true totality — obscuration reaches 1 (never at partial locations).
+					coronaSize = crescent.r * (512 / 135);
+					coronaOpacity = Math.max(0, Math.min(1, (obsc - 0.985) / 0.015));
 					m.triggerRepaint();
 				}
 
@@ -482,6 +494,15 @@
 			<svg viewBox="-50 -50 100 100">
 				<circle class="loupe-sun" r={LOUPE_R} />
 				<circle class="loupe-moon" cx={crescent.x} cy={crescent.y} r={crescent.r} />
+				<image
+					href="/corona_512.webp"
+					x={-coronaSize / 2}
+					y={-coronaSize / 2}
+					width={coronaSize}
+					height={coronaSize}
+					opacity={coronaOpacity}
+					preserveAspectRatio="xMidYMid meet"
+				/>
 			</svg>
 		</div>
 
