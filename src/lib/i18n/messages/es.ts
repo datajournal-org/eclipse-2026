@@ -71,7 +71,9 @@ const messages: Messages = {
 		azimuth: 'Acimut',
 		coverage: 'Cobertura',
 		loading: 'Cargando relieve …',
-		recenter: 'Restablecer vista'
+		recenter: 'Restablecer vista',
+		zoom_in: 'Acercar',
+		zoom_out: 'Alejar'
 	},
 	b6: {
 		title: 'Tu lista',

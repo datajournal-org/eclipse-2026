@@ -71,7 +71,9 @@ const messages: Messages = {
 		azimuth: 'Azimuth',
 		coverage: 'Coverage',
 		loading: 'Loading terrain …',
-		recenter: 'Reset view'
+		recenter: 'Reset view',
+		zoom_in: 'Zoom in',
+		zoom_out: 'Zoom out'
 	},
 	b6: {
 		title: 'Your checklist',

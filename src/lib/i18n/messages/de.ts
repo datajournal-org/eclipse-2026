@@ -69,7 +69,9 @@ const messages = {
 		azimuth: 'Azimut',
 		coverage: 'Bedeckung',
 		loading: 'Gelände wird geladen …',
-		recenter: 'Ansicht zurücksetzen'
+		recenter: 'Ansicht zurücksetzen',
+		zoom_in: 'Vergrößern',
+		zoom_out: 'Verkleinern'
 	},
 	b6: {
 		title: 'Deine Checkliste',
