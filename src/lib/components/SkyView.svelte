@@ -22,8 +22,7 @@
 		norm180,
 		AU_KM as AU,
 		SUN_RADIUS_KM as RSUN,
-		MOON_RADIUS_KM as RMOON,
-		EARTH_RADIUS_M
+		MOON_RADIUS_KM as RMOON
 	} from '$lib/constants';
 
 	const ELEV = 'https://tiles.versatiles.org/tiles/elevation/{z}/{x}/{y}';
@@ -34,7 +33,6 @@
 	let altTxt = $state('–');
 	let azTxt = $state('–');
 	let obscTxt = $state('–');
-	let note = $state('');
 	let frameIndex = $state(0);
 	let frameMax = $state(1);
 	let setFrame: (i: number) => void = () => {};
@@ -274,21 +272,7 @@
 				};
 				m.addControl(resetControl, 'top-right');
 
-				const EYE = 1.7; // eye height used to place the Sun disc / horizon test above the ground
-
-				// max elevation angle of the terrain along an azimuth (incl. Earth-curvature dip)
-				function terrainHorizonAlt(az: number, eyeAlt: number): number {
-					let maxAng = -90;
-					for (const d of [150, 300, 600, 1200, 2500, 5000, 10000, 20000, 40000]) {
-						const [lng2, lat2] = destPoint(LAT, LON, az, d);
-						const e = m.queryTerrainElevation([lng2, lat2]);
-						if (e == null) continue;
-						const drop = (d * d) / (2 * EARTH_RADIUS_M); // horizon dip from curvature
-						const ang = Math.atan2(e - drop - eyeAlt, d) * R2D;
-						if (ang > maxAng) maxAng = ang;
-					}
-					return maxAng;
-				}
+				const EYE = 1.7; // eye height used to place the Sun disc above the ground
 
 				function update() {
 					const date = new Date(times[frameIndex]);
@@ -306,24 +290,19 @@
 					const ground = m.queryTerrainElevation([LON, LAT] as [number, number]) ?? 0;
 					const eyeAlt = ground + EYE;
 
-					// place the Sun disc along (az, alt), far away so buildings occlude it
+					// place the Sun disc along (az, alt), far out in the sky
 					const hd = SUN_DIST * Math.cos(s.alt * D2R),
 						vd = SUN_DIST * Math.sin(s.alt * D2R);
 					const [slng, slat] = destPoint(LAT, LON, s.az, hd);
 					const merc = maplibregl.MercatorCoordinate.fromLngLat([slng, slat], eyeAlt + vd);
 					sun.center = [merc.x, merc.y, merc.z, 1];
 
-					// Occlusion is handled by the depth test in sunLayer: the rendered terrain and buildings cut
-					// the Sun from the camera's viewpoint — exactly what's on screen. (The old analytic fade
-					// measured from the observer's eye at the marker, but the scene renders from the elevated
-					// framing camera ~140 m up, so it hid the Sun while it was still well above the terrain in
-					// view.) Only gate the billboard off once the Sun is well below the astronomical horizon.
+					// The Sun is drawn on top (sunLayer, depth test off): terrain occlusion is intentionally
+					// ignored — we don't know the observer's height (street level vs. a rooftop), so a hill that
+					// would block the Sun from the ground might not from a roof. Hide it only once it is below
+					// the true (sea-level) horizon.
 					sun.opacity = 1;
-					sun.visible = s.alt > -1;
-
-					// "behind horizon" note reflects the observer's real GROUND view (eye level at the marker),
-					// where nearby terrain can block a low Sun even though the elevated overview still shows it.
-					const horizon = terrainHorizonAlt(s.az, eyeAlt);
+					sun.visible = s.alt > 0;
 
 					const obsc = discOverlapFraction(sunAngR, moonAngR, Math.hypot(dx, dy));
 
@@ -347,7 +326,6 @@
 					altTxt = s.alt.toFixed(1) + '°';
 					azTxt = s.az.toFixed(0) + '°';
 					obscTxt = (obsc * 100).toFixed(0) + '%';
-					note = s.alt <= horizon ? get(t)('b3.behind_horizon') : '';
 					m.triggerRepaint();
 				}
 
@@ -407,7 +385,6 @@
 			<span>☀ {$t('b3.altitude')} <b>{altTxt}</b></span>
 			<span>{$t('b3.azimuth')} <b>{azTxt}</b></span>
 			<span>◐ {$t('b3.coverage')} <b>{obscTxt}</b></span>
-			{#if note}<span class="warn">{note}</span>{/if}
 		</div>
 	</div>
 </section>
@@ -427,9 +404,6 @@
 
 		& b {
 			color: var(--accent);
-		}
-		& .warn {
-			color: var(--warn);
 		}
 	}
 

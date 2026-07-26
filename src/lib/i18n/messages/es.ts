@@ -70,7 +70,6 @@ const messages: Messages = {
 		altitude: 'Altura',
 		azimuth: 'Acimut',
 		coverage: 'Cobertura',
-		behind_horizon: 'Sol tras el horizonte/relieve',
 		loading: 'Cargando relieve …',
 		recenter: 'Restablecer vista'
 	},

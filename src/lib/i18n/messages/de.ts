@@ -68,7 +68,6 @@ const messages = {
 		altitude: 'Höhe',
 		azimuth: 'Azimut',
 		coverage: 'Bedeckung',
-		behind_horizon: 'Sonne hinter Horizont/Gelände',
 		loading: 'Gelände wird geladen …',
 		recenter: 'Ansicht zurücksetzen'
 	},

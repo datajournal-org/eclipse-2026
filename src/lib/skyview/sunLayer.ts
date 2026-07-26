@@ -1,7 +1,7 @@
-// A first-person "eclipsed Sun" billboard for the B3 sky view (SkyView.svelte): the Sun's disc with the
-// Moon crescent cut out, drawn at a clip-space centre set each frame from the Sun's az/alt. It is
-// depth-tested so terrain and 3D buildings occlude it when the Sun is behind them. Ported from
-// prototype/b3.html — a WebGL layer in MapLibre's 3D custom-layer slot.
+// An "eclipsed Sun" billboard for the B3 sky view (SkyView.svelte): the Sun's disc with the Moon crescent
+// cut out, drawn at its real angular size at a clip-space centre set each frame from the Sun's az/alt. It
+// is drawn on top (depth test off) — terrain occlusion is intentionally ignored, since we don't know the
+// observer's height. A WebGL layer in MapLibre's 3D custom-layer slot.
 import type { CustomLayerInterface, CustomRenderMethodInput, Map as MlMap } from 'maplibre-gl';
 
 export type SunState = {
@@ -92,13 +92,10 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 			gl.uniform1f(u.u_moonR, sun.moonR);
 			gl.uniform1f(u.u_opacity, sun.opacity);
 			gl.uniform3f(u.u_sun, color[0], color[1], color[2]);
-			gl.enable(gl.DEPTH_TEST);
-			gl.depthFunc(gl.LEQUAL);
-			gl.depthMask(false);
+			gl.disable(gl.DEPTH_TEST); // always on top — terrain occlusion is ignored (observer height unknown)
 			gl.enable(gl.BLEND);
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-			gl.depthMask(true); // restore for MapLibre's next layer/frame
 		}
 	};
 }

@@ -70,7 +70,6 @@ const messages: Messages = {
 		altitude: 'Altitude',
 		azimuth: 'Azimuth',
 		coverage: 'Coverage',
-		behind_horizon: 'Sun behind horizon/terrain',
 		loading: 'Loading terrain …',
 		recenter: 'Reset view'
 	},
