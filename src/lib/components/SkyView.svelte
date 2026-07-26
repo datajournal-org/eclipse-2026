@@ -313,10 +313,17 @@
 					const merc = maplibregl.MercatorCoordinate.fromLngLat([slng, slat], eyeAlt + vd);
 					sun.center = [merc.x, merc.y, merc.z, 1];
 
-					// terrain occlusion: fade the Sun out as it drops below the terrain/curvature horizon
+					// Occlusion is handled by the depth test in sunLayer: the rendered terrain and buildings cut
+					// the Sun from the camera's viewpoint — exactly what's on screen. (The old analytic fade
+					// measured from the observer's eye at the marker, but the scene renders from the elevated
+					// framing camera ~140 m up, so it hid the Sun while it was still well above the terrain in
+					// view.) Only gate the billboard off once the Sun is well below the astronomical horizon.
+					sun.opacity = 1;
+					sun.visible = s.alt > -1;
+
+					// "behind horizon" note reflects the observer's real GROUND view (eye level at the marker),
+					// where nearby terrain can block a low Sun even though the elevated overview still shows it.
 					const horizon = terrainHorizonAlt(s.az, eyeAlt);
-					sun.opacity = Math.min(1, Math.max(0, (s.alt - horizon + 0.25) / 0.5));
-					sun.visible = sun.opacity > 0.01;
 
 					const obsc = discOverlapFraction(sunAngR, moonAngR, Math.hypot(dx, dy));
 
