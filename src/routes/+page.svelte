@@ -19,7 +19,6 @@
 	<!-- A — always visible (event overview) -->
 	<Countdown />
 	<ShadowRun />
-	<Placeholder title={$t('a3.title')} note={$t('a3.note')} tag="A3" />
 
 	{#if $userLocation}
 		<!-- B — appended once a location is chosen -->
