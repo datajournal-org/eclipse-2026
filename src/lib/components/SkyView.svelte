@@ -544,7 +544,10 @@
 
 				// NOTE: no re-framing on 'idle' — the camera is set once here and never moves on its own
 				// again (a later jumpTo would fight the user's panning and appear to teleport the marker).
-				m.once('idle', () => update());
+				m.once('idle', () => {
+					applyFraming();
+					update();
+				});
 				applyFraming();
 				update();
 				ready = true;
