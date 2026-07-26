@@ -10,7 +10,6 @@
    ============================================================================= */
 
 .stage-canvas {
-
 	/* control groups (zoom / reset / overlay …), restyled for the dark map */
 	.maplibregl-ctrl-group {
 		background: color-mix(in oklab, var(--bg-2) 88%, transparent);
@@ -29,7 +28,7 @@
 			background: transparent;
 			color: var(--text); /* inline-SVG icons (stroke="currentColor") read light on the dark button */
 
-			&+button {
+			& + button {
 				border-top: 1px solid var(--border);
 			}
 
