@@ -21,6 +21,7 @@ const messages = {
 		path: 'Pfad',
 		core: 'Kernschatten',
 		loading: 'Globus wird geladen …',
+		load_error: 'Globus konnte nicht geladen werden. Bitte Seite neu laden.',
 		toggle_overlay: 'Linien & Korridor ein/aus'
 	},
 	a3: {

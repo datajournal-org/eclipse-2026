@@ -22,6 +22,7 @@ const messages: Messages = {
 		path: 'Trayectoria',
 		core: 'Umbra',
 		loading: 'Cargando globo …',
+		load_error: 'No se pudo cargar el globo. Recarga la página.',
 		toggle_overlay: 'Mostrar/ocultar líneas y corredor'
 	},
 	a3: {

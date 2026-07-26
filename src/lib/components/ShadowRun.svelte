@@ -85,6 +85,7 @@
 	let frameIndex = $state(START_INDEX);
 	let clockUtc = $state(formatUtc(shadowFrames[START_INDEX].time));
 	let mapReady = $state(false);
+	let loadError = $state(false); // dynamic-import / map init failed → show a message instead of a stuck loader
 	/** Set once the map has loaded; renders the frame at `index`. */
 	let showFrame: (index: number) => void = () => {};
 
@@ -141,8 +142,12 @@
 		}
 
 		(async () => {
-			const maplibregl = await import('maplibre-gl');
-			if (disposed) return;
+			const maplibregl = await import('maplibre-gl').catch((err) => {
+				console.error('[A2] failed to load maplibre-gl', err);
+				loadError = true;
+				return null;
+			});
+			if (!maplibregl || disposed) return;
 
 			corridorBand = fillStripPrimitive(corridorEdges.north, corridorEdges.south, brand.accent.rgb, 0.1);
 			const m = new maplibregl.Map({
@@ -169,6 +174,8 @@
 			});
 			map = m;
 			if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { __map: m });
+			// Surface style/tile/WebGL errors that would otherwise be swallowed (and can stall loading).
+			m.on('error', (e) => console.error('[A2] map error:', (e as { error?: unknown }).error ?? e));
 			m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 			m.addControl(new maplibregl.FullscreenControl({ container: stage }), 'top-right');
 
@@ -189,18 +196,27 @@
 			m.addControl(overlayControl, 'top-right');
 
 			m.on('load', () => {
-				m.setProjection({ type: 'globe' });
-				m.addLayer(createMoonShadowLayer(shadowState)); // darkening, under the reference lines
-				m.addLayer(createIsoLinesLayer(isoLinesState)); // corridor + iso rings + terminator
-				isoLabels.attach(m, maplibregl.Marker, INITIAL_VIEW.center);
-				m.on('move', () => isoLabels.update(m, currentModel, labelsVisible)); // labels track viewport-down
-				showFrame = (index) => renderFrame(m, index);
-				showFrame(frameIndex);
+				// The base globe is up → reveal it (and enable the location pin) even if the reference overlay
+				// below fails to initialise, so a hiccup degrades gracefully instead of hanging the loader.
 				mapInstance = m;
 				MarkerCtor = maplibregl.Marker;
 				mapReady = true;
+				try {
+					m.setProjection({ type: 'globe' });
+					m.addLayer(createMoonShadowLayer(shadowState)); // darkening, under the reference lines
+					m.addLayer(createIsoLinesLayer(isoLinesState)); // corridor + iso rings + terminator
+					isoLabels.attach(m, maplibregl.Marker, INITIAL_VIEW.center);
+					m.on('move', () => isoLabels.update(m, currentModel, labelsVisible)); // labels track viewport-down
+					showFrame = (index) => renderFrame(m, index);
+					showFrame(frameIndex);
+				} catch (err) {
+					console.error('[A2] reference overlay setup failed', err);
+				}
 			});
-		})();
+		})().catch((err) => {
+			console.error('[A2] globe init failed', err);
+			loadError = true;
+		});
 
 		return () => {
 			disposed = true;
@@ -241,7 +257,11 @@
 	<div class="a2-stage" bind:this={stage}>
 		<div class="stage bleed">
 			<div class="stage-canvas" bind:this={mapContainer}></div>
-			{#if !mapReady}<div class="stage-loading">{$t('a2.loading')}</div>{/if}
+			{#if loadError}
+				<div class="stage-loading">{$t('a2.load_error')}</div>
+			{:else if !mapReady}
+				<div class="stage-loading">{$t('a2.loading')}</div>
+			{/if}
 		</div>
 
 		<div class="timebar">

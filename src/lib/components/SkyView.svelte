@@ -52,9 +52,13 @@
 		let detachDrag: (() => void) | undefined;
 
 		(async () => {
-			const maplibregl = await import('maplibre-gl');
-			const { colorful } = await import('@versatiles/style');
-			if (disposed) return;
+			const mods = await Promise.all([import('maplibre-gl'), import('@versatiles/style')]).catch((err) => {
+				console.error('[B3] failed to load map libraries', err);
+				return null;
+			});
+			if (!mods || disposed) return;
+			const [maplibregl, versatiles] = mods;
+			const { colorful } = versatiles;
 
 			const lc = localCircumstances(LAT, LON);
 			const { N, times, startFrame } = buildTimeline(LAT, LON, lc);
@@ -92,6 +96,8 @@
 				style
 			});
 			map = m;
+			// Surface style/terrain/WebGL errors that would otherwise be swallowed (and can stall loading).
+			m.on('error', (e) => console.error('[B3] map error:', (e as { error?: unknown }).error ?? e));
 			// Horizontal drag orbits the camera around the marker (handlers below); disable MapLibre's own
 			// pan/rotate/zoom so they don't fight it. Pitch/height never change → no >90° bug.
 			m.dragPan.disable();
@@ -195,7 +201,9 @@
 				update();
 				ready = true;
 			});
-		})();
+		})().catch((err) => {
+			console.error('[B3] sky view init failed', err);
+		});
 
 		return () => {
 			disposed = true;

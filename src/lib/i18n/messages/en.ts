@@ -22,6 +22,7 @@ const messages: Messages = {
 		path: 'Path',
 		core: 'Umbra',
 		loading: 'Loading globe …',
+		load_error: 'Could not load the globe. Please reload the page.',
 		toggle_overlay: 'Toggle lines & corridor'
 	},
 	a3: {
