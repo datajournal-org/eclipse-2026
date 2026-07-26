@@ -23,6 +23,7 @@
 	--ink-000: #ece9e1; /* near-white text */
 	--danger-500: #ff7a5c; /* eye-safety */
 	--success-500: #7fd4a0;
+	--red-700: #a51818; /* location marker (dark red) */
 
 	/* ink alpha steps — text, surfaces and hairlines over the dark ground */
 	--ink-a04: rgb(236 233 225 / 0.045);
@@ -54,6 +55,7 @@
 	--accent-2: var(--blue-500);
 	--warn: var(--danger-500);
 	--good: var(--success-500);
+	--marker: var(--red-700); /* location marker (globe + B3 sky view) */
 
 	/* radii */
 	--radius: var(--radius-soft);

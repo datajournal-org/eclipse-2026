@@ -384,10 +384,10 @@
 
 			/* the user's chosen location (a DOM marker, like the labels) */
 			.user-pin {
-				width: 12px;
-				height: 12px;
+				width: 16px;
+				height: 16px;
 				border-radius: 50%;
-				background: var(--accent-2);
+				background: var(--marker);
 				box-shadow:
 					0 0 0 2px #fff,
 					0 1px 5px rgba(0, 0, 0, 0.6);
@@ -396,9 +396,9 @@
 			.user-pin::before {
 				content: '';
 				position: absolute;
-				inset: -7px;
+				inset: -8px;
 				border-radius: 50%;
-				border: 2px solid var(--accent-2);
+				border: 2px solid var(--marker);
 				animation: a2-pin-pulse 2s ease-out infinite;
 			}
 		}

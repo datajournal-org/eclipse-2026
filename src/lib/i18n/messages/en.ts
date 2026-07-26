@@ -66,12 +66,13 @@ const messages: Messages = {
 	},
 	b3: {
 		title: 'Your view of the Sun',
-		subtitle: 'Looking toward the Sun with terrain and buildings — make sure the view is clear.',
+		subtitle: 'Your location and the Sun’s path — drag to look around, mind a clear view.',
 		altitude: 'Altitude',
 		azimuth: 'Azimuth',
 		coverage: 'Coverage',
 		behind_horizon: 'Sun behind horizon/terrain',
-		loading: 'Loading terrain …'
+		loading: 'Loading terrain …',
+		recenter: 'Reset view'
 	},
 	b6: {
 		title: 'Your checklist',

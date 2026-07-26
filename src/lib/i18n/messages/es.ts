@@ -66,12 +66,13 @@ const messages: Messages = {
 	},
 	b3: {
 		title: 'Tu vista del Sol',
-		subtitle: 'Mirando hacia el Sol con relieve y edificios — asegúrate de tener vista despejada.',
+		subtitle: 'Tu ubicación y la trayectoria del Sol — arrastra para mirar alrededor, procura vista despejada.',
 		altitude: 'Altura',
 		azimuth: 'Acimut',
 		coverage: 'Cobertura',
 		behind_horizon: 'Sol tras el horizonte/relieve',
-		loading: 'Cargando relieve …'
+		loading: 'Cargando relieve …',
+		recenter: 'Restablecer vista'
 	},
 	b6: {
 		title: 'Tu lista',

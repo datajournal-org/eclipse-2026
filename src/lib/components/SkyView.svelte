@@ -13,6 +13,7 @@
 	import { destPoint } from '$lib/shadow-globe/vec3';
 	import { createSunLayer, type SunState } from '$lib/skyview/sunLayer';
 	import { environment, DUSK_HEX } from '$lib/skyview/environment';
+	import { computeFraming } from '$lib/skyview/framing';
 	import { SKY_PALETTE, ECLIPSE_DATE } from '$lib/config';
 	import { hexToRgb } from '$lib/brand';
 	import {
@@ -46,6 +47,7 @@
 			LON = loc.lon;
 		let map: MlMap | undefined;
 		let disposed = false;
+		let detachDrag: (() => void) | undefined;
 
 		(async () => {
 			const maplibregl = (await import('maplibre-gl')).default;
@@ -82,10 +84,21 @@
 				style
 			});
 			map = m;
-			m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+			// Horizontal drag orbits the camera around the marker (handlers below); disable MapLibre's own
+			// pan/rotate/zoom so they don't fight it. Pitch/height never change → no >90° bug.
+			m.dragPan.disable();
+			m.dragRotate.disable();
+			m.scrollZoom.disable();
+			m.doubleClickZoom.disable();
+			m.touchZoomRotate.disable();
+			m.keyboard.disable();
 
 			m.on('load', () => {
 				m.setTerrain({ source: 'dem', exaggeration: 1.0 });
+				// Pin the camera to the sea-level-referenced altitude we compute below, instead of clamping the
+				// view centre onto the terrain: over mountainous ground that terrain height swings as the camera
+				// orbits, which bobbed the whole rig up and down and pushed the marker off-screen.
+				m.setCenterClampedToGround(false);
 				try {
 					m.setSky({
 						'sky-color': SKY_PALETTE.sky,
@@ -131,9 +144,122 @@
 				);
 				m.addLayer(createSunLayer(sun, hexToRgb(SKY_PALETTE.sun)));
 
-				const EYE = 1.7,
-					CAM_TGT = 3000,
-					AIM_DOWN = 6; // eye height, camera target distance, fixed slight downward aim
+				// ---- orientation framing: one fixed shot showing the whole Sun arc + the location marker ----
+				// Sun-arc envelope over the eclipse window (coarse sample, azimuth unwrapped).
+				let azMin = Infinity,
+					azMax = -Infinity,
+					altMax = -Infinity,
+					prevAz: number | null = null;
+				for (let i = 0; i <= N; i += 8) {
+					const ss = sunMoonHorizon(LAT, LON, new Date(times[i])).sun;
+					let a = ss.az;
+					if (prevAz !== null) {
+						while (a - prevAz > 180) a -= 360;
+						while (a - prevAz < -180) a += 360;
+					}
+					prevAz = a;
+					azMin = Math.min(azMin, a);
+					azMax = Math.max(azMax, a);
+					altMax = Math.max(altMax, ss.alt);
+				}
+				const aspect = (mapContainer.clientWidth || 1) / (mapContainer.clientHeight || 1);
+				const framing = computeFraming({ azMin, azMax, altMax }, aspect);
+				m.setVerticalFieldOfView(framing.fov);
+
+				// Positioned camera: 200 m behind the marker, at a fixed sea-level-referenced altitude so the
+				// marker sits ~10% from the bottom. camAlt and the centre elevation are constant across the
+				// orbit (only the bearing changes) and centerClampedToGround is off, so the camera height never
+				// bobs with the terrain — the marker keeps its screen position as the camera orbits.
+				const CAM_DIST = 200; // m behind the marker
+				let orbitDeg = 0; // horizontal-drag offset → the camera orbits around the marker
+				function applyFraming() {
+					const gAlt = m.queryTerrainElevation([LON, LAT] as [number, number]) ?? 0;
+					// view-centre depression (deg below horizontal): keep the frame's top just above the Sun's peak
+					const c = Math.max(6, Math.min(18, framing.fov / 2 - (altMax + 6)));
+					const delta = c + 0.4 * framing.fov; // depression to the marker → 90% down (10% from bottom)
+					const camAlt = gAlt + CAM_DIST * Math.tan(delta * D2R);
+					const az = framing.meanAz + orbitDeg; // orbit the whole rig around the marker
+					const [cLon, cLat] = destPoint(LAT, LON, az + 180, CAM_DIST); // camera behind the marker (circle)
+					const centerDist = (camAlt - gAlt) / Math.tan(c * D2R); // ground distance to the view centre
+					const [tLon, tLat] = destPoint(cLat, cLon, az, centerDist); // view-centre ground point
+					m.jumpTo(
+						m.calculateCameraOptionsFromTo(
+							new maplibregl.LngLat(cLon, cLat),
+							camAlt,
+							new maplibregl.LngLat(tLon, tLat),
+							gAlt
+						)
+					);
+				}
+
+				// location marker — a DOM marker, exactly like the A2 globe. MapLibre keeps it on the terrain
+				// surface at [LON,LAT] every frame; now that the camera height no longer bobs, it holds its
+				// screen position as the camera orbits. Dark-red dot + white ring (no pulse), styled by the
+				// .b3-user-pin rule below, sharing the globe's --marker token.
+				const pin = document.createElement('div');
+				pin.className = 'b3-user-pin';
+				new maplibregl.Marker({ element: pin }).setLngLat([LON, LAT]).addTo(m);
+
+				// horizontal drag → orbit the camera around the marker (marker stays ~in place; the world turns).
+				// Window-level move/up so a drag continues off the canvas.
+				const canvas = m.getCanvas();
+				canvas.style.cursor = 'grab';
+				let dragging = false,
+					lastX = 0;
+				const startDrag = (x: number) => {
+					dragging = true;
+					lastX = x;
+					canvas.style.cursor = 'grabbing';
+				};
+				const moveDrag = (x: number) => {
+					if (!dragging) return;
+					orbitDeg -= (x - lastX) * 0.3; // drag right → the scene turns right
+					lastX = x;
+					applyFraming();
+				};
+				const endDrag = () => {
+					dragging = false;
+					canvas.style.cursor = 'grab';
+				};
+				const onMouseMove = (e: MouseEvent) => moveDrag(e.clientX);
+				canvas.addEventListener('mousedown', (e) => startDrag(e.clientX));
+				window.addEventListener('mousemove', onMouseMove);
+				window.addEventListener('mouseup', endDrag);
+				canvas.addEventListener('touchstart', (e) => e.touches[0] && startDrag(e.touches[0].clientX), {
+					passive: true
+				});
+				canvas.addEventListener('touchmove', (e) => e.touches[0] && moveDrag(e.touches[0].clientX), {
+					passive: true
+				});
+				canvas.addEventListener('touchend', endDrag);
+				detachDrag = () => {
+					window.removeEventListener('mousemove', onMouseMove);
+					window.removeEventListener('mouseup', endDrag);
+				};
+
+				// reset button — back to the Sun-facing framing (orbit 0)
+				const resetControl: import('maplibre-gl').IControl = {
+					onAdd() {
+						const c = document.createElement('div');
+						c.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+						const b = document.createElement('button');
+						b.type = 'button';
+						b.title = get(t)('b3.recenter');
+						b.setAttribute('aria-label', b.title);
+						b.innerHTML =
+							'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+						b.onclick = () => {
+							orbitDeg = 0;
+							applyFraming();
+						};
+						c.appendChild(b);
+						return c;
+					},
+					onRemove() {}
+				};
+				m.addControl(resetControl, 'top-right');
+
+				const EYE = 1.7; // eye height used to place the Sun disc / horizon test above the ground
 
 				// max elevation angle of the terrain along an azimuth (incl. Earth-curvature dip)
 				function terrainHorizonAlt(az: number, eyeAlt: number): number {
@@ -176,23 +302,6 @@
 					sun.opacity = Math.min(1, Math.max(0, (s.alt - horizon + 0.25) / 0.5));
 					sun.visible = sun.opacity > 0.01;
 
-					// eye-level first-person camera toward the Sun azimuth at a FIXED slight downward angle
-					// (independent of Sun altitude → pitch stays within maxPitch; the Sun rides up/down in frame)
-					try {
-						const tgtAlt = eyeAlt - CAM_TGT * Math.tan(AIM_DOWN * D2R);
-						const [tlng, tlat] = destPoint(LAT, LON, s.az, CAM_TGT);
-						m.jumpTo(
-							m.calculateCameraOptionsFromTo(
-								new maplibregl.LngLat(LON, LAT),
-								eyeAlt,
-								new maplibregl.LngLat(tlng, tlat),
-								tgtAlt
-							)
-						);
-					} catch {
-						m.setBearing(s.az);
-					}
-
 					const obsc = discOverlapFraction(sunAngR, moonAngR, Math.hypot(dx, dy));
 
 					// keep the map in sync with the simulated Sun: direction from (az, alt), brightness/colour
@@ -226,7 +335,10 @@
 				// start at greatest eclipse
 				const peakT = (lc?.peak?.time ?? new Date(ECLIPSE_DATE + 'T18:08:00Z')).getTime();
 				frameIndex = Math.round(((peakT - tStart) / (tEnd - tStart)) * N);
-				m.once('idle', update); // recompute once terrain tiles are loaded (queryTerrainElevation needs them)
+				// NOTE: no re-framing on 'idle' — the camera is set once here and never moves on its own
+				// again (a later jumpTo would fight the user's panning and appear to teleport the marker).
+				m.once('idle', () => update());
+				applyFraming();
 				update();
 				ready = true;
 			});
@@ -234,6 +346,7 @@
 
 		return () => {
 			disposed = true;
+			detachDrag?.();
 			map?.remove();
 		};
 	});
@@ -302,6 +415,21 @@
 		}
 		& .warn {
 			color: var(--warn);
+		}
+	}
+
+	/* the user's location — a DOM marker on MapLibre's own DOM (added outside the component tree), so it
+	   lives in a :global block under .b3. Same dot as the A2 globe's .user-pin, without the pulse. */
+	:global {
+		.b3 .b3-user-pin {
+			width: 16px;
+			height: 16px;
+			border-radius: 50%;
+			background: var(--marker);
+			box-shadow:
+				0 0 0 2px #fff,
+				0 1px 5px rgba(0, 0, 0, 0.6);
+			pointer-events: none;
 		}
 	}
 </style>

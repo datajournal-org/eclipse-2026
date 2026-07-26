@@ -64,12 +64,13 @@ const messages = {
 	},
 	b3: {
 		title: 'Deine Sicht zur Sonne',
-		subtitle: 'Blick Richtung Sonne mit Gelände und Gebäuden — achte auf freie Sicht.',
+		subtitle: 'Dein Standort und die Bahn der Sonne — zieh zum Umschauen, achte auf freie Sicht.',
 		altitude: 'Höhe',
 		azimuth: 'Azimut',
 		coverage: 'Bedeckung',
 		behind_horizon: 'Sonne hinter Horizont/Gelände',
-		loading: 'Gelände wird geladen …'
+		loading: 'Gelände wird geladen …',
+		recenter: 'Ansicht zurücksetzen'
 	},
 	b6: {
 		title: 'Deine Checkliste',
