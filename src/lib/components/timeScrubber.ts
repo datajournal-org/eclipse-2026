@@ -17,6 +17,7 @@ export type TimeBand = {
 	peak: number; // Maximum, drawn as a ◆ on the band
 	frame: number; // jump target for the band label
 	label: string;
+	sub?: string; // the Maximum time, shown under the band label
 };
 
 // Regular time-grid ticks (e.g. every 30 min) across a slider window — a plain ruler, tappable to jump.

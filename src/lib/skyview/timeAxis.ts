@@ -35,7 +35,7 @@ export function buildTimeAxis(opts: {
 		ticks.push({
 			frac: frac(lc.partialBegin.time),
 			frame: frameOf(lc.partialBegin.time),
-			label: t('b2.first_contact'),
+			label: t('b3.phase_start'),
 			sub: fmtTime(lc.partialBegin.time),
 			align: 'start',
 			kind: 'contact'
@@ -45,7 +45,7 @@ export function buildTimeAxis(opts: {
 		ticks.push({
 			frac: frac(lc.peak.time),
 			frame: frameOf(lc.peak.time),
-			label: t('b2.maximum'),
+			label: t('b3.phase_max'),
 			sub: fmtTime(lc.peak.time),
 			align: 'center',
 			kind: 'max'
@@ -54,7 +54,7 @@ export function buildTimeAxis(opts: {
 		ticks.push({
 			frac: frac(lc.partialEnd.time),
 			frame: frameOf(lc.partialEnd.time),
-			label: t('b2.last_contact'),
+			label: t('b3.phase_end'),
 			sub: fmtTime(lc.partialEnd.time),
 			align: 'end',
 			kind: 'contact'
@@ -67,7 +67,8 @@ export function buildTimeAxis(opts: {
 			to: frac(lc.totalEnd.time),
 			peak: frac(lc.peak.time),
 			frame: frameOf(lc.peak.time),
-			label: t('b2.total_begin')
+			label: t('b3.phase_max'),
+			sub: fmtTime(lc.peak.time)
 		};
 
 	let sunsetFrac: number | null = null;

@@ -66,9 +66,10 @@
 					data-align="center"
 					style:left={pct((band.from + band.to) / 2)}
 					onclick={() => onscrub(band.frame)}
-					aria-label={band.label}
+					aria-label={band.sub ? `${band.label} · ${band.sub}` : band.label}
 				>
 					<span class="name">{band.label}</span>
+					{#if band.sub}<span class="sub tnum">{band.sub}</span>{/if}
 				</button>
 			{/if}
 			{#each ticks as tk (tk.label)}

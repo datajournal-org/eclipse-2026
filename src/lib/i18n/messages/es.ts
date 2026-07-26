@@ -73,7 +73,10 @@ const messages: Messages = {
 		loading: 'Cargando relieve …',
 		recenter: 'Restablecer vista',
 		zoom_in: 'Acercar',
-		zoom_out: 'Alejar'
+		zoom_out: 'Alejar',
+		phase_start: 'Inicio',
+		phase_max: 'Máximo',
+		phase_end: 'Fin'
 	},
 	b6: {
 		title: 'Tu lista',
