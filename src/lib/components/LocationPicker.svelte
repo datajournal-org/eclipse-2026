@@ -1,6 +1,6 @@
 <!-- A flat 2D map for choosing/adjusting a location: a draggable pin over the VersaTiles basemap, with the
      totality corridor drawn on top so users can see whether their spot is in the path (and drag into it).
-     The parent owns the coordinate; this component reports moves via onmove and follows external changes. -->
+     Fills its (positioned) parent; the parent owns the coordinate and the search/confirm chrome. -->
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Map as MlMap, Marker as MlMarker } from 'maplibre-gl';
@@ -18,6 +18,7 @@
 
 	onMount(() => {
 		let disposed = false;
+		let ro: ResizeObserver | undefined;
 
 		(async () => {
 			const [maplibregl, versatiles] = await Promise.all([loadMaplibre(), import('@versatiles/style')]).catch(
@@ -40,10 +41,12 @@
 			});
 			map = m;
 			m.on('error', (e) => console.error('[picker] map error:', (e as { error?: unknown }).error ?? e));
-			m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+			m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+			// the map may mount inside a dialog that sizes up after open → keep the canvas in sync
+			ro = new ResizeObserver(() => m.resize());
+			ro.observe(mapContainer);
 
 			m.on('load', () => {
-				// totality corridor band (north edge + reversed south edge → closed polygon)
 				const ring = [...corridorEdges.north, ...[...corridorEdges.south].reverse()];
 				if (ring.length) {
 					ring.push(ring[0]);
@@ -55,13 +58,13 @@
 						id: 'corridor-fill',
 						type: 'fill',
 						source: 'corridor',
-						paint: { 'fill-color': brand.accent.hex, 'fill-opacity': 0.14 }
+						paint: { 'fill-color': brand.accent.hex, 'fill-opacity': 0.16 }
 					});
 					m.addLayer({
 						id: 'corridor-line',
 						type: 'line',
 						source: 'corridor',
-						paint: { 'line-color': brand.accent.hex, 'line-width': 1.5, 'line-opacity': 0.6 }
+						paint: { 'line-color': brand.accent.hex, 'line-width': 1.5, 'line-opacity': 0.65 }
 					});
 				}
 
@@ -81,6 +84,7 @@
 
 		return () => {
 			disposed = true;
+			ro?.disconnect();
 			map?.remove();
 		};
 	});
@@ -105,11 +109,8 @@
 
 <style>
 	.picker {
-		position: relative;
-		height: min(46vh, 340px);
-		border-radius: var(--radius-sm);
-		overflow: hidden;
-		border: 1px solid var(--border);
+		position: absolute;
+		inset: 0;
 	}
 	.picker-map {
 		position: absolute;

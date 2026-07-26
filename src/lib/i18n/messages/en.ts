@@ -30,7 +30,10 @@ const messages: Messages = {
 		note: 'Three places, the same event, a completely different experience.'
 	},
 	a4: {
-		title: 'What will you see from where you are?',
+		cta_title: 'Choose your location to see your personal eclipse',
+		cta_sub: 'How high is the Sun, how much gets covered — and are you in the totality path?',
+		choose: 'Choose location',
+		close: 'Close',
 		geo: 'Use my location',
 		search: 'Search a city or address',
 		searching: 'Searching …',

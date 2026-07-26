@@ -29,7 +29,10 @@ const messages = {
 		note: 'Drei Orte, dasselbe Ereignis, völlig anderes Erlebnis.'
 	},
 	a4: {
-		title: 'Was siehst du von dir aus?',
+		cta_title: 'Wähle deinen Standort, um deine persönliche Finsternis zu sehen',
+		cta_sub: 'Wie hoch steht die Sonne, wie viel wird bedeckt – und liegst du in der Totalitätszone?',
+		choose: 'Standort wählen',
+		close: 'Schließen',
 		geo: 'Meinen Standort verwenden',
 		search: 'Stadt oder Adresse suchen',
 		searching: 'Suche …',

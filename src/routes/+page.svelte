@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { userLocation, clearLocation, type Place } from '$lib/stores/location';
+	import { userLocation, type Place } from '$lib/stores/location';
 	import { t } from '$lib/i18n';
 	import Countdown from '$lib/components/Countdown.svelte';
 	import ShadowRun from '$lib/components/ShadowRun.svelte';
 	import LocationCall from '$lib/components/LocationCall.svelte';
+	import LocationDialog from '$lib/components/LocationDialog.svelte';
 	import Verdict from '$lib/components/Verdict.svelte';
 	import SkyView from '$lib/components/SkyView.svelte';
 	import Checklist from '$lib/components/Checklist.svelte';
@@ -11,6 +12,7 @@
 	import SafetyFooter from '$lib/components/SafetyFooter.svelte';
 
 	const label = (p: Place) => p.name ?? `${p.lat.toFixed(3)}°, ${p.lon.toFixed(3)}°`;
+	let pickerOpen = $state(false);
 </script>
 
 <main class="content">
@@ -26,16 +28,17 @@
 				<span class="eyebrow">{$t('b.your_sky')}</span>
 				<div class="pname">📍 {label($userLocation)}</div>
 			</div>
-			<button onclick={clearLocation}>{$t('b.change')}</button>
+			<button onclick={() => (pickerOpen = true)}>{$t('b.change')}</button>
 		</div>
 		<Verdict />
 		<SkyView />
 		<Checklist />
 	{:else}
-		<LocationCall />
+		<LocationCall onchoose={() => (pickerOpen = true)} />
 	{/if}
 </main>
 
+<LocationDialog bind:open={pickerOpen} />
 <SafetyFooter />
 
 <style>
