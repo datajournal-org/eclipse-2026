@@ -165,7 +165,7 @@ gegenprüfen; Zahlen sichtbar im UI → Realismus ist prüfbar, nicht behauptet.
 
 ## Prototypen (Durchstich A2 + B3)
 
-Im Ordner [`prototype/`](./prototype/) — lauffähig via `npx serve .` oder
+Im Ordner [`prototype/`](../prototype/) — lauffähig via `npx serve .` oder
 `python3 -m http.server`, dann `index.html`.
 
 - `eclipse.mjs` — geteilte Finsternis-Mathematik, läuft in Node **und** Browser
