@@ -38,8 +38,11 @@ export function placeSun(
 
 	// The Sun is drawn on top (sunLayer, depth test off): terrain occlusion is intentionally ignored — we
 	// don't know the observer's height (street level vs. a rooftop), so a hill that would block the Sun from
-	// the ground might not from a roof. Hide it only once it is below the true (sea-level) horizon.
-	sun.visible = s.alt > 0;
+	// the ground might not from a roof. Keep it visible until the whole disc has set — the apparent upper
+	// limb below the horizon, i.e. the centre at -(angular radius). `s.alt` is the refracted centre altitude,
+	// so this coincides with the standard sunset (astronomy-engine's SearchRiseSet) shown on the slider,
+	// instead of vanishing ~2 min early when the centre (half the disc) crosses the horizon.
+	sun.visible = s.alt > -sunAngR;
 }
 
 // Steer the map's directional light and hillshade to match the simulated Sun's azimuth/altitude and the
