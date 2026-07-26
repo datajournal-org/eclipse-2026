@@ -231,14 +231,19 @@
 		padding: 0;
 		border: 0;
 		background: transparent;
-	}
-	.picker-dlg[open] {
-		display: grid;
-		place-items: center;
-	}
-	.picker-dlg::backdrop {
-		background: rgba(4, 6, 10, 0.62);
-		backdrop-filter: blur(3px);
+
+		&::backdrop {
+			background: rgba(4, 6, 10, 0.62);
+			backdrop-filter: blur(3px);
+		}
+		&[open] {
+			display: grid;
+			place-items: center;
+
+			.sheet {
+				animation: pop 0.18s ease-out;
+			}
+		}
 	}
 
 	.sheet {
@@ -253,9 +258,6 @@
 		overflow: hidden;
 		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 	}
-	.picker-dlg[open] .sheet {
-		animation: pop 0.18s ease-out;
-	}
 	@keyframes pop {
 		from {
 			transform: translateY(8px) scale(0.98);
@@ -269,10 +271,11 @@
 		gap: 10px;
 		padding: 13px 14px 11px;
 		border-bottom: 1px solid var(--border);
-	}
-	.head h2 {
-		font-size: 1.05rem;
-		margin: 0;
+
+		h2 {
+			font-size: 1.05rem;
+			margin: 0;
+		}
 	}
 	.icon-btn {
 		margin-left: auto;
@@ -306,20 +309,21 @@
 		border: 1px solid var(--border);
 		border-radius: var(--radius-sm);
 		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-	}
-	.searchbar .s-ico {
-		color: var(--muted);
-		font-size: 0.9rem;
-	}
-	.searchbar input {
-		flex: 1;
-		min-width: 0;
-		border: 0;
-		background: none;
-		color: var(--text);
-		font: inherit;
-		padding: 0.45rem 0.2rem;
-		outline: none;
+
+		.s-ico {
+			color: var(--muted);
+			font-size: 0.9rem;
+		}
+		input {
+			flex: 1;
+			min-width: 0;
+			border: 0;
+			background: none;
+			color: var(--text);
+			font: inherit;
+			padding: 0.45rem 0.2rem;
+			outline: none;
+		}
 	}
 	.gps {
 		display: grid;
@@ -359,12 +363,12 @@
 		max-height: 62%;
 		overflow-y: auto;
 
-		& .hint {
+		.hint {
 			padding: 9px 10px;
 			color: var(--muted);
 			font-size: 0.88rem;
 		}
-		& li button {
+		li button {
 			display: flex;
 			align-items: center;
 			gap: 9px;
@@ -383,19 +387,19 @@
 				background: color-mix(in oklab, var(--accent) 16%, transparent);
 				outline: none;
 			}
-			& .ico {
+			.ico {
 				color: var(--accent);
 			}
-			& .txt {
+			.txt {
 				display: flex;
 				flex-direction: column;
 				gap: 1px;
 				min-width: 0;
 			}
-			& .lbl {
+			.lbl {
 				font-weight: 600;
 			}
-			& .sub {
+			.sub {
 				font-size: 0.8rem;
 				color: var(--muted);
 			}
@@ -417,45 +421,47 @@
 		gap: 8px 12px;
 		padding: 10px 14px 14px;
 		border-top: 1px solid var(--border);
-	}
-	.summary {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 4px 10px;
-		min-width: 0;
-	}
-	.place {
-		font-weight: 600;
-	}
-	.verdict {
-		white-space: nowrap;
-		font-size: 0.9rem;
-		font-variant-numeric: tabular-nums;
-		color: var(--accent);
 
-		&.total {
-			color: var(--accent-2, var(--accent));
+		.summary {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: baseline;
+			gap: 4px 10px;
+			min-width: 0;
+
+			.place {
+				font-weight: 600;
+			}
+			.verdict {
+				white-space: nowrap;
+				font-size: 0.9rem;
+				font-variant-numeric: tabular-nums;
+				color: var(--accent);
+
+				&.total {
+					color: var(--accent-2, var(--accent));
+					font-weight: 700;
+				}
+				&.none {
+					color: var(--muted);
+				}
+			}
+		}
+		.use {
+			font: inherit;
 			font-weight: 700;
-		}
-		&.none {
-			color: var(--muted);
-		}
-	}
-	.use {
-		font: inherit;
-		font-weight: 700;
-		white-space: nowrap;
-		cursor: pointer;
-		padding: 0.6rem 1rem;
-		border-radius: var(--radius-sm);
-		border: 1px solid var(--accent);
-		background: var(--accent);
-		color: #1a1206;
+			white-space: nowrap;
+			cursor: pointer;
+			padding: 0.6rem 1rem;
+			border-radius: var(--radius-sm);
+			border: 1px solid var(--accent);
+			background: var(--accent);
+			color: #1a1206;
 
-		&:disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
+			&:disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+			}
 		}
 	}
 
@@ -463,15 +469,16 @@
 	@media (max-width: 560px) {
 		.picker-dlg[open] {
 			place-items: end stretch;
+
+			.sheet {
+				animation: sheetUp 0.24s ease-out;
+			}
 		}
 		.sheet {
 			width: 100%;
 			height: 92dvh;
 			border-radius: 18px 18px 0 0;
 			border-bottom: 0;
-		}
-		.picker-dlg[open] .sheet {
-			animation: sheetUp 0.24s ease-out;
 		}
 		@keyframes sheetUp {
 			from {

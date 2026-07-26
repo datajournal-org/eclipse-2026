@@ -111,18 +111,19 @@
 	.picker {
 		position: absolute;
 		inset: 0;
-	}
-	.picker-map {
-		position: absolute;
-		inset: 0;
-	}
-	.picker-loading {
-		position: absolute;
-		inset: 0;
-		display: grid;
-		place-items: center;
-		color: var(--muted);
-		font-size: 0.9rem;
-		background: var(--bg);
+
+		.picker-map {
+			position: absolute;
+			inset: 0;
+		}
+		.picker-loading {
+			position: absolute;
+			inset: 0;
+			display: grid;
+			place-items: center;
+			color: var(--muted);
+			font-size: 0.9rem;
+			background: var(--bg);
+		}
 	}
 </style>
