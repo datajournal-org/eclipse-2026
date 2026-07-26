@@ -30,18 +30,18 @@
 			if (!maplibregl || !versatiles || disposed) return;
 
 			const brand = readBrandColors();
-			const style = versatiles.eclipse({ baseUrl: 'https://tiles.versatiles.org', recolor: { saturate:-0.8 } });
+			const style = versatiles.eclipse({ baseUrl: 'https://tiles.versatiles.org', recolor: { saturate: -0.8 } });
 
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				style,
 				center: [lon, lat],
 				zoom: 6,
-				attributionControl: { compact: true }
+				attributionControl: { compact: false }
 			});
 			map = m;
 			m.on('error', (e) => console.error('[picker] map error:', (e as { error?: unknown }).error ?? e));
-			m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+			m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 			// the map may mount inside a dialog that sizes up after open → keep the canvas in sync
 			ro = new ResizeObserver(() => m.resize());
 			ro.observe(mapContainer);
@@ -103,7 +103,9 @@
 </script>
 
 <div class="picker">
-	<div class="picker-map" bind:this={mapContainer}></div>
+	<!-- stage-canvas: inherit the shared map-chrome styling (controls/attribution) from map.css, so the
+	     picker's MapLibre UI matches the A2/B3 maps. -->
+	<div class="picker-map stage-canvas" bind:this={mapContainer}></div>
 	{#if !ready}<div class="picker-loading">{$t('a2.loading')}</div>{/if}
 </div>
 
@@ -115,6 +117,7 @@
 		.picker-map {
 			position: absolute;
 			inset: 0;
+			height: auto; /* fill via inset:0; override .stage-canvas' fixed height */
 		}
 		.picker-loading {
 			position: absolute;
@@ -124,6 +127,10 @@
 			color: var(--muted);
 			font-size: 0.9rem;
 			background: var(--bg);
+		}
+		/* the search bar overlays the map top → push the top-right zoom control below it */
+		:global(.maplibregl-ctrl-top-right) {
+			top: 48px;
 		}
 	}
 </style>

@@ -150,7 +150,18 @@
 	<div class="sheet" bind:this={sheetEl}>
 		<div class="head">
 			<h2>{$t('a4.choose')}</h2>
-			<button class="icon-btn" onclick={() => (open = false)} aria-label={$t('a4.close')}>✕</button>
+			<button class="icon-btn" onclick={() => (open = false)} aria-label={$t('a4.close')}>
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					aria-hidden="true"
+				>
+					<path d="M6 6l12 12M18 6L6 18" />
+				</svg>
+			</button>
 		</div>
 
 		<div class="stage">
@@ -168,9 +179,19 @@
 					aria-label={$t('a4.search')}
 					autocomplete="off"
 				/>
-				<button class="gps" onclick={useGeo} disabled={geoBusy} title={$t('a4.geo')} aria-label={$t('a4.geo')}
-					>⌖</button
-				>
+				<button class="gps" onclick={useGeo} disabled={geoBusy} title={$t('a4.geo')} aria-label={$t('a4.geo')}>
+					<svg
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						aria-hidden="true"
+					>
+						<circle cx="12" cy="12" r="6" />
+						<path d="M12 1v4M12 19v4M1 12h4M19 12h4" />
+					</svg>
+				</button>
 			</div>
 
 			{#if searching || searchErr || results.length}
@@ -269,7 +290,7 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		padding: 13px 14px 11px;
+		padding: 12px 14px;
 		border-bottom: 1px solid var(--border);
 
 		h2 {
@@ -278,6 +299,8 @@
 		}
 	}
 	.icon-btn {
+		display: grid;
+		place-items: center;
 		margin-left: auto;
 		width: 32px;
 		height: 32px;
@@ -285,7 +308,14 @@
 		border: 1px solid var(--border);
 		background: var(--bg-2);
 		color: var(--text);
+		padding: 0;
+		line-height: 1;
 		cursor: pointer;
+
+		svg {
+			width: 16px;
+			height: 16px;
+		}
 	}
 
 	/* map is the stage; search + results overlay its top */
@@ -328,16 +358,20 @@
 	.gps {
 		display: grid;
 		place-items: center;
-		width: 34px;
-		height: 34px;
+		width: 32px;
+		height: 32px;
 		border-radius: 8px;
-		border: 1px solid var(--border);
+		border: 1px solid var(--accent);
 		background: var(--accent);
 		color: var(--bg);
 		cursor: pointer;
-		font-size: 30px;
 		padding: 0;
 		line-height: 1;
+
+		svg {
+			width: 18px;
+			height: 18px;
+		}
 
 		&:disabled {
 			opacity: 0.5;
@@ -417,10 +451,9 @@
 	}
 	.foot {
 		display: flex;
-		flex-wrap: wrap;
+		flex-direction: column;
 		align-items: center;
-		justify-content: space-between;
-		gap: 8px 12px;
+		gap: 10px;
 		padding: 10px 14px 14px;
 		border-top: 1px solid var(--border);
 
@@ -428,8 +461,9 @@
 			display: flex;
 			flex-wrap: wrap;
 			align-items: baseline;
+			justify-content: center;
 			gap: 4px 10px;
-			min-width: 0;
+			text-align: center;
 
 			.place {
 				font-weight: 600;
