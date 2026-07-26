@@ -141,7 +141,7 @@
 		}
 
 		(async () => {
-			const maplibregl = (await import('maplibre-gl')).default;
+			const maplibregl = await import('maplibre-gl');
 			if (disposed) return;
 
 			corridorBand = fillStripPrimitive(corridorEdges.north, corridorEdges.south, brand.accent.rgb, 0.1);

@@ -52,7 +52,7 @@
 		let detachDrag: (() => void) | undefined;
 
 		(async () => {
-			const maplibregl = (await import('maplibre-gl')).default;
+			const maplibregl = await import('maplibre-gl');
 			const { colorful } = await import('@versatiles/style');
 			if (disposed) return;
 
