@@ -9,11 +9,13 @@
 	import type { Map as MlMap } from 'maplibre-gl';
 	import { t, fmt } from '$lib/i18n';
 	import { userLocation } from '$lib/stores/location';
-	import { localCircumstances } from '$lib/eclipse';
+	import { localCircumstances, sunset } from '$lib/eclipse';
 	import type { SunState } from '$lib/skyview/sunLayer';
 	import { eclipseGeometry } from '$lib/skyview/eclipseGeometry';
 	import { cssRgb, veilColour, loupeSkyCss } from '$lib/skyview/colors';
 	import { buildTimeline } from '$lib/skyview/timeline';
+	import { buildTimeAxis, type TimeAxis } from '$lib/skyview/timeAxis';
+	import TimeScrubber from '$lib/components/TimeScrubber.svelte';
 	import { buildMapStyle, addSceneLayers, sunArcEnvelope } from '$lib/skyview/mapSetup';
 	import { createCameraController } from '$lib/skyview/cameraController';
 	import { placeSun, syncMapLighting } from '$lib/skyview/frameSync';
@@ -29,7 +31,7 @@
 	let azTxt = $state('–');
 	let obscTxt = $state('–');
 	let frameIndex = $state(0);
-	let frameMax = $state(1);
+	let axis = $state<TimeAxis | null>(null); // event markers for the time slider (built once, in onMount)
 	// A) loupe inset crescent + B) Sun locator square & leader lines — rendered by the SkyLoupe child, which
 	// exposes place() so the render loop below can glue the overlay to the on-screen Sun each frame.
 	const LOUPE_R = 32; // loupe Sun-disc radius in SVG units (viewBox is -50..50 → leaves sky margin around it)
@@ -56,8 +58,16 @@
 
 			const lc = localCircumstances(LAT, LON);
 			const { N, times, startFrame } = buildTimeline(LAT, LON, lc);
-			frameMax = N;
 			frameIndex = startFrame;
+			// event markers for the slider (labels/times baked here from the current locale + timezone)
+			axis = buildTimeAxis({
+				lc,
+				sunset: sunset(LAT, LON),
+				times,
+				N,
+				t: get(t),
+				fmtTime: (d) => get(fmt).time(d)
+			});
 
 			const sun: SunState = {
 				center: [0, 0, 0, 1],
@@ -193,9 +203,6 @@
 			map?.remove();
 		};
 	});
-	function onScrub(e: Event) {
-		setFrame(+(e.currentTarget as HTMLInputElement).value);
-	}
 </script>
 
 <section class="block b3">
@@ -214,24 +221,25 @@
 		{#if !ready}<div class="stage-loading">{$t('b3.loading')}</div>{/if}
 	</div>
 
-	<div class="scrubber">
-		<div class="row">
-			<div class="clock tnum">{clock}</div>
-			<input
-				type="range"
-				min="0"
-				max={frameMax}
-				step="1"
-				value={frameIndex}
-				oninput={onScrub}
-				aria-label={$t('b3.title')}
-			/>
-		</div>
-		<div class="chips tnum">
+	<div class="timebar">
+		<div class="readout tnum">
+			<span class="clock">{clock}</span>
 			<span>☀ {$t('b3.altitude')} <b>{altTxt}</b></span>
 			<span>{$t('b3.azimuth')} <b>{azTxt}</b></span>
 			<span>◐ {$t('b3.coverage')} <b>{obscTxt}</b></span>
 		</div>
+		{#if axis}
+			<TimeScrubber
+				value={frameIndex}
+				max={axis.max}
+				ariaLabel={$t('b3.title')}
+				ticks={axis.ticks}
+				band={axis.band}
+				sunsetFrac={axis.sunsetFrac}
+				sunsetNote={axis.sunsetNote}
+				onscrub={(i) => setFrame(i)}
+			/>
+		{/if}
 	</div>
 </section>
 
@@ -240,14 +248,23 @@
 	.stage {
 		--stage-h: min(60vh, 440px);
 	}
-	.chips {
+	.timebar {
+		margin-top: 12px;
+	}
+	.readout {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 14px;
-		margin-top: 8px;
+		align-items: baseline;
+		gap: 6px 16px;
 		font-size: 0.86rem;
 		color: var(--muted);
 
+		& .clock {
+			font-weight: 700;
+			font-size: 1.1rem;
+			color: var(--fg);
+			white-space: nowrap;
+		}
 		& b {
 			color: var(--accent);
 		}

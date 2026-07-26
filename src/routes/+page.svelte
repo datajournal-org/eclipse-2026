@@ -6,7 +6,6 @@
 	import LocationCall from '$lib/components/LocationCall.svelte';
 	import Verdict from '$lib/components/Verdict.svelte';
 	import SkyView from '$lib/components/SkyView.svelte';
-	import PersonalTimeline from '$lib/components/PersonalTimeline.svelte';
 	import Checklist from '$lib/components/Checklist.svelte';
 	import Placeholder from '$lib/components/Placeholder.svelte';
 	import SafetyFooter from '$lib/components/SafetyFooter.svelte';
@@ -31,7 +30,6 @@
 		</div>
 		<Verdict />
 		<SkyView />
-		<PersonalTimeline />
 		<Checklist />
 	{:else}
 		<LocationCall />
