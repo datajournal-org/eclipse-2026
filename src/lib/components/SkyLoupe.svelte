@@ -95,8 +95,7 @@
 		/>
 		<!-- ground silhouette below the horizon → the Sun / corona sink into it at sunset (tall enough to
 		     always reach the bottom of the frame, even once the horizon has risen well above centre) -->
-		<rect class="loupe-ground" x="-50" y={horizonY} width="100" height="1000" />
-		<line class="loupe-horizon" x1="-50" y1={horizonY} x2="50" y2={horizonY} />
+		<rect class="loupe-ground" x="-50" y={horizonY} width="100" height={300 - horizonY} />
 	</svg>
 </div>
 
@@ -144,11 +143,6 @@
 		}
 		.loupe-ground {
 			fill: var(--loupe-ground, #15110d); /* dusk-darkened land silhouette below the horizon */
-		}
-		.loupe-horizon {
-			stroke: var(--loupe-glow);
-			stroke-width: 0.8;
-			opacity: 0.75; /* warm last-light line at the horizon */
 		}
 	}
 	/* same white rim + shadow as the loupe, only a bit thinner (the loupe is its magnification) */

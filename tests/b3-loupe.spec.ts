@@ -14,7 +14,7 @@ test('B3 loads and the loupe horizon rises at sunset', async ({ page }) => {
 
 	const slider = page.locator('section.b3 input[type="range"]');
 	const max = Number(await slider.getAttribute('max'));
-	const horizonY = () => page.locator('section.b3 .loupe-horizon').evaluate((el) => Number(el.getAttribute('y1')));
+	const horizonY = () => page.locator('section.b3 .loupe-ground').evaluate((el) => Number(el.getAttribute('y1')));
 	const setFrame = (f: number) =>
 		slider
 			.evaluate((el, v) => {

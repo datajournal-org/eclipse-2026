@@ -34,9 +34,17 @@ export function loupeSkyCss(sunAlt: number, veilRgb: Rgb, veilOpacity: number): 
 	return cssRgb(mix3(mix3(SKY_LO, SKY_HI, skyT), veilRgb, veilOpacity));
 }
 
-// Ground silhouette below the loupe horizon: the scene's land colour sunk far toward night (a dusk
-// silhouette that keeps a hint of the land's hue), then dimmed by the veil exactly as the sky is.
-export function loupeGroundCss(landColorHex: string, veilRgb: Rgb, veilOpacity: number): string {
-	const silhouette = mix3(hexToRgb(landColorHex), NIGHT_RGB, 0.82);
-	return cssRgb(mix3(silhouette, veilRgb, veilOpacity));
+// Parse a CSS colour to normalised 0..1 RGB. The map's land colour arrives as `rgb(r,g,b)` (the VersaTiles
+// style's background-color), not a hex string, so hexToRgb alone would read it as black.
+function toRgb01(color: string): Rgb {
+	const m = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+	if (m) return [+m[1] / 255, +m[2] / 255, +m[3] / 255];
+	return hexToRgb(color);
+}
+
+// Ground below the loupe horizon = the map's own land colour, dimmed by the veil exactly as the veil dims
+// the rendered scene's land — so the loupe reads as a true zoomed cutout: its ground matches the terrain
+// around the marker rather than a separate silhouette tone.
+export function loupeGroundCss(landColor: string, veilRgb: Rgb, veilOpacity: number): string {
+	return cssRgb(mix3(toRgb01(landColor), veilRgb, veilOpacity));
 }
