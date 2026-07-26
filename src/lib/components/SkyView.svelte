@@ -202,10 +202,10 @@
 
 				// location marker — a DOM marker, exactly like the A2 globe. MapLibre keeps it on the terrain
 				// surface at [LON,LAT] every frame; now that the camera height no longer bobs, it holds its
-				// screen position as the camera orbits. Dark-red dot + white ring (no pulse), styled by the
-				// .b3-user-pin rule below, sharing the globe's --marker token. Added after the veil → above it.
+				// screen position as the camera orbits. Shared .user-pin dot (styles/map.css), same as the A2
+				// globe. Added after the veil → above it.
 				const pin = document.createElement('div');
-				pin.className = 'b3-user-pin';
+				pin.className = 'user-pin';
 				new maplibregl.Marker({ element: pin }).setLngLat([LON, LAT]).addTo(m);
 
 				// horizontal drag → orbit the camera around the marker (marker stays ~in place; the world turns).
@@ -418,8 +418,8 @@
 		}
 	}
 
-	/* MapLibre's own DOM (canvas container, markers) is added outside the component tree, so these live in
-	   a :global block under .b3. */
+	/* B3-only MapLibre DOM (added outside the component tree). Shared map chrome (controls, attribution,
+	   the .user-pin marker) lives in styles/map.css; only the twilight veil is B3-specific. */
 	:global {
 		/* twilight veil — inside the map's canvas container, under the marker: dims the rendered scene but
 		   not the location marker above it. */
@@ -428,17 +428,6 @@
 			inset: 0;
 			pointer-events: none;
 			transition: opacity 150ms linear;
-		}
-		/* the user's location — same dot as the A2 globe's .user-pin, without the pulse. */
-		.b3 .b3-user-pin {
-			width: 16px;
-			height: 16px;
-			border-radius: 50%;
-			background: var(--marker);
-			box-shadow:
-				0 0 0 2px #fff,
-				0 1px 5px rgba(0, 0, 0, 0.6);
-			pointer-events: none;
 		}
 	}
 </style>

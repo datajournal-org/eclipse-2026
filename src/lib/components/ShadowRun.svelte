@@ -291,48 +291,10 @@
 		font-weight: 400;
 		opacity: 0.6;
 	}
-	/* Everything below targets MapLibre's own DOM (added outside the component tree),
-	   so it lives in one :global block, nested under the map's .a2 root. */
+	/* A2-only MapLibre DOM (added outside the component tree). Shared map chrome — control buttons,
+	   attribution, the .user-pin marker — lives in styles/map.css; only the globe's own bits are here. */
 	:global {
 		.a2 {
-			/* control groups (zoom / fullscreen / overlay), restyled for the dark map */
-			.maplibregl-ctrl-group {
-				background: color-mix(in oklab, var(--bg-2) 88%, transparent);
-				border: 1px solid var(--border);
-				border-radius: var(--radius-sm);
-				overflow: hidden;
-				box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
-				backdrop-filter: blur(6px);
-
-				button {
-					width: 32px;
-					height: 32px;
-					background: transparent;
-
-					& + button {
-						border-top: 1px solid var(--border);
-					}
-					&:hover {
-						background: var(--surface-2);
-					}
-					&:focus-visible {
-						outline: 2px solid var(--accent);
-						outline-offset: -2px;
-					}
-
-					/* icons are dark SVG background-images — invert them to read on the dark buttons */
-					.maplibregl-ctrl-icon {
-						filter: invert(1) brightness(1.1) opacity(0.75);
-					}
-					&:hover .maplibregl-ctrl-icon {
-						filter: invert(1) brightness(1.1);
-					}
-					&:disabled .maplibregl-ctrl-icon {
-						filter: invert(1) opacity(0.28);
-					}
-				}
-			}
-
 			/* overlay-toggle button uses an inline (light) SVG rather than an inverted background image */
 			.a2-overlay-toggle {
 				display: flex;
@@ -353,19 +315,6 @@
 				}
 			}
 
-			/* attribution pill */
-			.maplibregl-ctrl-attrib {
-				background: color-mix(in oklab, var(--bg-2) 70%, transparent);
-				color: var(--muted);
-
-				a {
-					color: var(--muted);
-				}
-			}
-			.maplibregl-ctrl-attrib-button {
-				filter: invert(1) opacity(0.6);
-			}
-
 			/* percent labels are DOM markers (added outside the component tree) */
 			.iso-label {
 				font:
@@ -380,37 +329,6 @@
 					0 0 2px color-mix(in oklab, var(--bg) 90%, transparent);
 				/* own compositor layer → moving the marker while rotating is composited, not repainted */
 				will-change: transform;
-			}
-
-			/* the user's chosen location (a DOM marker, like the labels) */
-			.user-pin {
-				width: 16px;
-				height: 16px;
-				border-radius: 50%;
-				background: var(--marker);
-				box-shadow:
-					0 0 0 2px #fff,
-					0 1px 5px rgba(0, 0, 0, 0.6);
-				pointer-events: none;
-			}
-			.user-pin::before {
-				content: '';
-				position: absolute;
-				inset: -8px;
-				border-radius: 50%;
-				border: 2px solid var(--marker);
-				animation: a2-pin-pulse 2s ease-out infinite;
-			}
-		}
-
-		@keyframes a2-pin-pulse {
-			from {
-				transform: scale(0.5);
-				opacity: 0.7;
-			}
-			to {
-				transform: scale(1.5);
-				opacity: 0;
 			}
 		}
 	}
