@@ -162,23 +162,27 @@ button {
 	pointer-events: none;
 }
 
-/* Time scrubber — the clock + range-slider row shared by the A2/B3 map screens. */
-.scrubber {
+/* Time-slider header (clock + optional live chips) above a TimeScrubber track. Shared by the A2/B3 map
+   screens so both sliders read as one family. */
+.timebar {
 	margin-top: 12px;
+}
+.readout {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 6px 16px;
+	font-size: 0.86rem;
+	color: var(--muted);
 
-	& .row {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
 	& .clock {
 		font-weight: 700;
 		font-size: 1.1rem;
+		color: var(--fg);
 		white-space: nowrap;
 	}
-	& input[type='range'] {
-		flex: 1;
-		accent-color: var(--accent);
+	& b {
+		color: var(--accent);
 	}
 }
 

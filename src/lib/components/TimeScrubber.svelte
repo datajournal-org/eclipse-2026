@@ -56,31 +56,33 @@
 		aria-label={ariaLabel}
 	/>
 
-	<div class="labels">
-		{#if band}
-			<button
-				class="lab"
-				data-align="center"
-				style:left={pct((band.from + band.to) / 2)}
-				onclick={() => onscrub(band.frame)}
-				aria-label={band.label}
-			>
-				<span class="name">{band.label}</span>
-			</button>
-		{/if}
-		{#each ticks as tk (tk.label)}
-			<button
-				class="lab"
-				data-align={tk.align}
-				style:left={pct(tk.frac)}
-				onclick={() => onscrub(tk.frame)}
-				aria-label={`${tk.label} · ${tk.sub}`}
-			>
-				<span class="name">{tk.label}</span>
-				<span class="sub tnum">{tk.sub}</span>
-			</button>
-		{/each}
-	</div>
+	{#if band || ticks.length}
+		<div class="labels">
+			{#if band}
+				<button
+					class="lab"
+					data-align="center"
+					style:left={pct((band.from + band.to) / 2)}
+					onclick={() => onscrub(band.frame)}
+					aria-label={band.label}
+				>
+					<span class="name">{band.label}</span>
+				</button>
+			{/if}
+			{#each ticks as tk (tk.label)}
+				<button
+					class="lab"
+					data-align={tk.align}
+					style:left={pct(tk.frac)}
+					onclick={() => onscrub(tk.frame)}
+					aria-label={`${tk.label} · ${tk.sub}`}
+				>
+					<span class="name">{tk.label}</span>
+					<span class="sub tnum">{tk.sub}</span>
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	{#if sunsetNote}
 		<p class="sunset-note tnum">☾ {sunsetNote}</p>

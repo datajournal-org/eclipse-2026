@@ -248,28 +248,6 @@
 	.stage {
 		--stage-h: min(60vh, 440px);
 	}
-	.timebar {
-		margin-top: 12px;
-	}
-	.readout {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 6px 16px;
-		font-size: 0.86rem;
-		color: var(--muted);
-
-		& .clock {
-			font-weight: 700;
-			font-size: 1.1rem;
-			color: var(--fg);
-			white-space: nowrap;
-		}
-		& b {
-			color: var(--accent);
-		}
-	}
-
 	/* B3-only MapLibre DOM (added outside the component tree). Shared map chrome (controls, attribution,
 	   the .user-pin marker) lives in styles/map.css; only the twilight veil is B3-specific. */
 	:global {

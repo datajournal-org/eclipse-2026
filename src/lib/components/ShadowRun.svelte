@@ -32,6 +32,7 @@
 	import { corridorEdges } from '$lib/shadow-globe/corridor';
 	import { OverlayToggleControl } from '$lib/shadow-globe/overlayToggleControl';
 	import { IsoLabels } from '$lib/shadow-globe/isoLabels';
+	import TimeScrubber from '$lib/components/TimeScrubber.svelte';
 
 	const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
 	const INITIAL_VIEW = { center: [-18, 50] as [number, number], zoom: 1.21 };
@@ -219,12 +220,6 @@
 		}
 		userMarker.getElement().title = loc.name ?? '';
 	});
-
-	function onScrub(event: Event) {
-		const target = event.currentTarget as HTMLInputElement;
-		frameIndex = +target.value;
-		showFrame(frameIndex);
-	}
 </script>
 
 <section class="block a2">
@@ -240,19 +235,20 @@
 			{#if !mapReady}<div class="stage-loading">{$t('a2.loading')}</div>{/if}
 		</div>
 
-		<div class="scrubber">
-			<div class="row">
-				<div class="clock tnum">{clockUtc} <small>UTC</small></div>
-				<input
-					type="range"
-					min="0"
-					max={shadowFrames.length - 1}
-					step="1"
-					value={frameIndex}
-					oninput={onScrub}
-					aria-label="{$t('a2.title')} — {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC"
-				/>
+		<div class="timebar">
+			<div class="readout tnum">
+				<span class="clock">{clockUtc} <small>UTC</small></span>
 			</div>
+			<TimeScrubber
+				value={frameIndex}
+				max={shadowFrames.length - 1}
+				ariaLabel="{$t('a2.title')} — {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC"
+				ticks={[]}
+				onscrub={(i) => {
+					frameIndex = i;
+					showFrame(i);
+				}}
+			/>
 		</div>
 	</div>
 </section>
@@ -262,7 +258,7 @@
 	.stage {
 		--stage-h: min(64vh, 480px);
 	}
-	/* Fullscreen wraps map + scrubber so the time slider stays visible. */
+	/* Fullscreen wraps map + time slider so the slider stays visible. */
 	.a2-stage:fullscreen {
 		display: flex;
 		flex-direction: column;
@@ -279,7 +275,7 @@
 			height: 100%;
 			background: #000;
 		}
-		& .scrubber {
+		& .timebar {
 			margin: 0;
 			align-self: center;
 			width: min(760px, 100%);
