@@ -295,11 +295,9 @@
 	   attribution, the .user-pin marker — lives in styles/map.css; only the globe's own bits are here. */
 	:global {
 		.a2 {
-			/* overlay-toggle button uses an inline (light) SVG rather than an inverted background image */
+			/* overlay-toggle button uses an inline (light) SVG rather than an inverted background image
+			   (centring comes from the shared button rule in styles/map.css) */
 			.a2-overlay-toggle {
-				display: flex;
-				align-items: center;
-				justify-content: center;
 				color: #eef2f8;
 
 				svg {
