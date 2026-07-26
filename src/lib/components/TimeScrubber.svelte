@@ -3,7 +3,7 @@
      native <input type=range> stays the control (drag + keyboard + a11y); everything else is decoration or a
      jump shortcut. Data comes from skyview/timeAxis.ts. -->
 <script lang="ts">
-	import type { Tick, TimeBand } from '$lib/skyview/timeAxis';
+	import type { Tick, TimeBand } from '$lib/components/timeScrubber';
 
 	let {
 		value,
@@ -26,6 +26,8 @@
 	} = $props();
 
 	const pct = (f: number) => `${f * 100}%`;
+	// single-line labels (grid ticks, no second line) → a shorter label strip
+	const compact = $derived(!band && ticks.every((t) => !t.sub));
 </script>
 
 <div class="axis">
@@ -57,7 +59,7 @@
 	/>
 
 	{#if band || ticks.length}
-		<div class="labels">
+		<div class="labels" class:compact>
 			{#if band}
 				<button
 					class="lab"
@@ -71,14 +73,14 @@
 			{/if}
 			{#each ticks as tk (tk.label)}
 				<button
-					class="lab"
+					class="lab {tk.kind}"
 					data-align={tk.align}
 					style:left={pct(tk.frac)}
 					onclick={() => onscrub(tk.frame)}
-					aria-label={`${tk.label} · ${tk.sub}`}
+					aria-label={tk.sub ? `${tk.label} · ${tk.sub}` : tk.label}
 				>
 					<span class="name">{tk.label}</span>
-					<span class="sub tnum">{tk.sub}</span>
+					{#if tk.sub}<span class="sub tnum">{tk.sub}</span>{/if}
 				</button>
 			{/each}
 		</div>
@@ -95,12 +97,12 @@
 		margin-top: 10px;
 	}
 
-	/* decorative track, vertically centred under the range thumb (input is 22px tall) */
+	/* decorative track, vertically centred under the range thumb (input is 18px tall → centre at 9px) */
 	.track {
 		position: absolute;
 		left: 0;
 		right: 0;
-		top: 11px;
+		top: 9px;
 		height: 6px;
 		transform: translateY(-50%);
 		border-radius: 3px;
@@ -151,6 +153,12 @@
 		border-radius: 1px;
 		background: var(--accent);
 	}
+	/* regular time-grid ticks (A2): shorter and subtler than the eclipse event ticks */
+	.tick.grid {
+		width: 1px;
+		height: 9px;
+		background: var(--muted);
+	}
 	/* hollow circle for sunset */
 	.sun {
 		position: absolute;
@@ -163,40 +171,41 @@
 		border: 2px solid var(--muted);
 	}
 
-	/* the control: transparent track (decoration shows through), a visible accent thumb */
+	/* the control: transparent track (decoration shows through), a round accent thumb. Input height ==
+	   thumb height so the thumb centres on the track with no per-browser margin tweaks. */
 	input[type='range'] {
 		position: relative;
 		z-index: 1;
 		-webkit-appearance: none;
 		appearance: none;
 		width: 100%;
-		height: 22px;
+		height: 18px;
 		margin: 0;
 		background: transparent;
 		cursor: pointer;
 	}
 	input[type='range']::-webkit-slider-runnable-track {
-		height: 22px;
+		height: 18px;
 		background: transparent;
 	}
 	input[type='range']::-moz-range-track {
-		height: 22px;
+		height: 18px;
 		background: transparent;
 	}
 	input[type='range']::-webkit-slider-thumb {
 		-webkit-appearance: none;
-		width: 12px;
-		height: 20px;
-		border-radius: 3px;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
 		background: var(--accent);
 		border: 2px solid var(--bg);
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 	}
 	input[type='range']::-moz-range-thumb {
 		box-sizing: border-box;
-		width: 12px;
-		height: 20px;
-		border-radius: 3px;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
 		background: var(--accent);
 		border: 2px solid var(--bg);
 		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
@@ -219,6 +228,9 @@
 		height: 2.6em;
 		margin-top: 6px;
 		font-size: 0.8rem;
+	}
+	.labels.compact {
+		height: 1.4em; /* single-line grid labels (A2) */
 	}
 	.lab {
 		position: absolute;
@@ -248,6 +260,11 @@
 	}
 	.lab .name {
 		font-weight: 600;
+	}
+	.lab.grid .name {
+		font-weight: 500;
+		font-size: 0.72rem;
+		color: var(--muted);
 	}
 	.lab .sub {
 		color: var(--muted);

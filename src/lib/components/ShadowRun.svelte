@@ -33,6 +33,7 @@
 	import { OverlayToggleControl } from '$lib/shadow-globe/overlayToggleControl';
 	import { IsoLabels } from '$lib/shadow-globe/isoLabels';
 	import TimeScrubber from '$lib/components/TimeScrubber.svelte';
+	import { buildTimeGrid } from '$lib/components/timeScrubber';
 
 	const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
 	const INITIAL_VIEW = { center: [-18, 50] as [number, number], zoom: 1.21 };
@@ -71,6 +72,14 @@
 
 	// ---- reactive UI state ----
 	const START_INDEX = Math.floor(shadowFrames.length / 2);
+	// regular UTC time marks on the slider (17:00, 17:30, …) — tap to jump to that instant
+	const timeTicks = buildTimeGrid({
+		start: timelineStart,
+		end: timelineEnd,
+		len: shadowFrames.length,
+		stepMin: 30,
+		label: formatUtc
+	});
 	let mapContainer: HTMLDivElement;
 	let stage: HTMLDivElement; // map + panel wrapper — what goes fullscreen (so the slider stays visible)
 	let frameIndex = $state(START_INDEX);
@@ -243,7 +252,7 @@
 				value={frameIndex}
 				max={shadowFrames.length - 1}
 				ariaLabel="{$t('a2.title')} — {formatUtc(timelineStart)}–{formatUtc(timelineEnd)} UTC"
-				ticks={[]}
+				ticks={timeTicks}
 				onscrub={(i) => {
 					frameIndex = i;
 					showFrame(i);

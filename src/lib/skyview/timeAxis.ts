@@ -2,24 +2,9 @@
 // track. Totality is a ~2-min sliver between totalBegin/peak/totalEnd, so on a true-time axis it is drawn
 // as one band (not three colliding ticks). Sunset gets a tick + a below-horizon tail only when it falls
 // inside the slider window; otherwise just an end note. Pure — labels/times are passed in already resolved.
+import type { Tick, TimeBand } from '$lib/components/timeScrubber';
+
 type Lc = ReturnType<typeof import('$lib/eclipse').localCircumstances>;
-
-export type Tick = {
-	frac: number; // position on the track, 0..1
-	frame: number; // slider frame to jump to when tapped
-	label: string;
-	sub: string; // the time, formatted
-	align: 'start' | 'center' | 'end';
-	kind: 'contact' | 'max';
-};
-
-export type TimeBand = {
-	from: number;
-	to: number;
-	peak: number; // totality's Maximum, drawn as a ◆ on the band
-	frame: number; // jump target for the band label (Maximum)
-	label: string;
-};
 
 export type TimeAxis = {
 	ticks: Tick[];
