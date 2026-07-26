@@ -10,6 +10,7 @@ export type SunState = {
 	moonR: number; // Moon angular radius / Sun angular radius
 	angRad: number; // the Sun's angular radius (rad) → billboard drawn at its real angular size
 	visible: boolean;
+	screen: [number, number] | null; // Sun centre in CSS px (for the DOM locator/loupe leader), null if behind
 };
 
 const VERTEX = `
@@ -73,6 +74,21 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 
 		render(gl, options: CustomRenderMethodInput) {
 			if (!sun.visible) return;
+
+			// project the Sun centre to CSS pixels so the DOM overlay (locator ring + loupe leader line) can
+			// point at the tiny real Sun. mainMatrix is column-major; we only need clip x/y/w.
+			const M = options.defaultProjectionData.mainMatrix;
+			const c = sun.center;
+			const cw = M[3] * c[0] + M[7] * c[1] + M[11] * c[2] + M[15] * c[3];
+			if (cw > 0) {
+				const ndcX = (M[0] * c[0] + M[4] * c[1] + M[8] * c[2] + M[12] * c[3]) / cw;
+				const ndcY = (M[1] * c[0] + M[5] * c[1] + M[9] * c[2] + M[13] * c[3]) / cw;
+				const el = map.getCanvas();
+				sun.screen = [(ndcX * 0.5 + 0.5) * el.clientWidth, (0.5 - ndcY * 0.5) * el.clientHeight];
+			} else {
+				sun.screen = null;
+			}
+
 			gl.useProgram(prog);
 			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 			gl.enableVertexAttribArray(aCorner);

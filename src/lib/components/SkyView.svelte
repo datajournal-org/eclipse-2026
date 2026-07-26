@@ -36,6 +36,12 @@
 	let obscTxt = $state('–');
 	let frameIndex = $state(0);
 	let frameMax = $state(1);
+	// A) loupe inset crescent + B) Sun locator ring & leader line
+	const LOUPE_R = 42; // loupe Sun-disc radius in SVG units (must match the <circle r> in the template)
+	let pointerVisible = $state(false); // Sun above the horizon AND on-screen
+	let crescent = $state({ x: 0, y: 0, r: 0 }); // loupe Moon-disc (the crescent cut-out), SVG units
+	let locatorEl: HTMLDivElement;
+	let leaderLineEl: SVGLineElement;
 	let setFrame: (i: number) => void = () => {};
 
 	onMount(() => {
@@ -66,7 +72,8 @@
 				moon: [0, 0],
 				moonR: 1,
 				angRad: 0,
-				visible: false
+				visible: false,
+				screen: null
 			};
 			const SUN_DIST = 30000; // metres: far out in the sky (parallax negligible; the Sun reads at infinity)
 
@@ -327,6 +334,8 @@
 					altTxt = s.alt.toFixed(1) + '°';
 					azTxt = s.az.toFixed(0) + '°';
 					obscTxt = (obsc * 100).toFixed(0) + '%';
+					// loupe crescent (changes only with time): Moon-disc offset/size in Sun-radius units × R
+					crescent = { x: sun.moon[0] * LOUPE_R, y: -sun.moon[1] * LOUPE_R, r: sun.moonR * LOUPE_R };
 					m.triggerRepaint();
 				}
 
@@ -337,6 +346,24 @@
 				// start at greatest eclipse
 				const peakT = (lc?.peak?.time ?? new Date(ECLIPSE_DATE + 'T18:08:00Z')).getTime();
 				frameIndex = Math.round(((peakT - tStart) / (tEnd - tStart)) * N);
+				// A + B overlay: keep the Sun locator ring + loupe leader line glued to the tiny real Sun each
+				// rendered frame (the camera can move without a scrub). The loupe crescent updates in update().
+				const LOUPE_ANCHOR: [number, number] = [86, 48]; // loupe right-middle in stage px (10 + 76, 10 + 38)
+				m.on('render', () => {
+					const s = sun.screen;
+					const w = mapContainer.clientWidth,
+						h = mapContainer.clientHeight;
+					const onScreen = !!s && sun.visible && s[0] >= 0 && s[0] <= w && s[1] >= 0 && s[1] <= h;
+					pointerVisible = onScreen;
+					if (onScreen && s && locatorEl && leaderLineEl) {
+						locatorEl.style.transform = `translate(${s[0]}px, ${s[1]}px) translate(-50%, -50%)`;
+						leaderLineEl.setAttribute('x1', String(LOUPE_ANCHOR[0]));
+						leaderLineEl.setAttribute('y1', String(LOUPE_ANCHOR[1]));
+						leaderLineEl.setAttribute('x2', String(s[0]));
+						leaderLineEl.setAttribute('y2', String(s[1]));
+					}
+				});
+
 				// NOTE: no re-framing on 'idle' — the camera is set once here and never moves on its own
 				// again (a later jumpTo would fight the user's panning and appear to teleport the marker).
 				m.once('idle', () => update());
@@ -366,6 +393,22 @@
 
 	<div class="stage bleed">
 		<div class="stage-canvas" bind:this={mapContainer}></div>
+
+		<!-- B: leader line from the loupe to the tiny real Sun -->
+		<svg class="b3-leader" class:hidden={!pointerVisible} aria-hidden="true">
+			<line bind:this={leaderLineEl} />
+		</svg>
+		<!-- B: locator ring around the real Sun -->
+		<div class="b3-locator" class:hidden={!pointerVisible} bind:this={locatorEl} aria-hidden="true"></div>
+		<!-- A: loupe inset — the eclipsed Sun's crescent, magnified -->
+		<div class="b3-loupe" class:hidden={!ready} aria-hidden="true" style:--loupe-sun={SKY_PALETTE.sun}>
+			<svg viewBox="-50 -50 100 100">
+				<defs><clipPath id="b3-sundisc"><circle r={LOUPE_R} /></clipPath></defs>
+				<circle class="loupe-sun" r={LOUPE_R} />
+				<circle class="loupe-moon" clip-path="url(#b3-sundisc)" cx={crescent.x} cy={crescent.y} r={crescent.r} />
+			</svg>
+		</div>
+
 		{#if !ready}<div class="stage-loading">{$t('b3.loading')}</div>{/if}
 	</div>
 
@@ -418,6 +461,63 @@
 			inset: 0;
 			pointer-events: none;
 			transition: opacity 150ms linear;
+		}
+
+		/* A) loupe inset (magnified crescent) + B) Sun locator ring & leader line. These sit above the
+		   twilight veil, so they stay legible as the eclipse darkens the scene. */
+		.b3 .b3-loupe {
+			position: absolute;
+			top: 10px;
+			left: 10px;
+			box-sizing: border-box;
+			width: 76px;
+			height: 76px;
+			padding: 7px;
+			border-radius: 12px;
+			background: color-mix(in oklab, var(--bg-2) 88%, transparent);
+			border: 1px solid var(--border);
+			box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+			backdrop-filter: blur(6px);
+			pointer-events: none;
+		}
+		.b3 .b3-loupe svg {
+			display: block;
+			width: 100%;
+			height: 100%;
+		}
+		.b3 .b3-loupe .loupe-sun {
+			fill: var(--loupe-sun);
+		}
+		.b3 .b3-loupe .loupe-moon {
+			fill: #12151d;
+		}
+		.b3 .b3-locator {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 26px;
+			height: 26px;
+			border: 2px solid var(--accent);
+			border-radius: 50%;
+			box-shadow: 0 0 8px 1px color-mix(in oklab, var(--accent) 45%, transparent);
+			pointer-events: none;
+		}
+		.b3 .b3-leader {
+			position: absolute;
+			inset: 0;
+			width: 100%;
+			height: 100%;
+			overflow: visible;
+			pointer-events: none;
+		}
+		.b3 .b3-leader line {
+			stroke: var(--accent);
+			stroke-width: 1.5;
+			stroke-dasharray: 3 3;
+			opacity: 0.65;
+		}
+		.b3 :is(.b3-loupe, .b3-locator, .b3-leader).hidden {
+			display: none;
 		}
 	}
 </style>
