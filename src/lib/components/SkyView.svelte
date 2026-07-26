@@ -10,36 +10,18 @@
 	import { t, fmt } from '$lib/i18n';
 	import { userLocation } from '$lib/stores/location';
 	import { sunMoonHorizon, localCircumstances } from '$lib/eclipse';
-	import { discOverlapFraction } from '$lib/shadow-globe/shadowProfile';
 	import { destPoint } from '$lib/shadow-globe/vec3';
 	import { createSunLayer, type SunState } from '$lib/skyview/sunLayer';
+	import { eclipseGeometry } from '$lib/skyview/eclipseGeometry';
+	import { cssRgb, veilColour, loupeSkyCss } from '$lib/skyview/colors';
+	import { bridgeSegments } from '$lib/skyview/overlay';
 	import { environment, DUSK_HEX } from '$lib/skyview/environment';
 	import { computeFraming } from '$lib/skyview/framing';
 	import { SKY_PALETTE, ECLIPSE_DATE } from '$lib/config';
 	import { hexToRgb } from '$lib/brand';
-	import {
-		DEG_TO_RAD as D2R,
-		RAD_TO_DEG as R2D,
-		norm180,
-		AU_KM as AU,
-		SUN_RADIUS_KM as RSUN,
-		MOON_RADIUS_KM as RMOON
-	} from '$lib/constants';
+	import { DEG_TO_RAD as D2R } from '$lib/constants';
 
 	const ELEV = 'https://tiles.versatiles.org/tiles/elevation/{z}/{x}/{y}';
-
-	// loupe sky-colour helpers: blend the sky palette by altitude, then dim toward dusk like the veil does
-	type Rgb = [number, number, number];
-	const SKY_HI = hexToRgb(SKY_PALETTE.sky);
-	const SKY_LO = hexToRgb(SKY_PALETTE.horizon);
-	const DUSK_RGB = hexToRgb(DUSK_HEX);
-	const NIGHT_RGB = hexToRgb('#05070d'); // near-black the veil trends toward at totality
-	const mix3 = (a: Rgb, b: Rgb, t: number): Rgb => [
-		a[0] + (b[0] - a[0]) * t,
-		a[1] + (b[1] - a[1]) * t,
-		a[2] + (b[2] - a[2]) * t
-	];
-	const cssRgb = (c: Rgb) => `rgb(${Math.round(c[0] * 255)} ${Math.round(c[1] * 255)} ${Math.round(c[2] * 255)})`;
 
 	let mapContainer: HTMLDivElement;
 	let ready = $state(false);
@@ -399,15 +381,11 @@
 
 				function update() {
 					const date = new Date(times[frameIndex]);
-					const sm = sunMoonHorizon(LAT, LON, date);
-					const s = sm.sun,
-						mo = sm.moon;
-					const sunAngR = Math.atan(RSUN / (s.distAu * AU)) * R2D;
-					const moonAngR = Math.atan(RMOON / (mo.distAu * AU)) * R2D;
-					const dx = norm180(mo.az - s.az) * Math.cos(s.alt * D2R); // +x east, +y up (screen)
-					const dy = mo.alt - s.alt;
+					const geo = eclipseGeometry(LAT, LON, date);
+					const s = geo.sun;
+					const { sunAngR, dx, dy, obsc } = geo;
 					sun.moon = [dx / sunAngR, dy / sunAngR];
-					sun.moonR = moonAngR / sunAngR;
+					sun.moonR = geo.moonAngR / sunAngR;
 					sun.angRad = sunAngR * D2R; // real angular radius (rad) → billboard drawn at true size
 
 					const ground = m.queryTerrainElevation([LON, LAT] as [number, number]) ?? 0;
@@ -426,16 +404,11 @@
 					// the true (sea-level) horizon.
 					sun.visible = s.alt > 0;
 
-					const obsc = discOverlapFraction(sunAngR, moonAngR, Math.hypot(dx, dy));
-
 					// keep the map in sync with the simulated Sun: direction from (az, alt), brightness/colour
 					// from the obscuration (same numbers that drive the Sun billboard).
 					const env = environment(obsc);
 					duskEl.style.opacity = String(env.veil); // dims the whole rendered scene, not the marker
-					// near totality, darken the veil colour from dusk-blue toward near-black, so the plunge reads
-					// as (almost) night rather than just "more blue"
-					const nightMix = Math.max(0, Math.min(1, (obsc - 0.9) / 0.1));
-					const veilRgb = mix3(DUSK_RGB, NIGHT_RGB, nightMix);
+					const veilRgb = veilColour(obsc);
 					duskEl.style.background = cssRgb(veilRgb);
 					m.setLight({
 						anchor: 'map',
@@ -455,10 +428,7 @@
 					obscTxt = (obsc * 100).toFixed(0) + '%';
 					// loupe crescent (changes only with time): Moon-disc offset/size in Sun-radius units × R
 					crescent = { x: sun.moon[0] * LOUPE_R, y: -sun.moon[1] * LOUPE_R, r: sun.moonR * LOUPE_R };
-					// loupe background = the sky behind the low Sun: blend horizon→sky by altitude, then dim toward
-					// dusk exactly as the veil dims the scene, so the loupe reads as a zoomed cutout of that sky.
-					const skyT = Math.max(0, Math.min(1, s.alt / 30));
-					loupeSky = cssRgb(mix3(mix3(SKY_LO, SKY_HI, skyT), veilRgb, env.veil));
+					loupeSky = loupeSkyCss(s.alt, veilRgb, env.veil);
 					// corona overlay (test): the image's Moon (270 of 512 px = radius 135) is mapped onto the loupe
 					// Moon disc, and only shown in true totality — obscuration reaches 1 (never at partial locations).
 					coronaSize = crescent.r * (512 / 135);
@@ -474,16 +444,7 @@
 				// instead at the moment the coverage first reaches 90% (on the way in): a livelier first view.
 				const peakT = (lc?.peak?.time ?? new Date(ECLIPSE_DATE + 'T18:08:00Z')).getTime();
 				const peakFrame = Math.round(((peakT - tStart) / (tEnd - tStart)) * N);
-				const obscAt = (t: number): number => {
-					const sm = sunMoonHorizon(LAT, LON, new Date(t));
-					const s = sm.sun,
-						mo = sm.moon;
-					const sunAngR = Math.atan(RSUN / (s.distAu * AU)) * R2D;
-					const moonAngR = Math.atan(RMOON / (mo.distAu * AU)) * R2D;
-					const dx = norm180(mo.az - s.az) * Math.cos(s.alt * D2R);
-					const dy = mo.alt - s.alt;
-					return discOverlapFraction(sunAngR, moonAngR, Math.hypot(dx, dy));
-				};
+				const obscAt = (t: number) => eclipseGeometry(LAT, LON, new Date(t)).obsc;
 				const START_OBSC = 0.9;
 				frameIndex = peakFrame;
 				if ((lc?.obscuration ?? 0) > START_OBSC) {
@@ -496,26 +457,7 @@
 				}
 				// A + B overlay: keep the Sun locator marker + the loupe's two connector lines glued to the tiny
 				// real Sun each rendered frame (the camera can move without a scrub). The loupe crescent updates
-				// in update(). Loupe and marker are squares; the two connectors are the convex-hull "bridge"
-				// edges between them (the polygon analogue of the external tangents between two circles).
-				const LOUPE_C: [number, number] = [58, 58]; // loupe centre in stage px (top/left 10 + 48)
-				const LOUPE_HALF = 48; // loupe half-size (96 px / 2)
-				const MARKER_HALF = 13; // locator square half-size (26 px / 2)
-				type Pt = { x: number; y: number; g: number }; // g: 0 = loupe corner, 1 = marker corner
-				const hull = (pts: Pt[]): Pt[] => {
-					const sorted = pts.slice().sort((a, b) => a.x - b.x || a.y - b.y);
-					const cross = (o: Pt, a: Pt, b: Pt) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-					const chain = (src: Pt[]) => {
-						const out: Pt[] = [];
-						for (const p of src) {
-							while (out.length >= 2 && cross(out[out.length - 2], out[out.length - 1], p) <= 0) out.pop();
-							out.push(p);
-						}
-						out.pop();
-						return out;
-					};
-					return chain(sorted).concat(chain(sorted.slice().reverse()));
-				};
+				// in update(); the connectors' geometry lives in skyview/overlay.ts.
 				m.on('render', () => {
 					const s = sun.screen;
 					const w = mapContainer.clientWidth,
@@ -528,39 +470,19 @@
 					}
 					if (locatorEl) locatorEl.style.transform = `translate(${s[0]}px, ${s[1]}px) translate(-50%, -50%)`;
 
-					// hide the connectors when the two squares overlap (no clean funnel)
-					const overlap =
-						Math.abs(s[0] - LOUPE_C[0]) < LOUPE_HALF + MARKER_HALF &&
-						Math.abs(s[1] - LOUPE_C[1]) < LOUPE_HALF + MARKER_HALF;
-					if (overlap || !leaderA || !leaderB) {
+					const segs = bridgeSegments(s[0], s[1]);
+					if (!segs || !leaderA || !leaderB) {
 						tangentVisible = false;
 						return;
 					}
-					const corners: Pt[] = [
-						{ x: LOUPE_C[0] - LOUPE_HALF, y: LOUPE_C[1] - LOUPE_HALF, g: 0 },
-						{ x: LOUPE_C[0] + LOUPE_HALF, y: LOUPE_C[1] - LOUPE_HALF, g: 0 },
-						{ x: LOUPE_C[0] + LOUPE_HALF, y: LOUPE_C[1] + LOUPE_HALF, g: 0 },
-						{ x: LOUPE_C[0] - LOUPE_HALF, y: LOUPE_C[1] + LOUPE_HALF, g: 0 },
-						{ x: s[0] - MARKER_HALF, y: s[1] - MARKER_HALF, g: 1 },
-						{ x: s[0] + MARKER_HALF, y: s[1] - MARKER_HALF, g: 1 },
-						{ x: s[0] + MARKER_HALF, y: s[1] + MARKER_HALF, g: 1 },
-						{ x: s[0] - MARKER_HALF, y: s[1] + MARKER_HALF, g: 1 }
-					];
-					const hp = hull(corners);
 					const lines = [leaderA, leaderB];
-					let li = 0;
-					for (let i = 0; i < hp.length && li < 2; i++) {
-						const a = hp[i],
-							b = hp[(i + 1) % hp.length];
-						if (a.g !== b.g) {
-							lines[li].setAttribute('x1', String(a.x));
-							lines[li].setAttribute('y1', String(a.y));
-							lines[li].setAttribute('x2', String(b.x));
-							lines[li].setAttribute('y2', String(b.y));
-							li++;
-						}
-					}
-					tangentVisible = li === 2;
+					segs.forEach((seg, i) => {
+						lines[i].setAttribute('x1', String(seg.x1));
+						lines[i].setAttribute('y1', String(seg.y1));
+						lines[i].setAttribute('x2', String(seg.x2));
+						lines[i].setAttribute('y2', String(seg.y2));
+					});
+					tangentVisible = true;
 				});
 
 				// NOTE: no re-framing on 'idle' — the camera is set once here and never moves on its own
