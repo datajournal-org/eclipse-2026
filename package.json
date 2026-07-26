@@ -10,16 +10,21 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"sync": "svelte-kit sync",
-		"check": "npm run check:ts && npm run check:svelte && npm run check:format && npm run lint",
+		"check": "npm run check:format && npm run check:ts && npm run lint && npm run check:svelte && npm run test",
 		"check:svelte": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:ts": "tsc --noEmit",
 		"check:format": "prettier --check .",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"test": "playwright test",
+		"test:ui": "playwright test --ui",
+		"test:headed": "playwright test --headed",
+		"test:report": "playwright show-report"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
+		"@playwright/test": "^1.62.0",
 		"@sveltejs/adapter-static": "^3.0.6",
 		"@sveltejs/kit": "^2.8.0",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
