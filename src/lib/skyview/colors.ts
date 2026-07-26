@@ -33,3 +33,10 @@ export function loupeSkyCss(sunAlt: number, veilRgb: Rgb, veilOpacity: number): 
 	const skyT = Math.max(0, Math.min(1, sunAlt / 30));
 	return cssRgb(mix3(mix3(SKY_LO, SKY_HI, skyT), veilRgb, veilOpacity));
 }
+
+// Ground silhouette below the loupe horizon: the scene's land colour sunk far toward night (a dusk
+// silhouette that keeps a hint of the land's hue), then dimmed by the veil exactly as the sky is.
+export function loupeGroundCss(landColorHex: string, veilRgb: Rgb, veilOpacity: number): string {
+	const silhouette = mix3(hexToRgb(landColorHex), NIGHT_RGB, 0.82);
+	return cssRgb(mix3(silhouette, veilRgb, veilOpacity));
+}

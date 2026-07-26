@@ -12,7 +12,7 @@
 	import { localCircumstances, sunset } from '$lib/eclipse';
 	import type { SunState } from '$lib/skyview/sunLayer';
 	import { eclipseGeometry } from '$lib/skyview/eclipseGeometry';
-	import { cssRgb, veilColour, loupeSkyCss } from '$lib/skyview/colors';
+	import { cssRgb, veilColour, loupeSkyCss, loupeGroundCss } from '$lib/skyview/colors';
 	import { buildTimeline } from '$lib/skyview/timeline';
 	import { buildTimeAxis, type TimeAxis } from '$lib/skyview/timeAxis';
 	import TimeScrubber from '$lib/components/TimeScrubber.svelte';
@@ -40,6 +40,8 @@
 	let loupeSky = $state<string>(SKY_PALETTE.sky); // loupe background = the sky colour behind the real Sun
 	let coronaSize = $state(0); // corona overlay size in loupe viewBox units (image Moon 270px → loupe Moon)
 	let coronaOpacity = $state(0); // corona fades in only at totality (obscuration → 1)
+	let horizonY = $state(999); // loupe horizon offset (SVG units, +y down); off-frame until the Sun sets
+	let loupeGround = $state<string>('#15110d'); // ground silhouette below the loupe horizon
 	let loupe = $state<{ place: (screen: [number, number] | null) => void }>();
 	let setFrame: (i: number) => void = () => {};
 
@@ -234,7 +236,17 @@
 		<div class="stage-canvas" bind:this={mapContainer}></div>
 
 		<!-- A) loupe inset + B) Sun locator square & tangent leaders; bound so the render loop can drive it -->
-		<SkyLoupe bind:this={loupe} {ready} loupeR={LOUPE_R} {loupeSky} {crescent} {coronaSize} {coronaOpacity} />
+		<SkyLoupe
+			bind:this={loupe}
+			{ready}
+			loupeR={LOUPE_R}
+			{loupeSky}
+			{loupeGround}
+			{horizonY}
+			{crescent}
+			{coronaSize}
+			{coronaOpacity}
+		/>
 
 		{#if !ready}<div class="stage-loading">{$t('b3.loading')}</div>{/if}
 	</div>

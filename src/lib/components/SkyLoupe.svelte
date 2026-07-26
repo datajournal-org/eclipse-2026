@@ -9,6 +9,8 @@
 		ready,
 		loupeR,
 		loupeSky,
+		loupeGround,
+		horizonY,
 		crescent,
 		coronaSize,
 		coronaOpacity
@@ -16,6 +18,8 @@
 		ready: boolean;
 		loupeR: number;
 		loupeSky: string;
+		loupeGround: string;
+		horizonY: number; // horizon offset from the centred Sun, in loupe SVG units (+y down)
 		crescent: { x: number; y: number; r: number };
 		coronaSize: number;
 		coronaOpacity: number;
@@ -67,8 +71,17 @@
 	aria-hidden="true"
 	style:--loupe-sun={SKY_PALETTE.sun}
 	style:--loupe-sky={loupeSky}
+	style:--loupe-ground={loupeGround}
 >
 	<svg viewBox="-50 -50 100 100">
+		<defs>
+			<linearGradient id="loupe-glow-grad" x1="0" y1="0" x2="0" y2="1">
+				<stop class="glow-top" offset="0" />
+				<stop class="glow-bottom" offset="1" />
+			</linearGradient>
+		</defs>
+		<!-- warm sunset glow in the sky just above the horizon (off-frame until the Sun nears setting) -->
+		<rect class="loupe-glow" x="-50" y={horizonY - 42} width="100" height="42" />
 		<circle class="loupe-sun" r={loupeR} />
 		<circle class="loupe-moon" cx={crescent.x} cy={crescent.y} r={crescent.r} />
 		<image
@@ -80,6 +93,10 @@
 			opacity={coronaOpacity}
 			preserveAspectRatio="xMidYMid meet"
 		/>
+		<!-- ground silhouette below the horizon → the Sun / corona sink into it at sunset (tall enough to
+		     always reach the bottom of the frame, even once the horizon has risen well above centre) -->
+		<rect class="loupe-ground" x="-50" y={horizonY} width="100" height="1000" />
+		<line class="loupe-horizon" x1="-50" y1={horizonY} x2="50" y2={horizonY} />
 	</svg>
 </div>
 
@@ -101,6 +118,7 @@
 		border: 2px solid #fff;
 		box-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
 		pointer-events: none;
+		--loupe-glow: #f2894b; /* warm sunset tint for the horizon glow + line */
 
 		svg {
 			display: block;
@@ -112,6 +130,25 @@
 		}
 		.loupe-moon {
 			fill: var(--loupe-sky, #8fb4e0); /* the Moon reveals the sky, same as in the scene */
+		}
+		.loupe-glow {
+			fill: url(#loupe-glow-grad);
+		}
+		.glow-top {
+			stop-color: var(--loupe-glow);
+			stop-opacity: 0;
+		}
+		.glow-bottom {
+			stop-color: var(--loupe-glow);
+			stop-opacity: 0.5;
+		}
+		.loupe-ground {
+			fill: var(--loupe-ground, #15110d); /* dusk-darkened land silhouette below the horizon */
+		}
+		.loupe-horizon {
+			stroke: var(--loupe-glow);
+			stroke-width: 0.8;
+			opacity: 0.75; /* warm last-light line at the horizon */
 		}
 	}
 	/* same white rim + shadow as the loupe, only a bit thinner (the loupe is its magnification) */
