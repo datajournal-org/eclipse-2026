@@ -81,9 +81,10 @@
 			</linearGradient>
 		</defs>
 		<!-- warm sunset glow in the sky just above the horizon (off-frame until the Sun nears setting) -->
-		<rect class="loupe-glow" x="-50" y={horizonY - 42} width="100" height="42" />
+		<rect class="loupe-sky" x="-60" y="-60" width="120" height="120" />
 		<circle class="loupe-sun" r={loupeR} />
 		<circle class="loupe-moon" cx={crescent.x} cy={crescent.y} r={crescent.r} />
+		<rect class="loupe-glow" x="-50" y={horizonY - 80} width="100" height="80" />
 		<image
 			href="/corona_512.webp"
 			x={-coronaSize / 2}
@@ -127,11 +128,15 @@
 		.loupe-sun {
 			fill: var(--loupe-sun);
 		}
+		.loupe-sky {
+			fill: var(--loupe-sky, #8fb4e0); /* the Moon reveals the sky, same as in the scene */
+		}
 		.loupe-moon {
 			fill: var(--loupe-sky, #8fb4e0); /* the Moon reveals the sky, same as in the scene */
 		}
 		.loupe-glow {
 			fill: url(#loupe-glow-grad);
+			mix-blend-mode: overlay; /* subtle warm tint over the sky, just above the horizon */
 		}
 		.glow-top {
 			stop-color: var(--loupe-glow);

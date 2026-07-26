@@ -20,11 +20,13 @@ export const mix3 = (a: Rgb, b: Rgb, t: number): Rgb => [
 
 export const cssRgb = (c: Rgb) => `rgb(${Math.round(c[0] * 255)} ${Math.round(c[1] * 255)} ${Math.round(c[2] * 255)})`;
 
-// Veil tint at a given obscuration: near totality, darken the veil from dusk-blue toward near-black, so
-// the plunge reads as (almost) night rather than just "more blue".
-export function veilColour(obsc: number): Rgb {
-	const nightMix = Math.max(0, Math.min(1, (obsc - 0.9) / 0.1));
-	return mix3(DUSK_RGB, NIGHT_RGB, nightMix);
+// Veil tint: dusk-blue through the partial phase and early twilight, darkening toward near-black night as
+// the eclipse nears totality OR the Sun sinks well below the horizon — so both the eclipse plunge and the
+// after-sunset dusk read as (almost) night rather than just "more blue".
+export function veilColour(obsc: number, sunAltDeg: number): Rgb {
+	const eclipseNight = Math.max(0, Math.min(1, (obsc - 0.9) / 0.1));
+	const duskNight = Math.max(0, Math.min(1, (-sunAltDeg - 2) / 6)); // Sun ~2°..8° below horizon → toward night
+	return mix3(DUSK_RGB, NIGHT_RGB, Math.max(eclipseNight, duskNight));
 }
 
 // Loupe background = the sky behind the low Sun: blend horizon→sky by altitude, then dim toward dusk

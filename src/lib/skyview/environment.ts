@@ -37,3 +37,15 @@ export function environment(obsc: number): Environment {
 		intensity: LIGHT_INTENSITY
 	};
 }
+
+// Twilight dimming from the Sun's altitude — the scene fades toward dusk as the Sun sinks, independently of
+// the eclipse. Full daylight while the Sun is well up; ramps in from DUSK_ALT_HI down to near-complete
+// twilight a few degrees below the horizon. Combined (screen) with the eclipse veil by the caller.
+const DUSK_ALT_HI = 8; // ° above the horizon: dusk dimming begins
+const DUSK_ALT_LO = -6; // ° below the horizon: near-complete twilight
+const MAX_DUSK_VEIL = 0.9; // opacity at full twilight (an evening event → dusk, not midnight-black)
+
+export function duskVeil(sunAltDeg: number): number {
+	const t = Math.max(0, Math.min(1, (DUSK_ALT_HI - sunAltDeg) / (DUSK_ALT_HI - DUSK_ALT_LO)));
+	return MAX_DUSK_VEIL * t * t * (3 - 2 * t); // smoothstep — gentle start, no hard edge at the top
+}

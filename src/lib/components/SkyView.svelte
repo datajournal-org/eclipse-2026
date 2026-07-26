@@ -19,7 +19,7 @@
 	import { buildMapStyle, addSceneLayers, sunArcEnvelope } from '$lib/skyview/mapSetup';
 	import { createCameraController } from '$lib/skyview/cameraController';
 	import { placeSun, syncMapLighting } from '$lib/skyview/frameSync';
-	import { environment, DUSK_HEX } from '$lib/skyview/environment';
+	import { environment, duskVeil, DUSK_HEX } from '$lib/skyview/environment';
 	import { computeFraming } from '$lib/skyview/framing';
 	import SkyLoupe from '$lib/components/SkyLoupe.svelte';
 	import { loadMaplibre } from '$lib/maplibre';
@@ -161,8 +161,12 @@
 						// keep the map in sync with the simulated Sun: brightness/colour from the obscuration (same
 						// numbers that drive the Sun billboard), light + hillshade from its (az, alt).
 						const env = environment(geo.obsc);
-						duskEl.style.opacity = String(env.veil); // dims the whole rendered scene, not the marker
-						const veilRgb = veilColour(geo.obsc);
+						// Combine the eclipse dimming with a dusk dimming from the Sun's altitude (screen blend), so the
+						// whole scene — terrain, buildings, sky, loupe — also darkens as the Sun sets, not only as it's
+						// covered. The eclipse owns the plunge to totality; dusk owns the fade after sunset.
+						const veil = 1 - (1 - env.veil) * (1 - duskVeil(s.alt));
+						duskEl.style.opacity = String(veil); // dims the whole rendered scene, not the marker
+						const veilRgb = veilColour(geo.obsc, s.alt);
 						duskEl.style.background = cssRgb(veilRgb);
 						syncMapLighting(m, s.az, s.alt, env);
 
@@ -172,11 +176,11 @@
 						obscTxt = (geo.obsc * 100).toFixed(0) + '%';
 						// loupe crescent (changes only with time): Moon-disc offset/size in Sun-radius units × R
 						crescent = { x: sun.moon[0] * LOUPE_R, y: -sun.moon[1] * LOUPE_R, r: sun.moonR * LOUPE_R };
-						loupeSky = loupeSkyCss(s.alt, veilRgb, env.veil);
+						loupeSky = loupeSkyCss(s.alt, veilRgb, veil);
 						// loupe horizon: the Sun sits `s.alt`° above the horizon → the horizon line is that far below
 						// the centred Sun, in loupe units (loupeR units = one solar radius = geo.sunAngR°).
 						horizonY = (s.alt / geo.sunAngR) * LOUPE_R;
-						loupeGround = loupeGroundCss(landColor, veilRgb, env.veil);
+						loupeGround = loupeGroundCss(landColor, veilRgb, veil);
 						// corona overlay (test): the image's Moon (270 of 512 px = radius 135) is mapped onto the loupe
 						// Moon disc, and only shown in true totality — obscuration reaches 1 (never at partial locations).
 						coronaSize = crescent.r * (512 / 135);
