@@ -2,11 +2,17 @@
 
 Mobile-first (portrait). All numbers are placeholders.
 
-> **Rendered wireframes:** the visual screen wireframes exist as an HTML artifact (rendered in
-> the browser, clean instead of ASCII):
-> <https://claude.ai/code/artifact/7457c9a1-a56a-4eb1-9785-4aac6fc856e1>
-> Source: [`wireframes.html`](./wireframes.html).
-> This document describes the flow and the content per screen; the artifact shows the layout.
+> **This is the design intent, not a description of the build.** Three blocks below were never built —
+> **A3** (three reference locations), **B2** (phase timeline) and the header's **ℹ About**. B2 in particular
+> was _decided against_ rather than deferred: the phase information lives in B3's scrubber ticks and
+> totality band (TESTING.md §7). Each is marked inline. Going the other way, `TimeZoneNote` ships between
+> A2 and the B block and appears in no wireframe.
+>
+> **Rendered wireframes:** [`wireframes.html`](./wireframes.html) in this directory is the source of truth.
+> It was also published as an artifact
+> (<https://claude.ai/code/artifact/7457c9a1-a56a-4eb1-9785-4aac6fc856e1>), which may not be reachable
+> outside the account that created it.
+> This document describes the flow and the content per screen; the HTML shows the layout.
 
 ---
 
@@ -17,7 +23,7 @@ flowchart TD
     A["State A: NO location<br/>(world stage · static)"]
     A --> A1["A1 · Countdown"]
     A --> A2["A2 · Shadow run"]
-    A --> A3["A3 · 3 reference locations"]
+    A --> A3["A3 · 3 reference locations<br/>(not built)"]
     A --> A4["A4 · “Where are you?”"]
 
     A4 --> SET{"Set location<br/>GPS · place search · map"}
@@ -25,12 +31,12 @@ flowchart TD
 
     B --> B1["B1 · Verdict card"]
     B --> B3["B3 · 3D horizon<br/>+ time slider"]
-    B --> B2["B2 · Timeline (phases)"]
+    B --> B2["B2 · Timeline (phases)<br/>(not built)"]
     B --> B6["B6 · Checklist + countdown"]
     B --> CH["Change / clear location"]
     CH -.-> A
 
-    X["Cross-cutting (everywhere):<br/>⚠ Eye safety · 🌐 Language · ℹ About"]
+    X["Cross-cutting (everywhere):<br/>⚠ Eye safety · 🌐 Language<br/>(ℹ About not built)"]
 ```
 
 States A and B are **the same screen** — B only replaces the "Where are you?" block with the
@@ -42,13 +48,14 @@ personal briefing. No page change, no time-dependent rebuilding.
 
 One scrollable screen. Order and content of the blocks:
 
-- **Header (everywhere):** ☀︎ Eclipse 2026 · 🌐 Language · ℹ About.
+- **Header (everywhere):** ☀︎ Eclipse 2026 · 🌐 Language. _(ℹ About is not built; the `nav.about`
+  string exists in all three catalogues but nothing renders it.)_
 - **A1 — Countdown:** a large live countdown "20 d : 04 : 12 to the total eclipse", below it the
   framing sentence "The first total solar eclipse over Europe since 1999."
 - **A2 — Shadow run:** globe with the entire shadow path as a **dashed trace** (Siberia →
   Iceland → Spain); the **current shadow** moves live over a scrubbable timeline (17:30 – 18:30
   UTC) on top, with partiality rings (90 / 50 / 0%).
-- **A3 — What does it look like?:** three reference locations side by side with the same
+- **A3 — What does it look like?** _(not built)_ — three reference locations side by side with the same
   rendering but a drastically different experience — northern Spain (100%, total) · Berlin
   (89%) · Rome (40%).
 - **A4 — Location call:** heading "What do you see from where you are?" (not "Allow location"),
@@ -59,8 +66,9 @@ One scrollable screen. Order and content of the blocks:
 
 ## State B — with location ("Your sky")
 
-Head: **📍 the set location** (e.g. "Berlin, Germany") with "change". Order:
+Head: **📍 the set location** (e.g. "Berlin, Germany") with "change". Planned order:
 **B1 → B3 → B2 → B6** — "Can I even see it?" (B3) deliberately comes before "When exactly?" (B2).
+_Built order is **B1 → B3 → B6**_, with a `SectionDivider` opening the block; B2 was folded into B3.
 
 ### B1 — Verdict card
 
@@ -69,7 +77,7 @@ A single big statement, one glance: eclipsed solar disc + **"87% obscuration"**,
 **sunset 20:47 (⚠ before the eclipse ends)**. Eye-safety verdict: "Partial — keep the glasses
 on **the whole time**, never take them off."
 
-### B2 — Personal timeline (phases)
+### B2 — Personal timeline (phases) _(not built — folded into B3)_
 
 A horizontal timeline with the real local phases (1st contact → maximum → sunset), each phase
 tappable with "what do I look for, when may the glasses come off?":
@@ -111,13 +119,18 @@ Plus "📅 Export to calendar" with the correct local phase times.
 - **⚠ Eye safety:** in A as a footer, in B in the verdict and in the phases.
    - Partial location → "Keep the glasses on the whole time."
    - Totality location → "Only take them off _during_ totality."
-- **ℹ About:** legal notice, data sources, note "the location stays local, no account needed".
+- **ℹ About** _(not built)_**:** legal notice, data sources, note "the location stays local, no account
+  needed".
 
 ---
 
 ## Order on a single page (scroll order)
 
-**State A:** Header → A1 countdown → A2 shadow run → A3 three locations → A4 location call →
+**State A (planned):** Header → A1 countdown → A2 shadow run → A3 three locations → A4 location call →
 eye safety.
+**State A (built):** Header → A1 countdown → A2 shadow run → TimeZoneNote → A4 location call → eye safety.
 
-**State B:** Header → 📍 location → B1 verdict → B3 3D horizon → B2 timeline → B6 checklist.
+**State B (planned):** Header → 📍 location → B1 verdict → B3 3D horizon → B2 timeline → B6 checklist.
+**State B (built):** Header → A1 countdown → A2 shadow run → TimeZoneNote → divider → 📍 location →
+B1 verdict → B3 3D horizon → divider → B6 checklist. As planned, the A blocks stay and only the A4
+location call is replaced — B is appended below it.

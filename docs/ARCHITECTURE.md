@@ -9,24 +9,27 @@ Complements [`CONCEPT.md`](./CONCEPT.md) and [`WIREFRAMES.md`](./WIREFRAMES.md).
 
 - **Fully static, no backend.** All eclipse maths runs in the browser.
 - **Privacy by design:** the location never leaves the device; no account, no user data.
-- **Offline-capable (PWA):** once a location is set, everything works offline (concept D4).
-- **Hosting:** static build, served via **bunny.net** (CDN).
+- **Offline-capable (PWA)** — _planned, not built._ There is no service worker yet, so the app currently
+  needs the network on every visit.
+- **Hosting:** static build, served via **bunny.net** (CDN) at `https://datajournal.org/eclipse-2026/`.
+  CI additionally builds and deploys a copy to **GitHub Pages** (`.github/workflows/ci.yml`), which
+  overrides `VITE_SITE_URL` so that copy's canonicals point at itself rather than at the CDN.
 
 ---
 
 ## Stack (fixed)
 
-| Layer       | Choice                                                               |
-| ----------- | -------------------------------------------------------------------- |
-| Framework   | **SvelteKit** (static adapter, prerendered)                          |
-| Astronomy   | **`astronomy-engine`** (pure JS, in the browser) — results validated |
-| Maps/3D     | **MapLibre GL JS** (globe projection for A2, 3D scene for B3)        |
-| Geocoder    | **VersaTiles geocoder** (see playground below)                       |
-| Map data    | **VersaTiles** tiles (satellite, OSM vector, elevation)              |
-| i18n        | from the start, initial set DE / EN / ES; formats via native `Intl`  |
-| Offline     | service worker (PWA), cache the location's tiles when it is set      |
-| Hosting/CDN | static via **bunny.net**                                             |
-| Backend     | **none**                                                             |
+| Layer       | Choice                                                                   |
+| ----------- | ------------------------------------------------------------------------ |
+| Framework   | **SvelteKit** (static adapter, prerendered)                              |
+| Astronomy   | **`astronomy-engine`** (pure JS, in the browser) — results validated     |
+| Maps/3D     | **MapLibre GL JS** (globe projection for A2, 3D scene for B3)            |
+| Geocoder    | **VersaTiles geocoder** (see playground below)                           |
+| Map data    | **VersaTiles** tiles (satellite, OSM vector, elevation)                  |
+| i18n        | from the start, initial set DE / EN / ES; formats via native `Intl`      |
+| Offline     | _planned:_ service worker (PWA) caching the location's tiles — not built |
+| Hosting/CDN | static via **bunny.net**; CI also deploys a copy to GitHub Pages         |
+| Backend     | **none**                                                                 |
 
 ---
 
@@ -61,7 +64,11 @@ Espenak/NASA tables (this also clears up the contradictory Wikipedia values).
 - **GPS:** browser `Geolocation` API.
 - **Place search:** VersaTiles geocoder.
 - **Map tap:** click on the map → reverse geocoding for the place name.
-- Chosen place in `localStorage` **and** the URL (`?lat=&lon=`) → shareable, stays local.
+- Chosen place in `localStorage` **only** — deliberately **never written to the URL**, so copying or sharing
+  the current link cannot carry the reader's address. `?lat=&lon=&name=` is still **read once at load** as a
+  debug override, and is never written back or promoted into storage. Enforced by
+  `stores/location.dom.test.ts` (`describe('privacy contract')`) and `tests/privacy.spec.ts`.
+  The trade-off is deliberate: a location is not shareable, and privacy wins that trade.
 
 ### 3. Shadow run (A2)
 
@@ -86,18 +93,18 @@ A MapLibre 3D scene combining a **stylised OSM vector ground** (`@versatiles/sty
 slider = pure UI, shares the astronomy engine. Details on the Sun below.
 _(Satellite tiles remain reserved for the A2 globe.)_
 
-### 6. Checklist (B6)
+### 5. Checklist (B6)
 
 **Non-interactive** — a plain text list. `.ics` calendar export client-side.
 
-### 7. i18n
+### 6. i18n
 
 Text from language files, `Intl` for date/number/compass direction. DE / EN / ES, **one prerendered page
 per language** at `/eclipse-2026/{de,en,es}/` — the URL owns the active language, and the header switches
 by navigating. The bare root serves English metadata for crawlers and dispatches browsers to their own
 language. Details and the `hreflang` contract: [I18N-ROUTING.md](./I18N-ROUTING.md).
 
-### 8. App shell
+### 7. App shell
 
 SvelteKit prerendered → static files on bunny.net, under the `/eclipse-2026/` base path. No SPA fallback:
 every route is a real file, so an unknown URL 404s instead of returning a soft 200. A service worker makes
@@ -117,7 +124,7 @@ projection matrix. Position = observer + direction vector (az, alt) at a large d
 reads as being at infinity.
 
 **2. Correct camera (third-person orbit).**
-MapLibre **v5 has no `FreeCameraOptions`**, so the camera is built with
+MapLibre (v6 today, v5 when this was written) **has no `FreeCameraOptions`**, so the camera is built with
 **`map.calculateCameraOptionsFromTo(from, fromAlt, to, toAlt)`**: it sits ~200 m behind a marker
 at the location, at a **constant sea-level altitude** (`setCenterClampedToGround(false)`, so it
 does not bob as the view centre moves over terrain), framed by `skyview/framing.ts` (a wide
@@ -150,11 +157,14 @@ and Espenak; numbers visible in the UI → realism is verifiable, not asserted.
 - **Camera over steep terrain:** the camera sits ~200 m behind the marker at a constant altitude
   (`setCenterClampedToGround(false)`); on very steep ground near the location, verify the framing
   doesn't clip.
-- **Live shadow (A2):** compute the umbra ellipse at the slider time from Besselian elements /
-  `astronomy-engine` in real time — check scrubbing performance.
-- **Crescent orientation:** derive the crescent's position angle correctly from the geometry
-  (don't guess), otherwise it's "the wrong way round".
+- **Live shadow (A2):** built and scrubbed end to end (`tests/a2-shadow-run.spec.ts`), but **no wall-clock
+  budget is asserted** — see TESTING.md §7 for why a threshold would measure the renderer rather than the
+  app. The performance question is open by decision, not by neglect.
+- ~~**Crescent orientation.**~~ Resolved: `skyview/eclipseGeometry.ts` derives the position angle from the
+  geometry, and `eclipseGeometry.test.ts` pins the sign and monotonicity of `dy` across maximum — the
+  "wrong way round" failure now breaks a test.
 - **Geocoder limits/attribution** from VersaTiles to be checked.
+- **No service worker**, so the offline promise in "Core principle" is not yet kept.
 
 ---
 

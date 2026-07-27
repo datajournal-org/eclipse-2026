@@ -10,9 +10,13 @@ precisely in discussion. Terms use the exact names found in the code where one e
   the **LocationCall** prompt.
 - **Language root** — `/eclipse-2026/`, the crawler-facing default-language page that dispatches browsers
   to `/de/`, `/en/` or `/es/`.
-- **A-sections** — location-independent overview blocks (e.g. **A2** = `ShadowRun` globe, **A3** = placeholder).
-- **B-sections** — per-location blocks: **B1** `Verdict`, **B2** `PersonalTimeline`, **B3** `SkyView`, **B6** `Checklist`.
-- **Eyebrow** — the small `A2` / `B3` tag shown in a block header.
+- **A-sections** — location-independent overview blocks: **A1** `Countdown` (`.cd`), **A2** `ShadowRun`
+  (`.a2`), **A4** `LocationCall`. Plus `TimeZoneNote`, which carries no section number.
+  (**A3**, the three side-by-side reference locations in WIREFRAMES.md, was never built.)
+- **B-sections** — per-location blocks: **B1** `Verdict` (`.b1`), **B3** `SkyView` (`.b3`), **B6**
+  `Checklist` (`.b6`). There is **no B2**: the phase timeline lives inside B3's scrubber (ticks, totality
+  band, phase labels) rather than as its own section — see TESTING.md §7.
+- **Eyebrow** — the small `.eyebrow` tag in a block header; today only A2 uses one, showing the date.
 - **`userLocation`** — the chosen place (`{lat, lon, name}`); kept in `localStorage` only, never written to
   the URL and never sent to a server. `?lat&lon&name` is read once at load as a debug override.
 - **`localEclipse`** — derived store: the local circumstances for the current `userLocation`.
@@ -64,9 +68,10 @@ precisely in discussion. Terms use the exact names found in the code where one e
 
 ## Libraries & tooling
 
-- **SvelteKit** — app framework; **adapter-static** + **prerender** ship the site as static files (bunny.net).
+- **SvelteKit** — app framework; **adapter-static** + **prerender** ship the site as static files
+  (bunny.net in production, plus a GitHub Pages copy from CI).
 - **Svelte 5 runes** — reactivity API (`$state`, `$derived`, `$effect`, `$props`) plus `onMount`.
-- **MapLibre GL JS** (v5) — the map/globe engine; hosts the terrain, buildings, hillshade, and custom WebGL layers.
+- **MapLibre GL JS** (v6) — the map/globe engine; hosts the terrain, buildings, hillshade, and custom WebGL layers.
 - **VersaTiles** — tile provider: `@versatiles/style` (the `colorful` base style) + hosted vector tiles and the elevation DEM.
 - **Terrarium DEM** — the raster-encoded elevation tiles used for 3D terrain.
 - **astronomy-engine** — ephemeris library for Sun/Moon positions and eclipse geometry.
@@ -75,4 +80,6 @@ precisely in discussion. Terms use the exact names found in the code where one e
 - **`brand.ts`** — reads design tokens so WebGL layers honour the same palette (`readBrandColors`).
 - **`map.css`** — shared styling for MapLibre chrome (controls, attribution) and the marker, scoped under `.stage-canvas`.
 - **Playwright** — headless browser used to verify visuals/behaviour (screenshots, scroll, timings).
-- **`npm run check`** — the gate: `tsc` + `svelte-check` + Prettier + ESLint; **`npm run build`** — the static build.
+- **`npm run check`** — the full gate: Prettier + `tsc` + ESLint + `svelte-check` **and both test layers**
+  (`npm run test` → Vitest, then Playwright), so it takes minutes, not seconds. `npm run check:ts`,
+  `check:format`, `check:svelte` and `lint` are the individual steps; **`npm run build`** — the static build.

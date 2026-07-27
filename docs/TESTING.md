@@ -1,8 +1,9 @@
 # Testing
 
-**Status: implemented.** 609 Vitest tests (`npm run test:unit`, ~2 s) and 319 Playwright tests across four
-browser projects (`npm run test:e2e`, ~1.5 min). `npm run check` runs both. What follows is the plan the
-suite was built from; §7 records where the implementation diverged from it and what the suite found.
+**Status: implemented.** 634 Vitest tests (`npm run test:unit`, ~2 s) and 274 Playwright tests across four
+browser projects (`npm run test:e2e`, ~60 s — see §8), plus the `@live` spec (7 tests, excluded by default
+and so not in that 274). `npm run check` runs both. What follows is the plan the suite was built from; §7 records where the implementation
+diverged from it and what the suite found.
 
 Two layers, no overlap:
 
@@ -48,12 +49,17 @@ stay under Prettier and ESLint like the rest of `src/` (no ignore entries), and
 ### 1.3 Scripts
 
 ```jsonc
-"test:unit": "vitest run",
-"test:unit:watch": "vitest",
-"test:unit:cov": "vitest run --coverage",
+"test:unit": "TZ=Europe/Berlin vitest run",
+"test:unit:watch": "TZ=Europe/Berlin vitest",
+"test:unit:cov": "TZ=Europe/Berlin vitest run --coverage",
 "test:e2e": "playwright test",
 "test": "npm run test:unit && npm run test:e2e",
 ```
+
+**The `TZ` prefix is load-bearing**, not decoration: several tests assert on locale-formatted local times and
+on the resolved zone name. A CI runner defaults to UTC, where `Intl` reports `'UTC'` — no `/` — and the
+suite went red on a machine difference rather than a code change. Pinning the zone makes the unit layer
+give the same answer everywhere; the Playwright projects pin `timezoneId` for the same reason.
 
 `npm run check` already calls `npm run test`, so the gate picks both layers up automatically. Add
 `/playwright-report/` and `/coverage/` to `.gitignore` (only `/test-results/` is ignored today).
@@ -73,7 +79,7 @@ export const REFERENCE = [
 ];
 ```
 
-This is the oracle for the astronomy tests and the expected on-screen values for the B1/B2 Playwright tests.
+This is the oracle for the astronomy tests and the expected on-screen values for the B1 Playwright tests.
 The doc table and the code stay in sync because both cite the same file.
 
 ---
@@ -284,8 +290,11 @@ Keep the current shape (build + `vite preview`, swiftshader for WebGL) and add:
 
 ### 3.2 Shared fixtures (`tests/fixtures.ts`)
 
+_Planned names below; three differ in the code — `storagePage` → **`storedPage`**, `frozenClock` →
+**`freezeClock`**, and the optional `stubTiles` shipped as the always-on tile cache in §8.2._
+
 1. **`locatedPage`** — navigates to `/?lat=…&lon=…&name=…` for a chosen `REFERENCE` site (the documented debug
-   override) and waits for the B sections. Parameterised by site so B1/B2/B3 specs run for a total _and_ a
+   override) and waits for the B sections. Parameterised by site so the B1/B3 specs run for a total _and_ a
    partial location.
 2. **`storagePage`** — seeds `localStorage['eclipse.location']` before load via `addInitScript`, for the
    persistence tests (and to prove the app doesn't need the URL).
@@ -348,11 +357,35 @@ not the arithmetic. Keeping this line is what stops the E2E suite from becoming 
 
 ## 4. CI
 
-A single GitHub Actions job (`node 24`, `npm ci`, `npx playwright install --with-deps chromium webkit`)
-running `npm run check`. Vitest first — it fails in seconds and saves the browser run. Upload
-`playwright-report/` and `test-results/` as artefacts on failure. `@live`-tagged specs run in a separate
-scheduled (nightly) job, so an upstream Photon/VersaTiles change surfaces as a nightly failure and never as a
-red PR.
+_(Planned as a single job; what shipped is below.)_ `.github/workflows/ci.yml` has four:
+
+| Job      | Runner             | Does                                                                   |
+| -------- | ------------------ | ---------------------------------------------------------------------- |
+| `checks` | `ubuntu-latest`    | Prettier, `tsc`, ESLint, `svelte-check`, Vitest — seconds, no browsers |
+| `e2e`    | `macos-latest` × 4 | every Playwright test, `--shard=N/4`                                   |
+| `build`  | `ubuntu-latest`    | prerender with `VITE_SITE_URL` (main only)                             |
+| `deploy` | `ubuntu-latest`    | GitHub Pages (main only)                                               |
+
+Three things the plan got wrong:
+
+- **The static gate must be its own job, not the first step of the browser job.** Sharing a job means a
+  lint or unit failure stops the browser tests from reporting at all — which happened: one timezone-dependent
+  unit test failing meant 226 browser tests never ran, on the one run where their result mattered.
+- **macOS, not Ubuntu.** GitHub's macOS runners expose a real GPU (verified from a run: `ANGLE Metal
+Renderer — Apple Paravirtual device`). On the GPU-less Ubuntu runner the WebGL specs never finished:
+  one leg failed at 9 min, the other was cancelled at 19. See §8.1 for why that gap is ~15×.
+- **Plain count-based shards.** A cost-based split was needed only while WebGL dominated
+  (192 s / 81 s / 27 s / 18 s across four shards without a GPU). With one, counting balances them:
+  29 s / 33 s / 23 s / 20 s.
+
+`actions/cache` restores `.cache/tiles` (per shard, `restore-keys` for the newest) and the Playwright
+browsers (keyed on the Playwright version, under `~/Library/Caches/ms-playwright` on macOS —
+not `~/.cache`). `--with-deps` is dropped: it is a Linux system-package flag. `playwright-report/` uploads
+on every non-cancelled run; traces are `on-first-retry` in CI, because `retain-on-failure` produced a
+213 MB artefact.
+
+**Still missing:** the nightly `@live` job. The specs and the `PWLIVE` guard exist (§8.3) but nothing
+schedules them, so an upstream Photon change would currently surface only when someone runs them by hand.
 
 ---
 
@@ -422,12 +455,16 @@ Three were fixed as part of building it:
    well up, `300 - horizonY` goes negative, the browser rejects the attribute and logs an error every
    frame. Fixed with a `Math.max(0, …)` clamp.
 
-Four are recorded by tests but left alone, because each needs a product decision rather than a fix:
+Four more were recorded by tests and initially left alone as product decisions. All four have since been
+resolved:
 
-- **`app.html` has no `<title>`.** The browser tab and any shared link show the bare URL.
-- **`localCircumstances` silently returns a different eclipse** for locations the 2026 event misses — it
-  searches forward from eclipse day, so Sydney gets the 2028 one. Callers that care must compare the
-  returned date against `ECLIPSE_DATE`. Pinned in `eclipse.test.ts`.
+- ~~**`app.html` has no `<title>`.**~~ Fixed by the per-locale routing work: every page carries its own
+  title, description and Open Graph metadata. `tests/seo.spec.ts` asserts it against the raw prerendered
+  HTML of all four documents. See [I18N-ROUTING.md](./I18N-ROUTING.md).
+- ~~**`localCircumstances` silently returns a different eclipse**~~ for locations the 2026 event misses — it
+  searches forward from eclipse day, so Sydney got the 2028 one. Now guarded: a hit more than
+  `SAME_ECLIPSE_WINDOW_MS` from the greatest-eclipse instant returns `null`, and `nextEclipseHere()`
+  surfaces the next visible eclipse instead of silently substituting it. Pinned in `eclipse.test.ts`.
 - ~~The "Nichts gefunden" message is unreachable.~~ Fixed, along with two more bugs found in the same
   function — see §9.
 - ~~The time scrubber's track is 18 px tall.~~ Now 24 px — see §10.
@@ -462,9 +499,11 @@ measurement suggested it was 4× faster, which repeating disproved. `--enable-un
 a **fallback**: with a GPU present the renderer string stays ANGLE Metal, and without one (a typical Linux CI
 runner) it is what keeps WebGL available at all.
 
-Both `workers` and `timeout` are consequently CI-conditional. The worker cap and the 150 s timeout existed
-to survive software GL; locally the GPU handles the load, so the default worker count and a 60 s timeout
-give faster feedback while CI keeps its margins.
+Both `workers` and `timeout` are consequently CI-conditional: `workers: CI ? 2 : undefined` and
+`timeout: CI ? 300_000 : 30_000`. The caps existed to survive software GL; locally the GPU handles the load,
+so the default worker count and a 30 s timeout give fast feedback, while CI keeps a wide margin. The
+per-assertion `mapReady` timeout is the one that actually binds a slow runner — a hardcoded 60 s there once
+failed CI while the generous test-level timeout sat unused, so it is CI-conditional too.
 
 ### 8.2 An on-disk tile cache (`tests/tileCache.ts`)
 
@@ -481,8 +520,8 @@ Four details that each cost a wrong turn:
 - **Strip `content-encoding`.** `route.fetch()` returns a decoded body and `fulfill` sets its own length, so
   replaying the original encoding headers makes the browser try to gunzip plain bytes. Everything else is
   preserved — CORS especially, without which these cross-origin responses are rejected outright.
-- **Store only 200s.** Caching a 404 would have permanently hidden the elevation-tile bug (§7 of
-  I18N-ROUTING.md). Errors go to the network every time.
+- **Store only 200s.** Caching a 404 would have permanently hidden the elevation-tile bug (§7 above, defect
+  2). Errors go to the network every time.
 - **Tolerate tests ending mid-fetch.** A test can finish while tiles are in flight; the context closes, the
   `APIResponse` is disposed, and `body()`/`fulfill()` reject — which Playwright charges to the test that just
   passed. Symptom: six failures whose _identity changed between runs_. `ignoreIfGone()` swallows exactly
@@ -665,4 +704,24 @@ map; that is more code and more state to get right, so it was not the place to s
 
 The spec snapshots every location-dependent field and requires all of them to change, rather than checking
 whichever card comes to mind — the failure mode here was precisely that the obvious card was fine.
-**Verified by reverting the fix: three of the five tests fail, reporting `skyReadout did not update`.**
+**Verified by reverting the fix: three of the six tests fail, reporting `skyReadout did not update`.**
+
+### Persistence, added later
+
+The snapshot also captures `localStorage['eclipse.location']`, because a change that repaints every section
+but never reaches storage looks perfect until the next visit. Two gaps closed with it:
+
+- **The round trip was never tested.** Every persistence test either asserted the string in storage or read
+  a value the _fixture_ had seeded — and `storedPage` re-seeds via `addInitScript` on every navigation, so
+  "restores the located state on reload" stayed green whether or not the app ever wrote anything. Two tests
+  now write through the UI and read back on a fresh load: one in `privacy.spec.ts` for setting a location,
+  one in `location-change.spec.ts` for changing it, the latter navigating away from `?lat&lon` first so the
+  override cannot be what produces the answer.
+- **Overwrite, not merge.** The double-change test asserts the second write replaces the first outright
+  (`toEqual`, not `toMatchObject`), so a stale name cannot ride along on new coordinates; the unit layer
+  pins the same property directly.
+
+Verified by breaking `persist()` in `setLocation`: five tests fail, including all three new checks.
+Storage assertions are deliberately **not** added to the GPS and map-pin specs — all three entry paths
+funnel through one `setLocation(pending)` call in `LocationDialog.svelte`, so per-path assertions would
+test the same line three times.

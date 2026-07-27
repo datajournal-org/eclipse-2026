@@ -2,6 +2,12 @@
 
 Web app to prepare for the total solar eclipse on **12 August 2026**.
 
+> **This document is the product concept — intent, not a record of what is built.** It is deliberately left
+> as written. One correction worth carrying: **B2, the personal timeline, was decided against, not
+> deferred** — the phases live in B3's scrubber (ticks, totality band, phase labels) instead of in a
+> section of their own (TESTING.md §7). A3 and the photography mode are simply not built.
+> [WIREFRAMES.md](./WIREFRAMES.md) marks block by block what shipped.
+
 ---
 
 ## 0. Guiding idea
