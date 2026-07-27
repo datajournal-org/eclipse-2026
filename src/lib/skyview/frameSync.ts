@@ -54,5 +54,7 @@ export function syncMapLighting(m: MlMap, az: number, alt: number, env: { light:
 		color: env.light,
 		intensity: env.intensity
 	});
-	m.setPaintProperty('hillshade', 'hillshade-illumination-direction', Math.round(((az % 360) + 360) % 360));
+	// Round BEFORE wrapping: wrapping first lets 359.6° round up to 360, which is outside the
+	// property's 0–359 range.
+	m.setPaintProperty('hillshade', 'hillshade-illumination-direction', ((Math.round(az) % 360) + 360) % 360);
 }
