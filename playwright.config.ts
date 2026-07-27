@@ -73,9 +73,11 @@ export default defineConfig({
 			use: { ...devices['Pixel 7'], ...GPU }
 		},
 		{
-			// WebKit's headless GL cannot be relied on, so it skips the GPU specs.
+			// WebKit's headless GL cannot be relied on, so it skips the GPU specs. @live has to be repeated
+			// here: a project-level grepInvert REPLACES the top-level one rather than adding to it, so
+			// listing only /@webgl/ silently let the live-network specs run on this project.
 			name: 'webkit',
-			grepInvert: /@webgl/,
+			grepInvert: process.env.PWLIVE ? /@webgl/ : /@webgl|@live/,
 			use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 900 } }
 		},
 		{
