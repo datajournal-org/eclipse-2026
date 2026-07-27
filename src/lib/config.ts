@@ -11,6 +11,20 @@
 // runs under plain Node via tsx, where `import.meta.env` does not exist at all.
 export const SITE_URL: string = import.meta.env?.VITE_SITE_URL ?? 'https://datajournal.org';
 
+/**
+ * The public source repository. Unlike SITE_URL this is NOT build-overridable: it names where the code
+ * lives, which does not change with the deployment target — a GitHub Pages preview and the CDN copy are
+ * built from the same repo and should both credit it.
+ */
+export const REPO_URL = 'https://github.com/datajournal-org/eclipse-2026';
+
+/**
+ * Where a locale's message catalogue lives, so the footer can send a reader straight to the file that
+ * holds the words they are reading. Points at `main` rather than a commit: the invitation is to improve
+ * the current translation, not to inspect the deployed one.
+ */
+export const translationFileUrl = (locale: string) => `${REPO_URL}/blob/main/src/lib/i18n/messages/${locale}.ts`;
+
 /** Date of the total solar eclipse. Single source of truth for the event day. */
 export const ECLIPSE_DATE = '2026-08-12';
 

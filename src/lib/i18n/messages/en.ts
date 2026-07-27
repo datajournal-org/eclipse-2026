@@ -106,6 +106,10 @@ const messages: Messages = {
 		b1: 'Verdict card',
 		b1_note: 'Obscuration, contact times and eye-safety verdict for your location — coming soon.'
 	},
+	footer: {
+		source: 'Source code on GitHub',
+		translation: 'Improve this translation'
+	},
 	safety: 'Never look at the Sun without certified eclipse glasses (ISO 12312-2).'
 };
 

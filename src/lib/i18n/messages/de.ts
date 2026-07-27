@@ -104,6 +104,10 @@ const messages = {
 		b1: 'Verdikt-Karte',
 		b1_note: 'Bedeckungsgrad, Kontaktzeiten und Augenschutz-Verdikt für deinen Ort — folgt.'
 	},
+	footer: {
+		source: 'Quelltext auf GitHub',
+		translation: 'Diese Übersetzung verbessern'
+	},
 	safety: 'Nie ohne geprüfte Finsternisbrille (ISO 12312-2) in die Sonne schauen.'
 };
 

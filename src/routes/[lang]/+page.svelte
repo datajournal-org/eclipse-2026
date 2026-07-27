@@ -11,6 +11,7 @@
 	import SkyView from '$lib/components/SkyView.svelte';
 	import Checklist from '$lib/components/Checklist.svelte';
 	import SafetyFooter from '$lib/components/SafetyFooter.svelte';
+	import SiteFooter from '$lib/components/SiteFooter.svelte';
 
 	const label = (p: Place) => p.name ?? `${p.lat.toFixed(3)}°, ${p.lon.toFixed(3)}°`;
 	let pickerOpen = $state(false);
@@ -49,6 +50,7 @@
 
 <LocationDialog bind:open={pickerOpen} />
 <SafetyFooter />
+<SiteFooter />
 
 <style>
 	.place {

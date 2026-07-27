@@ -106,6 +106,10 @@ const messages: Messages = {
 		b1: 'Tarjeta de veredicto',
 		b1_note: 'Ocultación, tiempos de contacto y veredicto de seguridad ocular para tu ubicación — próximamente.'
 	},
+	footer: {
+		source: 'Código fuente en GitHub',
+		translation: 'Mejorar esta traducción'
+	},
 	safety: 'Nunca mires al Sol sin gafas de eclipse certificadas (ISO 12312-2).'
 };
 
