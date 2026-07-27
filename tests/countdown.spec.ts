@@ -6,7 +6,8 @@ test.describe('countdown', () => {
 		await page.goto(localeUrl());
 		const digits = await countdownDigits(page);
 		expect(digits).toHaveLength(4);
-		expect(Number(digits[0])).toBe(30); // days — exactly 30 × 24 h before greatest eclipse
+		expect(Number(digits[0])).toBe(30); // days
+		expect(digits[1]).toBe('05'); // hours — the fixture sits 5 h clear of the day boundary
 		await expect(page.locator('section.cd .cap')).toContainText('totalen Sonnenfinsternis');
 	});
 
