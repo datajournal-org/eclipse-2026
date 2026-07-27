@@ -1,6 +1,25 @@
 /// <reference types="vitest/config" />
+import { existsSync, readFileSync } from 'node:fs';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+
+/**
+ * HTTPS for the dev server, opt-in via `npm run dev:https`.
+ *
+ * `navigator.geolocation` needs a secure context. Browsers treat localhost as secure but NOT a LAN
+ * hostname over plain http, so the GPS button in the location dialog cannot be exercised on a phone
+ * without this. It stays opt-in because everything else works over http and a certificate is one more
+ * thing to go wrong. Run `npm run cert` first; see scripts/dev-cert.sh.
+ */
+const devHttps = () => {
+	if (!process.env.DEV_HTTPS) return undefined;
+	const key = '.cert/dev-key.pem';
+	const cert = '.cert/dev.pem';
+	if (!existsSync(key) || !existsSync(cert)) {
+		throw new Error('DEV_HTTPS is set but .cert is missing — run `npm run cert` first.');
+	}
+	return { key: readFileSync(key), cert: readFileSync(cert) };
+};
 
 export default defineConfig({
 	plugins: [sveltekit()],
@@ -13,6 +32,7 @@ export default defineConfig({
 		// Bind every interface so a phone on the same Wi-Fi can reach the dev server; by default Vite
 		// listens on loopback only, which looks exactly like the machine being unreachable.
 		host: true,
+		https: devHttps(),
 		// Vite rejects requests whose Host header it does not recognise (DNS-rebinding protection), which
 		// includes this Mac's own mDNS name. Allowing the .local suffix covers any machine's Bonjour name
 		// without hardcoding one, and stays narrow: it does not open the dev server to public DNS names.
