@@ -4,7 +4,7 @@ Plan for moving the app from one prerendered document with client-side language 
 prerendered document **per language**, each with its own title, description and social metadata, tied
 together with `hreflang`.
 
-Status: **decided, in implementation.** The three questions in §1 are answered.
+Status: **implemented.** The three questions in §1 are answered; §7 records what the build actually needed.
 
 ## Why
 
@@ -244,3 +244,48 @@ touches every end-to-end test, since all 213 navigate to `/` or `/?lat=…`.
   analytics and any external references now split across languages.
 - **The service worker in ARCHITECTURE.md is not built yet.** When it is, it must not cache the root's
   redirect decision, or a reader who switches language will be sent back to the old one.
+
+---
+
+## 7. Implementation notes
+
+Things the plan did not anticipate, all found by building it:
+
+- **`paths.relative: false` is required.** SvelteKit's default relative paths render `base` as `..` during
+  prerendering, so every `canonical` and `hreflang` came out as `https://datajournal.org../de/`. Absolute
+  paths are correct here anyway — the deploy path is known and fixed.
+- **The layout must set the locale synchronously, not only in an `$effect`.** Effects do not run during
+  prerendering, so with the effect alone every generated page shipped the default language's metadata —
+  the one thing crawlers read. It now does both: a synchronous call for prerender and first render, an
+  effect for client-side language switches.
+- **Language links cannot carry the query string.** `page.url.search` throws during prerendering
+  ("Cannot access url.search on a page with prerendering enabled") — prerendered markup may not depend on
+  a query string. No real loss: `?lat=&lon=` is a debug override and the reader's actual location lives in
+  localStorage, so it survives the navigation regardless.
+- **`resolve('/[lang]', …)` applies `base` but not `trailingSlash`.** It returns `/eclipse-2026/de`, which
+  does not match the `/eclipse-2026/de/` canonical, so the slash is appended by hand. `seo.spec.ts`
+  asserts every internal language link is in canonical form.
+- **The root dispatch script duplicates the language list.** It runs before the bundle loads, so it cannot
+  import from `$lib/i18n`. `src/lib/i18n/rootDispatch.test.ts` reads `app.html` and asserts the list, the
+  default, the base path, the loop guard and the use of `replace` over `assign` all still agree with the
+  app — cheap insurance against the two copies drifting.
+
+### Coverage added
+
+- `tests/seo.spec.ts` — 15 tests against the raw prerendered HTML of all four documents.
+- `tests/root-redirect.spec.ts` — 10 tests over the language dispatch, including a stored-preference
+  override, an unsupported browser language, the loop guard, Back not being a trap, and the
+  JavaScript-disabled fallback.
+- `src/lib/i18n/rootDispatch.test.ts` — the drift guard described above.
+- `src/lib/i18n/index.dom.test.ts` — `detect`/`initLocale` cases replaced with `detectLocale` (pure, so
+  the root's decision is unit-tested) and `applyLocale`.
+
+### Still open
+
+- **Copy.** `app.page_title` / `app.page_description` are composed from strings already in the catalogues
+  (`app.tagline`, `countdown.since`), not written for the purpose. Replace when real copy exists; the
+  length caps asserted in the unit tests are what search results and preview cards will truncate at.
+- **The 1200×630 social image**, and with it `og:image`, `og:image:alt` and `twitter:card`'s upgrade to
+  `summary_large_image`.
+- **Verify on the real host.** bunny.net has to serve `de/index.html` for `/eclipse-2026/de/`; every
+  internal link and the canonical use the trailing-slash form, so directory indexes must resolve.

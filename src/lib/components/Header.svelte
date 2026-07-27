@@ -9,8 +9,12 @@
 	//
 	// The trailing slash is appended by hand: `resolve` applies `base` but knows nothing about the
 	// `trailingSlash` page option, and a link to /de would not match the /de/ canonical.
+	const langHref = (l: string) => `${resolve('/[lang]', { lang: l })}/`;
 </script>
 
+<!-- eslint-disable svelte/no-navigation-without-resolve --
+     The language links go through `resolve` (see `langHref`), so `base` is applied — the rule just
+     cannot see it through the helper. -->
 <header class="hdr">
 	<div class="brand">
 		<span class="mark" aria-hidden="true">☀︎</span>
@@ -21,7 +25,7 @@
 			<a
 				class:active={$locale === l}
 				aria-current={$locale === l ? 'true' : undefined}
-				href={`${resolve('/[lang]', { lang: l })}/`}
+				href={langHref(l)}
 				hreflang={l}
 				title={LOCALE_NAMES[l]}>{l.toUpperCase()}</a
 			>

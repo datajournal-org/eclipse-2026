@@ -5,12 +5,16 @@ precisely in discussion. Terms use the exact names found in the code where one e
 
 ## Page structure
 
-- **Two-state page** — one prerendered page: the **A** state (event overview, always shown) plus the **B**
-  state (personal, appended once a location is chosen); otherwise the **LocationCall** prompt.
+- **Two-state page** — one prerendered page per language (`/eclipse-2026/de/` …): the **A** state (event
+  overview, always shown) plus the **B** state (personal, appended once a location is chosen); otherwise
+  the **LocationCall** prompt.
+- **Language root** — `/eclipse-2026/`, the crawler-facing default-language page that dispatches browsers
+  to `/de/`, `/en/` or `/es/`.
 - **A-sections** — location-independent overview blocks (e.g. **A2** = `ShadowRun` globe, **A3** = placeholder).
 - **B-sections** — per-location blocks: **B1** `Verdict`, **B2** `PersonalTimeline`, **B3** `SkyView`, **B6** `Checklist`.
 - **Eyebrow** — the small `A2` / `B3` tag shown in a block header.
-- **`userLocation`** — the chosen place (`{lat, lon, name}`); kept in `localStorage` and the URL (`?lat&lon&name`), never sent to a server.
+- **`userLocation`** — the chosen place (`{lat, lon, name}`); kept in `localStorage` only, never written to
+  the URL and never sent to a server. `?lat&lon&name` is read once at load as a debug override.
 - **`localEclipse`** — derived store: the local circumstances for the current `userLocation`.
 
 ## Astronomy & eclipse

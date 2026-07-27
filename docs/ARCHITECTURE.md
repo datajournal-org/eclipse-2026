@@ -92,13 +92,17 @@ _(Satellite tiles remain reserved for the A2 globe.)_
 
 ### 7. i18n
 
-Text from language files, `Intl` for date/number/compass direction, switching in the header,
-default from the browser. Start: DE / EN / ES.
+Text from language files, `Intl` for date/number/compass direction. DE / EN / ES, **one prerendered page
+per language** at `/eclipse-2026/{de,en,es}/` — the URL owns the active language, and the header switches
+by navigating. The bare root serves English metadata for crawlers and dispatches browsers to their own
+language. Details and the `hreflang` contract: [I18N-ROUTING.md](./I18N-ROUTING.md).
 
 ### 8. App shell
 
-SvelteKit prerendered → static files on bunny.net. A service worker makes the app usable
-offline after the first visit (and once a location is set).
+SvelteKit prerendered → static files on bunny.net, under the `/eclipse-2026/` base path. No SPA fallback:
+every route is a real file, so an unknown URL 404s instead of returning a soft 200. A service worker makes
+the app usable offline after the first visit (and once a location is set) — when it is built, it must not
+cache the root's language decision.
 
 ---
 

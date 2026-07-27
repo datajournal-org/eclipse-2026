@@ -15,8 +15,12 @@
 	// multilingual — its own chrome is in the default language, but each link names its language natively.
 	const DICTS = { de, en, es };
 	const copy = DICTS[DEFAULT_LOCALE];
+
+	// Trailing slash appended for the same reason as in Header.svelte: it is what the canonical form is.
+	const langHref = (l: string) => `${resolve('/[lang]', { lang: l })}/`;
 </script>
 
+<!-- eslint-disable svelte/no-navigation-without-resolve -- see Header.svelte: `langHref` uses `resolve`. -->
 <main class="pick">
 	<h1>{copy.app.title}</h1>
 	<p class="tagline">{copy.app.tagline}</p>
@@ -25,7 +29,7 @@
 	<nav aria-label="Language">
 		<ul>
 			{#each LOCALES as l (l)}
-				<li><a href={`${resolve('/[lang]', { lang: l })}/`} hreflang={l} lang={l}>{LOCALE_NAMES[l]}</a></li>
+				<li><a href={langHref(l)} hreflang={l} lang={l}>{LOCALE_NAMES[l]}</a></li>
 			{/each}
 		</ul>
 	</nav>
