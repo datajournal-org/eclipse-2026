@@ -37,21 +37,6 @@ jobs:
 
          - run: npm run sync
 
-         # Browsers are ~400 MB and unchanged between runs; key on the Playwright version so a bump
-         # invalidates it. `--with-deps` still runs on a hit, since the system libraries live outside the cache.
-         - name: Resolve the Playwright version
-           id: pw
-           run: echo "version=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-
-         - uses: actions/cache@v4
-           id: browsers
-           with:
-              path: ~/.cache/ms-playwright
-              key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-
-         - name: Install browsers
-           run: npx playwright install --with-deps chromium webkit
-
          # The map tiles. One located page load pulls ~66 objects from tiles.versatiles.org; across the
          # suite that is thousands of requests for the same handful of tiles. Restoring this keeps the run
          # fast and keeps us from hammering a free community service on every push.
@@ -77,6 +62,21 @@ jobs:
          - run: npm run check:svelte
 
          - run: npm run test:unit
+
+         # Browsers are ~400 MB and unchanged between runs; key on the Playwright version so a bump
+         # invalidates it. `--with-deps` still runs on a hit, since the system libraries live outside the cache.
+         - name: Resolve the Playwright version
+           id: pw
+           run: echo "version=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+         - uses: actions/cache@v4
+           id: browsers
+           with:
+              path: ~/.cache/ms-playwright
+              key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+         - name: Install browsers
+           run: npx playwright install --with-deps chromium webkit
 
          # The WebGL specs are the expensive ones: no GPU here, so Chromium falls back to SwiftShader and
          # rasterises B3's terrain scene on the CPU. Measured on an M4 Pro at CI's worker count they take
