@@ -69,12 +69,10 @@ jobs:
          # file — and the type checks below run before anything builds.
          - run: npm run corridor
 
-         - name: Format, types, lint
-           run: |
-              npm run check:format
-              npm run check:ts
-              npm run lint
-              npm run check:svelte
+         - run: npm run check:format
+         - run: npm run check:ts
+         - run: npm run lint
+         - run: npm run check:svelte
 
          - run: npm run test:unit
 
