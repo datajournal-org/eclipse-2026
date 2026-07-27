@@ -26,22 +26,31 @@ jobs:
    # shard: measured 192s / 81s / 27s / 18s across four, so four runners bought only 1.7x. Without a GPU
    # those 47 specs rasterise B3's terrain scene on the CPU and dominate everything else.
    #
-   # Splitting them out gives three balanced jobs — ~59s / ~143s / ~151s in a local simulation of these
-   # conditions — so wall-clock is the slowest job rather than the sum.
+   # Splitting them out gives three jobs — ~59s / ~143s / ~151s in a local simulation of a GPU-less
+   # runner — so wall-clock is the slowest job rather than the sum. If the macOS legs below turn out to
+   # have a real GPU, the WebGL work collapses and `rest` becomes the long pole; rebalance then.
    test:
-      runs-on: ubuntu-latest
+      runs-on: ${{ matrix.os }}
       timeout-minutes: 45
       strategy:
          fail-fast: false
          matrix:
             include:
+               # The non-WebGL leg has no GPU work at all, so the cheaper Linux runner is right for it.
                - name: rest
+                 os: ubuntu-latest
                  shard: --grep-invert @webgl
                  browsers: chromium webkit
+               # The WebGL legs go to macOS. On the Ubuntu runner B3's terrain scene is rasterised by
+               # SwiftShader on two cores and did not reach `idle` inside 60 s; Apple Silicon runners are
+               # faster per core and may expose Metal, which locally was the difference between ~20 s and
+               # ~1.4 s. The renderer step below records which of the two we are actually getting.
                - name: webgl-1
+                 os: macos-latest
                  shard: --grep @webgl --shard=1/2
                  browsers: chromium
                - name: webgl-2
+                 os: macos-latest
                  shard: --grep @webgl --shard=2/2
                  browsers: chromium
 
@@ -96,12 +105,35 @@ jobs:
 
          - uses: actions/cache@v4
            with:
-              path: ~/.cache/ms-playwright
+              # Playwright stores browsers under ~/Library/Caches on macOS and ~/.cache on Linux.
+              path: ${{ runner.os == 'macOS' && '~/Library/Caches/ms-playwright' || '~/.cache/ms-playwright' }}
               key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ matrix.name }}
 
-         # `--with-deps` still runs on a cache hit: the system libraries live outside the cached directory.
+         # `--with-deps` still runs on a cache hit — on Linux the system libraries live outside the cached
+         # directory. It is a no-op on macOS.
          - name: Install browsers
            run: npx playwright install --with-deps ${{ matrix.browsers }}
+
+         # Which renderer Chromium actually gets here. Metal means the GPU is available; SwiftShader means
+         # we are paying for macOS and rasterising on the CPU anyway, and the legs should move back.
+         - name: Report the WebGL renderer
+           if: matrix.name != 'rest'
+           run: |
+              cat > tests/renderer-report.spec.ts <<'EOF'
+              import { test } from './fixtures';
+              test('renderer @webgl', async ({ page }) => {
+                await page.goto('about:blank');
+                const renderer = await page.evaluate(() => {
+                  const gl = document.createElement('canvas').getContext('webgl2');
+                  if (!gl) return 'NO WEBGL';
+                  const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+                  return dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : 'no debug ext';
+                });
+                console.log(`::notice title=WebGL on ${process.env.RUNNER_OS}::${renderer}`);
+              });
+              EOF
+              npx playwright test tests/renderer-report.spec.ts --project chromium --reporter=list
+              rm -f tests/renderer-report.spec.ts
 
          - name: End-to-end tests
            run: npx playwright test ${{ matrix.shard }}

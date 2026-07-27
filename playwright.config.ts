@@ -36,8 +36,11 @@ export default defineConfig({
 	// One number for the whole suite — no per-test overrides, which only ever drifted away from reality.
 	// Locally the slowest test is ~8 s (GPU, warm tile cache), so 30 s is ~4x headroom: enough to ride out
 	// a busy machine, tight enough that a genuine hang is reported in seconds rather than minutes.
-	// CI has no GPU and falls back to SwiftShader, where B3 alone needs 20 s+ to reach `idle`.
-	timeout: process.env.CI ? 150_000 : 30_000,
+	//
+	// CI is a different world: no GPU, so B3's terrain scene is rasterised on the CPU by SwiftShader, and
+	// on a two-core runner that took longer than 60 s just to reach `idle`. This has to stay above the
+	// mapReady budget in tests/fixtures.ts so the map's own wait is what reports the failure.
+	timeout: process.env.CI ? 300_000 : 30_000,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
 	grepInvert: process.env.PWLIVE ? undefined : /@live/,
@@ -53,7 +56,9 @@ export default defineConfig({
 		locale: 'de-DE', // → the app resolves to the German locale, so UI text is deterministic
 		timezoneId: 'Europe/Berlin', // every local time on screen depends on this
 		permissions: [], // geolocation is granted per-spec, where it is the thing under test
-		trace: 'retain-on-failure',
+		// `retain-on-failure` keeps a full trace for every attempt, and with retries a single broken
+		// beforeAll produced a 213 MB artifact. The first retry is enough to debug from.
+		trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure',
 		screenshot: 'only-on-failure'
 	},
 	expect: {

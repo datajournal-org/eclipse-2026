@@ -159,8 +159,16 @@ export async function openSharedPage(browser: Browser, path: string) {
 	return page;
 }
 
-/** Wait for a section's MapLibre instance to reach `idle` (the data-map-ready hook in the components). */
-export async function mapReady(page: Page, selector: string, timeout = 60_000) {
+/**
+ * Wait for a section's MapLibre instance to reach `idle` (the data-map-ready hook in the components).
+ *
+ * The budget has to be CI-aware. A GPU-less runner rasterises B3's terrain scene on the CPU, and a
+ * hardcoded 60 s was the constraint that actually failed the first CI run — not the per-test timeout,
+ * which was two and a half times larger and never came into play. Keep this comfortably BELOW the test
+ * timeout in playwright.config.ts, so a slow scene reports "the map never became ready" rather than the
+ * far less useful "test timed out".
+ */
+export async function mapReady(page: Page, selector: string, timeout = process.env.CI ? 180_000 : 60_000) {
 	await expect(page.locator(`${selector} [data-map-ready="true"]`)).toBeAttached({ timeout });
 }
 
@@ -187,7 +195,9 @@ export async function maxFrame(page: Page, section: string): Promise<number> {
  */
 export async function freezeClock(page: Page, at: 'T-30d' | 'T-90s' | 'T+1h') {
 	const peak = Date.parse(GREATEST.utc);
-	const offsets = { 'T-30d': -30 * 86_400_000, 'T-90s': -90_000, 'T+1h': 3_600_000 };
+	// T-30d is deliberately offset a few hours off the exact day boundary. Landing on it makes the day
+	// digit flip between 30 and 29 on a millisecond of drift, which showed up as a rare webkit flake.
+	const offsets = { 'T-30d': -(30 * 86_400 + 5 * 3_600) * 1000, 'T-90s': -90_000, 'T+1h': 3_600_000 };
 	await page.clock.install({ time: new Date(peak + offsets[at]) });
 }
 
