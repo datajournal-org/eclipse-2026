@@ -1,0 +1,138 @@
+name: CI
+
+on:
+   push:
+      branches: [main]
+   pull_request:
+   workflow_dispatch:
+
+# Pages deployment needs these; nothing else in the workflow writes to the repo.
+permissions:
+   contents: read
+   pages: write
+   id-token: write
+
+# A newer push supersedes an in-flight run, but never cancel a deployment half-way.
+concurrency:
+   group: ci-${{ github.ref }}
+   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+   NODE_VERSION: '24'
+
+jobs:
+   test:
+      runs-on: ubuntu-latest
+      timeout-minutes: 45
+
+      steps:
+         - uses: actions/checkout@v4
+
+         - uses: actions/setup-node@v4
+           with:
+              node-version: ${{ env.NODE_VERSION }}
+              cache: npm # caches ~/.npm keyed on package-lock.json
+
+         - run: npm ci
+
+         # Browsers are ~400 MB and unchanged between runs; key on the Playwright version so a bump
+         # invalidates it. `--with-deps` still runs on a hit, since the system libraries live outside the cache.
+         - name: Resolve the Playwright version
+           id: pw
+           run: echo "version=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+         - uses: actions/cache@v4
+           id: browsers
+           with:
+              path: ~/.cache/ms-playwright
+              key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+         - name: Install browsers
+           run: npx playwright install --with-deps chromium webkit
+
+         # The map tiles. One located page load pulls ~66 objects from tiles.versatiles.org; across the
+         # suite that is thousands of requests for the same handful of tiles. Restoring this keeps the run
+         # fast and keeps us from hammering a free community service on every push.
+         #
+         # The key is unique per run so it never hits, and restore-keys falls back to the most recent
+         # cache — the standard "always restore the latest, always save an updated copy" pattern. New
+         # tiles a run happens to need are fetched once and folded in, rather than the cache freezing.
+         - name: Cache map tiles
+           uses: actions/cache@v4
+           with:
+              path: .cache/tiles
+              key: tiles-${{ runner.os }}-${{ github.run_id }}
+              restore-keys: |
+                 tiles-${{ runner.os }}-
+
+         # corridor.generated.ts is git-ignored and written by `prebuild`, so a fresh clone has no such
+         # file — and the type checks below run before anything builds.
+         - run: npm run corridor
+
+         - name: Format, types, lint
+           run: |
+              npm run check:format
+              npm run check:ts
+              npm run lint
+              npm run check:svelte
+
+         - run: npm run test:unit
+
+         # The WebGL specs are the expensive ones: no GPU here, so Chromium falls back to SwiftShader and
+         # rasterises B3's terrain scene on the CPU. Measured on an M4 Pro at CI's worker count they take
+         # ~4 min for 47 tests, against ~36 s for the other 126 — and a runner is slower still. They run on
+         # main, where the wait is worth it, and are skipped on pull requests, which stay quick.
+         - name: End-to-end tests
+           run: |
+              if [ "${{ github.event_name }}" = "pull_request" ]; then
+                npx playwright test --grep-invert @webgl
+              else
+                npx playwright test
+              fi
+           env:
+              CI: true
+
+         - uses: actions/upload-artifact@v4
+           if: ${{ !cancelled() }}
+           with:
+              name: playwright-report
+              path: playwright-report/
+              retention-days: 7
+
+   build:
+      needs: test
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      runs-on: ubuntu-latest
+      timeout-minutes: 15
+
+      steps:
+         - uses: actions/checkout@v4
+         - uses: actions/setup-node@v4
+           with:
+              node-version: ${{ env.NODE_VERSION }}
+              cache: npm
+         - run: npm ci
+
+         # Every canonical, hreflang and og:url is absolute, so the build has to know where it will live.
+         # Without this the deployed pages would tell crawlers the real copy is on another host entirely.
+         # `paths.base` is '/eclipse-2026' and must match the repository name for a project Pages site.
+         - name: Build
+           run: npm run build
+           env:
+              VITE_SITE_URL: ${{ format('https://{0}.github.io', github.repository_owner) }}
+
+         - uses: actions/configure-pages@v5
+         - uses: actions/upload-pages-artifact@v3
+           with:
+              path: build
+
+   deploy:
+      needs: build
+      runs-on: ubuntu-latest
+      timeout-minutes: 10
+      environment:
+         name: github-pages
+         url: ${{ steps.deployment.outputs.page_url }}
+      steps:
+         - id: deployment
+           uses: actions/deploy-pages@v4
