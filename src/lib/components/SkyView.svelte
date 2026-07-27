@@ -101,6 +101,9 @@
 			map = m;
 			// Surface style/terrain/WebGL errors that would otherwise be swallowed (and can stall loading).
 			m.on('error', (e) => console.error('[B3] map error:', (e as { error?: unknown }).error ?? e));
+			// Test hook: the end-to-end suite waits on this instead of guessing at a timeout or watching
+			// for a visual side effect. `idle` fires once the style, sources and first frame are all done.
+			m.once('idle', () => mapContainer.setAttribute('data-map-ready', 'true'));
 			// Horizontal drag orbits the camera around the marker (handlers below); disable MapLibre's own
 			// pan/rotate/zoom so they don't fight it. Pitch/height never change → no >90° bug.
 			m.dragPan.disable();

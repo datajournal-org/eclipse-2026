@@ -41,6 +41,9 @@
 			});
 			map = m;
 			m.on('error', (e) => console.error('[picker] map error:', (e as { error?: unknown }).error ?? e));
+			// Test hook: the end-to-end suite waits on this instead of guessing at a timeout or watching
+			// for a visual side effect. `idle` fires once the style, sources and first frame are all done.
+			m.once('idle', () => mapContainer.setAttribute('data-map-ready', 'true'));
 			m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 			// the map may mount inside a dialog that sizes up after open → keep the canvas in sync
 			ro = new ResizeObserver(() => m.resize());

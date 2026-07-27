@@ -180,6 +180,9 @@
 			if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { __map: m });
 			// Surface style/tile/WebGL errors that would otherwise be swallowed (and can stall loading).
 			m.on('error', (e) => console.error('[A2] map error:', (e as { error?: unknown }).error ?? e));
+			// Test hook: the end-to-end suite waits on this instead of guessing at a timeout or watching
+			// for a visual side effect. `idle` fires once the style, sources and first frame are all done.
+			m.once('idle', () => mapContainer.setAttribute('data-map-ready', 'true'));
 			m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
 			m.addControl(new maplibregl.FullscreenControl({ container: stage }), 'top-right');
 
