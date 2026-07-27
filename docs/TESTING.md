@@ -494,7 +494,35 @@ Four details that each cost a wrong turn:
 
 `.cache/` is git-ignored; CI should restore it via `actions/cache` rather than commit binary tiles.
 
-### 8.3 What the speed itself exposed
+### 8.3 Why the geocoder is stubbed, not cached
+
+A fair question given §8.2, and the answer is that the two hosts play different roles.
+
+Tiles are **scenery** — no assertion depends on their content, so replaying whatever the server happened to
+send is fine. The geocoder is **under test**: `location-search.spec.ts` asserts on an HTTP 500, an empty
+result set, a bare `name` with no context line, a feature with broken geometry, a non-string property.
+Those are authored responses; a cache can only replay what actually came back, so it could never produce
+them. Volume settles it either way — a Photon response is a few KB against 6.8 MB of tiles per page load.
+
+`stubGeocoder` is an **auto fixture**, so the no-network property is enforced rather than depending on each
+new spec remembering to ask. Measured before making it automatic: zero un-stubbed geocoder requests across
+the whole suite — but only by luck, since nothing prevented the next spec from forgetting.
+
+`tests/geocode-live.spec.ts` is the deliberate exception, and the reason the stubs are safe: a suite built
+entirely on hand-written fixtures cannot notice the one upstream failure that matters most, the response
+shape changing. It calls `searchPlaces`/`reverseGeocode` against the real service and asserts the contract
+— coordinates in `[lon, lat]` order above all, since swapping them puts every result in the wrong
+hemisphere and silently corrupts the eclipse verdict — rather than the data, which changes with OSM.
+
+Run it with `PWLIVE=1 npx playwright test --grep @live` (~4 s, no browser work), nightly.
+
+**A trap worth knowing about:** a project-level `grepInvert` **replaces** the top-level one instead of
+adding to it. With `grepInvert: /@live/` set globally, the live specs still ran on the `webkit` project,
+because that project sets `grepInvert: /@webgl/`. Every PR would have hit the geocoder unnoticed. Both the
+per-project regex and a `beforeAll` guard inside the live spec — which throws unless `PWLIVE` is set — now
+prevent that.
+
+### 8.4 What the speed itself exposed
 
 The disposal race above was latent in the cache from the moment it was written, and only became reachable
 once the suite was fast enough for tests to routinely end with requests outstanding. Worth remembering when
