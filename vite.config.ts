@@ -9,6 +9,15 @@ export default defineConfig({
 	// and vector maps (B3) never load. Excluding it makes Vite serve maplibre from node_modules, where the
 	// worker resolves. (The production build is handled separately via setWorkerUrl in $lib/maplibre.ts.)
 	optimizeDeps: { exclude: ['maplibre-gl'] },
+	server: {
+		// Bind every interface so a phone on the same Wi-Fi can reach the dev server; by default Vite
+		// listens on loopback only, which looks exactly like the machine being unreachable.
+		host: true,
+		// Vite rejects requests whose Host header it does not recognise (DNS-rebinding protection), which
+		// includes this Mac's own mDNS name. Allowing the .local suffix covers any machine's Bonjour name
+		// without hardcoding one, and stays narrow: it does not open the dev server to public DNS names.
+		allowedHosts: ['.local']
+	},
 	test: {
 		// Two projects, because the codebase has two kinds of module: pure maths (node environment — fastest,
 		// and a failure there proves a module reached for the DOM by accident) and modules that need a
