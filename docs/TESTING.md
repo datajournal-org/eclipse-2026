@@ -522,7 +522,54 @@ because that project sets `grepInvert: /@webgl/`. Every PR would have hit the ge
 per-project regex and a `beforeAll` guard inside the live spec — which throws unless `PWLIVE` is set — now
 prevent that.
 
-### 8.4 What the speed itself exposed
+### 8.4 Doing less work
+
+Two further changes, both measured rather than assumed.
+
+**Shared pages for the map-heavy specs.** Building a MapLibre scene costs ~2 s, and `a2-shadow-run`,
+`b3-camera`, `b3-scrubber` and `b3-skyview` each drive the _same_ scene from many angles — so each file
+now opens one page in `beforeAll`, runs `serial`, and resets in `beforeEach` (camera recentred, slider
+rewound). Per-file summed time:
+
+| file            | before | after  |
+| --------------- | ------ | ------ |
+| `a2-shadow-run` | 20.2 s | 2.6 s  |
+| `b3-skyview`    | 28.7 s | 3.8 s  |
+| `b3-scrubber`   | 28.4 s | 5.7 s  |
+| `b3-camera`     | 28.8 s | 10.6 s |
+
+`b3-skyview` groups by location rather than sharing one page, because its ten tests span four places;
+Berlin and Palma appear once each and keep their own page, where there is nothing to amortise.
+`location-map` was tried and reverted: the picker map remounts on every dialog open, so only the page load
+was shareable, and the shared page destabilised the file for ~1 s of gain.
+
+Two traps this created. The reset target must be the frame the page OPENS on, not frame 0 — at 16:45 UTC
+the umbra has not reached Earth and there are legitimately no corridor labels. And `pageProblems` watches
+the _fixture's_ page, so the specs asserting on console errors attach their own listener to the shared
+page; without that they would have passed vacuously.
+
+**WebKit runs what the engine can break, not a second copy of everything.** The test for each file is
+whether it exercises browser-provided behaviour or our own JavaScript. Kept: `location-dialog` (`<dialog>`,
+focus trap), `responsive` (layout), `i18n` (Intl), `a11y` (focus, contrast), `countdown` (tabular-figure
+metrics are font rendering), `b6-checklist` (download handling), `location-gps` (permission model),
+`root-redirect` (hand-written ES5 before the bundle), `shell` (does it boot). Dropped: `b1-verdict`,
+`location-search`, `privacy`, `state-a` — astronomy rendered as text, a debounce over stubbed JSON, the
+localStorage contract, section presence. A second engine cannot fail those differently.
+
+Measured A/B, two runs each on an idle machine: **wall 78.1 s → 59.9 s, summed 438 s → 317 s.**
+
+### 8.5 Measuring this is noisier than it looks
+
+Two identical runs of the same configuration differ by ~10 % in wall clock and ~12 % in summed time. Any
+comparison closer than that needs repeated runs, and a single pair proves nothing — an early reading that
+made a change look 13 % _worse_ turned out to be another process using the CPU.
+
+This bit twice. The `fullyParallel: true` rejection (79.2 s vs 86.7 s) is a 9 % gap, i.e. inside the noise
+band, so **that conclusion is not currently supported** and wants re-testing over several runs. The
+option-1 wall-clock delta was similarly within noise — but its per-file summed times are 5–8× reductions,
+far outside it, which is why that change stands on solid ground while the parallelism one does not.
+
+### 8.6 What the speed itself exposed
 
 The disposal race above was latent in the cache from the moment it was written, and only became reachable
 once the suite was fast enough for tests to routinely end with requests outstanding. Worth remembering when

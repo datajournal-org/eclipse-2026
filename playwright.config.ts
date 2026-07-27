@@ -82,9 +82,25 @@ export default defineConfig({
 			// listing only /@webgl/ silently let the live-network specs run on this project.
 			name: 'webkit',
 			grepInvert: process.env.PWLIVE ? /@webgl/ : /@webgl|@live/,
-			// seo.spec.ts fetches raw HTML and never opens a page, so it only needs to run once —
-			// chromium carries it.
-			testIgnore: '**/seo.spec.ts',
+			// WebKit runs what the ENGINE can plausibly break, not a second copy of everything. The test
+			// for each file is whether it exercises browser-provided behaviour or our own JavaScript.
+			//
+			// Kept, and why: location-dialog (<dialog>, focus trap, backdrop), responsive (layout),
+			// i18n (Intl formatting), a11y (focus, keyboard, contrast), countdown (tabular-figure metrics
+			// are font rendering), b6-checklist (download handling differs by engine), location-gps
+			// (the geolocation permission model differs), root-redirect (hand-written ES5 running before
+			// the bundle, plus navigator.languages and location.replace), shell (does it boot at all).
+			//
+			// Dropped below: pure app logic that a second engine cannot fail differently — astronomy
+			// rendered as text, a debounce over stubbed JSON, the localStorage/URL contract, section
+			// presence. All of it is covered on chromium.
+			testIgnore: [
+				'**/seo.spec.ts', // fetches raw HTML, never opens a page — chromium carries it
+				'**/b1-verdict.spec.ts',
+				'**/location-search.spec.ts',
+				'**/privacy.spec.ts',
+				'**/state-a.spec.ts'
+			],
 
 			use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 900 } }
 		},
