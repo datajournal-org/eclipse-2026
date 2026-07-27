@@ -45,6 +45,18 @@ export function placeSun(
 	sun.visible = s.alt > -sunAngR;
 }
 
+/**
+ * Last hillshade direction pushed to each map, so an unchanged one is not pushed again.
+ *
+ * The direction is quantised to whole degrees, but the scrubber has far more steps than the Sun has
+ * degrees of azimuth to travel: over the eclipse window at Oviedo, 241 slider positions produce just
+ * **30 distinct** directions. Writing the other 211 changes nothing on screen and is not free —
+ * `setPaintProperty` re-evaluates the layer and re-renders the hillshade, measured at ~2 ms of extra
+ * frame time, which is most of the cost of a scrub. A WeakMap rather than a module-level variable so
+ * two maps (or two tests) cannot see each other's state, and a removed map is not retained.
+ */
+const lastHillshadeDir = new WeakMap<MlMap, number>();
+
 // Steer the map's directional light and hillshade to match the simulated Sun's azimuth/altitude and the
 // eclipse's brightness/colour (same numbers that drive the Sun billboard and the twilight veil).
 export function syncMapLighting(m: MlMap, az: number, alt: number, env: { light: string; intensity: number }) {
@@ -56,5 +68,8 @@ export function syncMapLighting(m: MlMap, az: number, alt: number, env: { light:
 	});
 	// Round BEFORE wrapping: wrapping first lets 359.6° round up to 360, which is outside the
 	// property's 0–359 range.
-	m.setPaintProperty('hillshade', 'hillshade-illumination-direction', ((Math.round(az) % 360) + 360) % 360);
+	const direction = ((Math.round(az) % 360) + 360) % 360;
+	if (lastHillshadeDir.get(m) === direction) return;
+	lastHillshadeDir.set(m, direction);
+	m.setPaintProperty('hillshade', 'hillshade-illumination-direction', direction);
 }

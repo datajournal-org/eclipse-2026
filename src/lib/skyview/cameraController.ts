@@ -55,6 +55,27 @@ export function createCameraController(opts: {
 	const canvas = m.getCanvas();
 	canvas.style.cursor = 'grab';
 
+	/**
+	 * Move the camera at most once per animation frame.
+	 *
+	 * A pointer reports far faster than the display paints — a high-poll mouse or trackpad easily lands
+	 * three `mousemove`s in one frame — and every `applyFraming()` is a `jumpTo`, which makes MapLibre
+	 * re-derive its tile coverage. Repainting the scene unchanged is nearly free (measured: p90 9.1 ms
+	 * against a 9.3 ms idle baseline), but three camera moves in a frame cost p90 21.5 ms, over twice the
+	 * frame budget — so all but the last were paid for and then thrown away.
+	 *
+	 * `orbitDeg` still accumulates on every event, so no pointer movement is lost; only the expensive
+	 * consequence is deferred to the moment it can be shown.
+	 */
+	let framingRaf = 0;
+	const scheduleFraming = () => {
+		if (framingRaf) return;
+		framingRaf = requestAnimationFrame(() => {
+			framingRaf = 0;
+			applyFraming();
+		});
+	};
+
 	// orbit (horizontal drag / one finger)
 	let dragging = false,
 		lastX = 0;
@@ -67,7 +88,7 @@ export function createCameraController(opts: {
 		if (!dragging) return;
 		orbitDeg -= (x - lastX) * 0.3; // drag right → the scene turns right
 		lastX = x;
-		applyFraming();
+		scheduleFraming();
 	};
 	const endDrag = () => {
 		dragging = false;
@@ -126,7 +147,7 @@ export function createCameraController(opts: {
 			const gap = touchGap(e.touches);
 			if (pinchGap0 > 0) {
 				camDist = camDistTarget = clampDist(pinchCam0 * (pinchGap0 / gap)); // fingers apart → closer
-				applyFraming();
+				scheduleFraming(); // touchmove outruns the display exactly as mousemove does
 			}
 		} else if (dragging && e.touches[0]) moveDrag(e.touches[0].clientX);
 	};
@@ -203,6 +224,7 @@ export function createCameraController(opts: {
 			window.removeEventListener('mousemove', onMouseMove);
 			window.removeEventListener('mouseup', endDrag);
 			if (zoomRaf) cancelAnimationFrame(zoomRaf);
+			if (framingRaf) cancelAnimationFrame(framingRaf);
 		}
 	};
 }

@@ -107,15 +107,45 @@ describe('applyFraming', () => {
 
 describe('orbit', () => {
 	it('turns the camera when the canvas is dragged', () => {
-		const { m, controller } = makeRig();
+		const { m, controller, raf } = makeRig();
 		controller.applyFraming();
 		const start = lastPose(m)!.from;
 
 		m.canvas.emit('mousedown', { clientX: 100 });
 		window.dispatchEvent(new MouseEvent('mousemove', { clientX: 200 }));
 
+		// The camera moves on the next frame, not in the event handler: a pointer reports faster than the
+		// display paints, and every move is a `jumpTo` that makes MapLibre re-derive its tile coverage.
+		expect(raf.pending()).toBe(1);
+		expect(lastPose(m)!.from.lng, 'moved inside the event handler').toBeCloseTo(start.lng, 6);
+		raf.flush();
+
 		const after = lastPose(m)!.from;
 		expect(after.lng).not.toBeCloseTo(start.lng, 6);
+	});
+
+	it('collapses a burst of pointer events into one camera move', () => {
+		// The whole point of the deferral: three moves inside one frame must cost one jumpTo, not three.
+		const burst = makeRig();
+		burst.controller.applyFraming();
+		burst.m.canvas.emit('mousedown', { clientX: 100 });
+		burst.m.reset();
+
+		for (const x of [150, 200, 250]) window.dispatchEvent(new MouseEvent('mousemove', { clientX: x }));
+		expect(burst.raf.pending()).toBe(1);
+		burst.raf.flush();
+		expect(burst.m.callsTo('jumpTo')).toHaveLength(1);
+		const viaBurst = lastPose(burst.m)!.from.lng;
+		burst.controller.detach(); // stop it hearing the second rig's events
+
+		// ...and it lands exactly where the LAST event pointed, so no pointer movement is dropped —
+		// coalescing must not turn into lagging behind the finger.
+		const single = makeRig();
+		single.controller.applyFraming();
+		single.m.canvas.emit('mousedown', { clientX: 100 });
+		window.dispatchEvent(new MouseEvent('mousemove', { clientX: 250 }));
+		single.raf.flush();
+		expect(viaBurst).toBeCloseTo(lastPose(single.m)!.from.lng, 9);
 	});
 
 	it('does nothing while no drag is in progress', () => {
@@ -148,7 +178,7 @@ describe('orbit', () => {
 	it('keeps the camera altitude constant right around the orbit', () => {
 		// The documented "never bobs" property: only the bearing changes as you orbit, so the camera
 		// height stays put even over mountainous ground.
-		const { m, controller } = makeRig({ terrainElevation: 900 });
+		const { m, controller, raf } = makeRig({ terrainElevation: 900 });
 		controller.applyFraming();
 		const alt0 = lastPose(m)!.camAlt;
 
@@ -156,6 +186,7 @@ describe('orbit', () => {
 		const alts: number[] = [];
 		for (let x = 100; x <= 1200; x += 100) {
 			window.dispatchEvent(new MouseEvent('mousemove', { clientX: x }));
+			raf.flush(); // the move lands next frame — without this every sample is the same stale pose
 			alts.push(lastPose(m)!.camAlt);
 		}
 		window.dispatchEvent(new MouseEvent('mouseup'));
@@ -164,7 +195,7 @@ describe('orbit', () => {
 	});
 
 	it('keeps the camera at a constant distance from the marker while orbiting', () => {
-		const { m, controller } = makeRig();
+		const { m, controller, raf } = makeRig();
 		controller.applyFraming();
 		const dist = () => {
 			const { from } = lastPose(m)!;
@@ -174,6 +205,7 @@ describe('orbit', () => {
 		m.canvas.emit('mousedown', { clientX: 0 });
 		for (const x of [200, 600, 1000]) {
 			window.dispatchEvent(new MouseEvent('mousemove', { clientX: x }));
+			raf.flush();
 			expect(dist()).toBeCloseTo(d0, 6);
 		}
 		window.dispatchEvent(new MouseEvent('mouseup'));
@@ -246,15 +278,16 @@ describe('zoom', () => {
 	});
 
 	it('pinches directly, without easing', () => {
-		const { m, controller } = makeRig();
+		const { m, controller, raf } = makeRig();
 		controller.applyFraming();
 		const before = camDistance(m);
 
 		const touch = (x: number, y: number) => ({ clientX: x, clientY: y });
 		m.canvas.emit('touchstart', { touches: [touch(0, 0), touch(100, 0)] });
 		m.canvas.emit('touchmove', { touches: [touch(0, 0), touch(200, 0)] });
+		raf.flush();
 
-		// fingers apart → closer, applied immediately
+		// fingers apart → closer: no easing, just deferred to the frame that can show it
 		expect(camDistance(m)).toBeLessThan(before);
 	});
 
@@ -273,11 +306,12 @@ describe('zoom', () => {
 	});
 
 	it('orbits with a single finger', () => {
-		const { m, controller } = makeRig();
+		const { m, controller, raf } = makeRig();
 		controller.applyFraming();
 		const start = lastPose(m)!.from.lng;
 		m.canvas.emit('touchstart', { touches: [{ clientX: 100, clientY: 0 }] });
 		m.canvas.emit('touchmove', { touches: [{ clientX: 220, clientY: 0 }] });
+		raf.flush();
 		expect(lastPose(m)!.from.lng).not.toBeCloseTo(start, 6);
 	});
 

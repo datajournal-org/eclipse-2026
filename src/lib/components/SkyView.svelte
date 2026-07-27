@@ -45,6 +45,8 @@
 	let loupe = $state<{ place: (screen: [number, number] | null) => void }>();
 	let setFrame: (i: number) => void = () => {};
 
+	let scrubFrame = 0; // pending rAF id for the coalesced scrub update (0 = none)
+
 	onMount(() => {
 		const loc = get(userLocation);
 		if (!loc) return;
@@ -99,6 +101,9 @@
 				style
 			});
 			map = m;
+			// Same `?debug` handle the A2 globe exposes, so the scene can be inspected and profiled from
+			// the console or a spec without reaching into component internals.
+			if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { __b3map: m });
 			// Surface style/terrain/WebGL errors that would otherwise be swallowed (and can stall loading).
 			m.on('error', (e) => console.error('[B3] map error:', (e as { error?: unknown }).error ?? e));
 			// Test hook: the end-to-end suite waits on this instead of guessing at a timeout or watching
@@ -191,9 +196,19 @@
 						m.triggerRepaint();
 					}
 
+					// Scrubbing is driven by `input`, which fires per pointer event — on a high-rate trackpad
+					// or touchscreen that is more often than the display paints, so the scene was rebuilt
+					// two or three times for one visible frame and the extra rebuilds were thrown away.
+					// Coalescing to one update per animation frame does the work once, at the moment it can
+					// actually be shown. `frameIndex` still moves synchronously, so the thumb and the
+					// readout never lag the finger.
 					setFrame = (i: number) => {
 						frameIndex = i;
-						update();
+						if (scrubFrame) return;
+						scrubFrame = requestAnimationFrame(() => {
+							scrubFrame = 0;
+							update();
+						});
 					};
 
 					// keep the loupe overlay glued to the tiny real Sun each rendered frame (the camera can move
@@ -226,6 +241,7 @@
 
 		return () => {
 			disposed = true;
+			if (scrubFrame) cancelAnimationFrame(scrubFrame);
 			detachDrag?.();
 			map?.remove();
 		};
