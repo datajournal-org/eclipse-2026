@@ -21,9 +21,29 @@ env:
    NODE_VERSION: '24'
 
 jobs:
+   # The whole end-to-end suite runs on every push and pull request, split by COST rather than by test
+   # count. Playwright's own --shard divides by number of tests, which lumps all the WebGL specs into one
+   # shard: measured 192s / 81s / 27s / 18s across four, so four runners bought only 1.7x. Without a GPU
+   # those 47 specs rasterise B3's terrain scene on the CPU and dominate everything else.
+   #
+   # Splitting them out gives three balanced jobs — ~59s / ~143s / ~151s in a local simulation of these
+   # conditions — so wall-clock is the slowest job rather than the sum.
    test:
       runs-on: ubuntu-latest
       timeout-minutes: 45
+      strategy:
+         fail-fast: false
+         matrix:
+            include:
+               - name: rest
+                 shard: --grep-invert @webgl
+                 browsers: chromium webkit
+               - name: webgl-1
+                 shard: --grep @webgl --shard=1/2
+                 browsers: chromium
+               - name: webgl-2
+                 shard: --grep @webgl --shard=2/2
+                 browsers: chromium
 
       steps:
          - uses: actions/checkout@v4
@@ -48,54 +68,50 @@ jobs:
            uses: actions/cache@v4
            with:
               path: .cache/tiles
-              key: tiles-${{ runner.os }}-${{ github.run_id }}
+              key: tiles-${{ runner.os }}-${{ matrix.name }}-${{ github.run_id }}
               restore-keys: |
-                 tiles-${{ runner.os }}-
+                 tiles-${{ runner.os }}-${{ matrix.name }}-
 
          # corridor.generated.ts is git-ignored and written by `prebuild`, so a fresh clone has no such
          # file — and the type checks below run before anything builds.
          - run: npm run corridor
 
-         - run: npm run check:format
-         - run: npm run check:ts
-         - run: npm run lint
-         - run: npm run check:svelte
-
-         - run: npm run test:unit
+         # Shard-independent, so run them once rather than three times over.
+         - if: matrix.name == 'rest'
+           run: npm run check:format
+         - if: matrix.name == 'rest'
+           run: npm run check:ts
+         - if: matrix.name == 'rest'
+           run: npm run lint
+         - if: matrix.name == 'rest'
+           run: npm run check:svelte
+         - if: matrix.name == 'rest'
+           run: npm run test:unit
 
          # Browsers are ~400 MB and unchanged between runs; key on the Playwright version so a bump
-         # invalidates it. `--with-deps` still runs on a hit, since the system libraries live outside the cache.
+         # invalidates it. The WebGL shards only run the chromium project, so they skip WebKit entirely.
          - name: Resolve the Playwright version
            id: pw
            run: echo "version=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
 
          - uses: actions/cache@v4
-           id: browsers
            with:
               path: ~/.cache/ms-playwright
-              key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+              key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ matrix.name }}
 
+         # `--with-deps` still runs on a cache hit: the system libraries live outside the cached directory.
          - name: Install browsers
-           run: npx playwright install --with-deps chromium webkit
+           run: npx playwright install --with-deps ${{ matrix.browsers }}
 
-         # The WebGL specs are the expensive ones: no GPU here, so Chromium falls back to SwiftShader and
-         # rasterises B3's terrain scene on the CPU. Measured on an M4 Pro at CI's worker count they take
-         # ~4 min for 47 tests, against ~36 s for the other 126 — and a runner is slower still. They run on
-         # main, where the wait is worth it, and are skipped on pull requests, which stay quick.
          - name: End-to-end tests
-           run: |
-              if [ "${{ github.event_name }}" = "pull_request" ]; then
-                npx playwright test --grep-invert @webgl
-              else
-                npx playwright test
-              fi
+           run: npx playwright test ${{ matrix.shard }}
            env:
               CI: true
 
          - uses: actions/upload-artifact@v4
            if: ${{ !cancelled() }}
            with:
-              name: playwright-report
+              name: playwright-report-${{ matrix.name }}
               path: playwright-report/
               retention-days: 7
 
