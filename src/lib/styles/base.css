@@ -122,6 +122,19 @@ button {
 	margin-inline: calc(-1 * var(--edge));
 }
 
+/* Map sections step outside the reading column on a wide screen.
+   `--maxw` (680px) is a measure for prose; the A2 globe and the B3 horizon are dense spatial displays
+   that a text column wastes. This widens the whole section — stage AND the time slider under it — so the
+   control keeps spanning its map instead of ending short of it.
+   The overhang is the smaller of "how much wider we want to be" and "how much room the viewport has,
+   keeping an --edge gutter", floored at 0 — so below ~712px it evaluates to zero and nothing moves,
+   which is why phones need no separate rule. */
+.block.wide {
+	--wide-maxw: 1120px;
+	--overhang: max(0px, min((var(--wide-maxw) - var(--maxw)) / 2, (100vw - var(--maxw)) / 2 - var(--edge)));
+	margin-inline: calc(-1 * var(--overhang));
+}
+
 /* Section subtitle under a .block-head. */
 .sub {
 	color: var(--muted);
@@ -150,8 +163,17 @@ button {
 	background: var(--bg);
 }
 .stage-canvas {
-	height: var(--stage-h, min(62vh, 460px));
+	/* Phones: never more than half the viewport, so the map cannot swallow the screen and the content
+	   under it stays discoverable. */
+	height: var(--stage-h, 50vh);
 	background: var(--bg);
+}
+/* From the width at which .block.wide starts to open up (--maxw + two gutters), the stage gets taller
+   too — a wider map with the old height would just be a letterbox. */
+@media (min-width: 712px) {
+	.stage-canvas {
+		height: var(--stage-h-wide, min(70vh, 640px));
+	}
 }
 .stage-loading {
 	position: absolute;

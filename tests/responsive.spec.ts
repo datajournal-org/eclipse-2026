@@ -1,4 +1,4 @@
-import { test, expect, byName, localeUrl } from './fixtures';
+import { test, expect, byName, localeUrl, mapReady } from './fixtures';
 
 // Runs on the mobile project (Pixel 7) — the phone in someone's hand on eclipse day.
 test.describe('mobile layout @mobile', () => {
@@ -79,5 +79,54 @@ test.describe('mobile layout @mobile', () => {
 		await locatedPage(byName('Oviedo'));
 		await page.locator('footer.safety').scrollIntoViewIfNeeded();
 		await expect(page.locator('footer.safety')).toBeVisible();
+	});
+});
+
+/**
+ * How much room the two maps get. They carry dense spatial information, so on a wide screen they step
+ * outside the 680 px reading column; on a phone they are capped at half the viewport so the content
+ * below them stays discoverable rather than being pushed off-screen.
+ */
+test.describe('map sizing', () => {
+	const stages = (page: import('@playwright/test').Page) =>
+		page.evaluate(() => {
+			const box = (sel: string) => {
+				const r = document.querySelector(sel)!.getBoundingClientRect();
+				return { w: r.width, h: r.height };
+			};
+			return {
+				a2: box('section.a2 .stage-canvas'),
+				b3: box('section.b3 .stage-canvas'),
+				bar: box('section.a2 .timebar'),
+				column: box('main.content').w,
+				vh: window.innerHeight,
+				overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+			};
+		});
+
+	test('never taller than half the viewport on a phone @webgl @mobile', async ({ page, locatedPage }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await locatedPage(byName('Oviedo'));
+		await mapReady(page, 'section.b3');
+		const s = await stages(page);
+		expect(s.a2.h).toBeLessThanOrEqual(s.vh / 2 + 1);
+		expect(s.b3.h).toBeLessThanOrEqual(s.vh / 2 + 1);
+		// ...while still spanning the full width.
+		expect(s.a2.w).toBe(390);
+		expect(s.b3.w).toBe(390);
+		expect(s.overflow).toBeLessThanOrEqual(1);
+	});
+
+	test('breaks out of the reading column on a desktop @webgl', async ({ page, locatedPage }) => {
+		await page.setViewportSize({ width: 1440, height: 900 });
+		await locatedPage(byName('Oviedo'));
+		await mapReady(page, 'section.b3');
+		const s = await stages(page);
+		expect(s.a2.w).toBeGreaterThan(s.column);
+		expect(s.b3.w).toBeGreaterThan(s.column);
+		// The slider has to widen with its map, or the control ends short of what it controls.
+		expect(s.bar.w).toBeGreaterThan(s.column - 64);
+		// Widening must not cost a horizontal scrollbar.
+		expect(s.overflow).toBeLessThanOrEqual(1);
 	});
 });

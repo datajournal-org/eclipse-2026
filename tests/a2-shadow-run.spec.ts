@@ -141,17 +141,17 @@ test.describe('A2 opening framing', () => {
 		});
 	}
 
-	test('keeps the hand-tuned framing where there is room @webgl', async ({ page }) => {
-		// maxZoom pins the wide case, so a desktop opens exactly as it did before the fit was added.
+	test('keeps the framing centred where it was aimed @webgl', async ({ page }) => {
+		// The fit supplies the zoom; the centre is ours. A plain fitBounds would derive the centre in
+		// mercator space and land at 59.7°N, tipping the Atlantic leg of the path off the top.
 		await page.setViewportSize({ width: 1440, height: 900 });
 		await page.goto(localeUrl('de', '?debug'));
 		await mapReady(page, A2);
 		const view = await page.evaluate(() => {
 			const m = (window as unknown as { __map: MlMap }).__map;
-			return { zoom: m.getZoom(), lat: m.getCenter().lat, lng: m.getCenter().lng };
+			return { lat: m.getCenter().lat, lng: m.getCenter().lng };
 		});
-		expect(view.zoom).toBeCloseTo(1.21, 2);
-		expect(view.lat).toBeCloseTo(50, 1); // not the 59.7° a plain fitBounds would have produced
+		expect(view.lat).toBeCloseTo(50, 1);
 		expect(view.lng).toBeCloseTo(-18, 1);
 	});
 });

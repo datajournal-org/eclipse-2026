@@ -250,7 +250,7 @@
 	});
 </script>
 
-<section class="block b3">
+<section class="block b3 wide">
 	<div class="block-head">
 		<h2>{$t('b3.title')}</h2>
 	</div>
@@ -298,10 +298,6 @@
 </section>
 
 <style>
-	/* media height for the shared global .stage-canvas */
-	.stage {
-		--stage-h: min(60vh, 440px);
-	}
 	/* B3-only MapLibre DOM (added outside the component tree). Shared map chrome (controls, attribution,
 	   the .user-pin marker) lives in styles/map.css; only the twilight veil is B3-specific. */
 	:global {

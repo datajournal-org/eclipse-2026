@@ -37,6 +37,8 @@
 	import { loadMaplibre } from '$lib/maplibre';
 
 	const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
+	// `zoom` here is only what the map is constructed with; the real opening zoom comes from the
+	// FRAME_BOUNDS fit below, which reads the stage. It stays as the fallback if that fit ever fails.
 	const INITIAL_VIEW = { center: [-18, 50] as [number, number], zoom: 1.21 };
 	const TERMINATOR_OPACITY = 0.35;
 
@@ -212,7 +214,12 @@
 			//    back ~1.26 for a phone (a mercator answer), the cap swallows it, and the globe is clipped
 			//    exactly as before. `style.load` is early enough that no frame has been painted.
 			const applyFit = () => {
-				const fit = m.cameraForBounds(FRAME_BOUNDS, { padding: 8, maxZoom: INITIAL_VIEW.zoom });
+				// Padding proportional to the stage, not a fixed pixel count: the same 8 px that leaves a
+				// sensible margin on a 390 px phone is invisible on a 1120 px desktop, and a value large
+				// enough for the desktop eats a phone's globe. 4% of the shortest side holds the globe at a
+				// steady ~0.9 of the frame across every breakpoint.
+				const shortest = Math.min(mapContainer.clientWidth, mapContainer.clientHeight);
+				const fit = m.cameraForBounds(FRAME_BOUNDS, { padding: Math.round(shortest * 0.04) });
 				if (fit) m.jumpTo({ center: INITIAL_VIEW.center, zoom: fit.zoom });
 			};
 			if (m.isStyleLoaded()) applyFit();
@@ -295,7 +302,7 @@
 	});
 </script>
 
-<section class="block a2">
+<section class="block a2 wide">
 	<div class="block-head">
 		<h2>{$t('a2.title')}</h2>
 		<span class="eyebrow">12.08.2026</span>
@@ -336,10 +343,6 @@
 </section>
 
 <style>
-	/* media height for the shared global .stage-canvas */
-	.stage {
-		--stage-h: min(64vh, 480px);
-	}
 	/* Fullscreen wraps map + time slider so the slider stays visible. */
 	.a2-stage:fullscreen {
 		display: flex;
