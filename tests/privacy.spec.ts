@@ -1,11 +1,11 @@
-import { test, expect, PHOTON } from './fixtures';
+import { test, expect, PHOTON, localeUrl } from './fixtures';
 
 // The contract from stores/location.ts: the chosen place lives in localStorage only, so a shared link
 // can never carry someone's address. Vitest checks the store; this checks the whole app honours it.
 test.describe('location privacy', () => {
 	test('keeps the chosen place out of the URL', async ({ page, stubGeocoder }) => {
 		await stubGeocoder(PHOTON.oviedo);
-		await page.goto('/');
+		await page.goto(localeUrl());
 		await page.getByRole('button', { name: /Standort wählen/ }).click();
 		await page.getByRole('searchbox', { name: 'Stadt oder Adresse suchen' }).fill('Oviedo');
 		await page.locator('.results li button').first().click();
@@ -19,7 +19,7 @@ test.describe('location privacy', () => {
 
 	test('persists it in localStorage instead', async ({ page, stubGeocoder }) => {
 		await stubGeocoder(PHOTON.oviedo);
-		await page.goto('/');
+		await page.goto(localeUrl());
 		await page.getByRole('button', { name: /Standort wählen/ }).click();
 		await page.getByRole('searchbox', { name: 'Stadt oder Adresse suchen' }).fill('Oviedo');
 		await page.locator('.results li button').first().click();
@@ -43,7 +43,7 @@ test.describe('location privacy', () => {
 		// Seeded by hand rather than with the storedPage fixture: that one re-seeds on every navigation
 		// (addInitScript), which would undo the clear this test is about.
 		await stubGeocoder();
-		await page.goto('/');
+		await page.goto(localeUrl());
 		await page.evaluate(() =>
 			window.localStorage.setItem('eclipse.location', JSON.stringify({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' }))
 		);

@@ -7,6 +7,14 @@ export type { ReferenceSite };
 const GEOCODER = 'https://geocode.versatiles.org/**';
 const STORAGE_KEY = 'eclipse.location';
 
+/** kit.paths.base — the site is deployed under https://datajournal.org/eclipse-2026/. */
+export const BASE = '/eclipse-2026';
+/** The language every spec uses unless it is specifically about language selection. */
+export const LANG = 'de';
+
+/** URL of a language's page, with optional query. */
+export const localeUrl = (lang = LANG, query = '') => `${BASE}/${lang}/${query}`;
+
 /** Recorded-shape Photon responses, so the dialog's parsing is exercised without the network. */
 export const PHOTON = {
 	oviedo: {
@@ -30,8 +38,8 @@ export const PHOTON = {
 type Fixtures = {
 	/** Every test gets the geocoder stubbed; opt out with the @live tag. */
 	stubGeocoder: (body?: unknown, status?: number) => Promise<void>;
-	/** Load the app with a location already chosen, via the documented ?lat&lon debug override. */
-	locatedPage: (site: { lat: number; lon: number; name?: string }) => Promise<void>;
+	/** Load a language's page with a location already chosen, via the ?lat&lon debug override. */
+	locatedPage: (site: { lat: number; lon: number; name?: string }, lang?: string) => Promise<void>;
 	/** Load the app with a location seeded into localStorage instead of the URL. */
 	storedPage: (site: { lat: number; lon: number; name?: string }) => Promise<void>;
 	/** Console errors and failed requests collected over the whole test. */
@@ -53,9 +61,9 @@ export const test = base.extend<Fixtures>({
 
 	locatedPage: async ({ page, stubGeocoder }, use) => {
 		await stubGeocoder();
-		await use(async (site) => {
+		await use(async (site, lang = LANG) => {
 			const name = site.name ? `&name=${encodeURIComponent(site.name)}` : '';
-			await page.goto(`/?lat=${site.lat}&lon=${site.lon}${name}`);
+			await page.goto(localeUrl(lang, `?lat=${site.lat}&lon=${site.lon}${name}`));
 		});
 	},
 
@@ -66,7 +74,7 @@ export const test = base.extend<Fixtures>({
 				STORAGE_KEY,
 				JSON.stringify({ lat: site.lat, lon: site.lon, name: site.name ?? null })
 			] as const);
-			await page.goto('/');
+			await page.goto(localeUrl());
 		});
 	},
 

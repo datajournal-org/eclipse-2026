@@ -1,4 +1,4 @@
-import { test, expect, byName } from './fixtures';
+import { test, expect, byName, localeUrl } from './fixtures';
 
 // Runs on the mobile project (Pixel 7) — the phone in someone's hand on eclipse day.
 test.describe('mobile layout @mobile', () => {
@@ -27,7 +27,7 @@ test.describe('mobile layout @mobile', () => {
 	});
 
 	test('keeps the language buttons reachable', async ({ page }) => {
-		await page.goto('/');
+		await page.goto(localeUrl());
 		const en = page.getByRole('button', { name: 'EN', exact: true });
 		await expect(en).toBeVisible();
 		await en.click();
@@ -36,7 +36,7 @@ test.describe('mobile layout @mobile', () => {
 
 	test('opens the location dialog as a usable sheet', async ({ page, stubGeocoder }) => {
 		await stubGeocoder();
-		await page.goto('/');
+		await page.goto(localeUrl());
 		await page.getByRole('button', { name: /Standort wählen/ }).click();
 
 		const sheet = page.locator('dialog.picker-dlg .sheet');

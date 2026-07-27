@@ -1,11 +1,11 @@
-import { test, expect, mapReady, setFrame, maxFrame } from './fixtures';
+import { test, expect, mapReady, setFrame, maxFrame, localeUrl } from './fixtures';
 
 const A2 = 'section.a2';
 
 test.describe('A2 shadow run @webgl', () => {
 	test.beforeEach(async ({ page, stubGeocoder }) => {
 		await stubGeocoder();
-		await page.goto('/');
+		await page.goto(localeUrl());
 		await mapReady(page, A2);
 	});
 

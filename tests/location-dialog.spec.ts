@@ -1,7 +1,7 @@
-import { test, expect } from './fixtures';
+import { test, expect, localeUrl } from './fixtures';
 
 const openDialog = async (page: import('@playwright/test').Page) => {
-	await page.goto('/');
+	await page.goto(localeUrl());
 	await page.getByRole('button', { name: /Standort wählen/ }).click();
 	await expect(page.locator('dialog.picker-dlg')).toBeVisible();
 };
@@ -85,7 +85,7 @@ test.describe('location dialog', () => {
 	test('does not swallow clicks on the page once closed', async ({ page, stubGeocoder }) => {
 		// The closed dialog is full-viewport by design; if it kept laying out it would eat every click.
 		await stubGeocoder();
-		await page.goto('/');
+		await page.goto(localeUrl());
 		const blocked = await page.evaluate(() => {
 			const dialog = document.querySelector('dialog.picker-dlg')!;
 			return getComputedStyle(dialog).display !== 'none';

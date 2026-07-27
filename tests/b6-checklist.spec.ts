@@ -1,4 +1,4 @@
-import { test, expect, byName } from './fixtures';
+import { test, expect, byName, localeUrl } from './fixtures';
 import { REFERENCE } from './fixtures';
 
 const OVIEDO = byName('Oviedo');
@@ -62,7 +62,7 @@ test.describe('B6 checklist', () => {
 	});
 
 	test('is absent until a location is chosen', async ({ page }) => {
-		await page.goto('/');
+		await page.goto(localeUrl());
 		await expect(page.locator('section.b6')).toHaveCount(0);
 	});
 

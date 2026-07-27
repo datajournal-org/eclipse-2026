@@ -1,8 +1,8 @@
-import { test, expect, mapReady } from './fixtures';
+import { test, expect, mapReady, localeUrl } from './fixtures';
 
 test.describe('app shell', () => {
 	test('renders the brand, the un-located sections and the safety footer', async ({ page, locatedPage }) => {
-		await page.goto('/');
+		await page.goto(localeUrl());
 		await expect(page.locator('header.hdr .name')).toHaveText('Eclipse 2026');
 		await expect(page.locator('section.cd')).toBeVisible(); // countdown
 		await expect(page.locator('section.a2')).toBeVisible(); // shadow run
@@ -33,16 +33,15 @@ test.describe('app shell', () => {
 
 	test('serves a prerendered document, not a client-rendered blank', async ({ page }) => {
 		// adapter-static: the un-located shell must be in the HTML itself.
-		const html = await (await page.request.get('/')).text();
+		const html = await (await page.request.get(localeUrl())).text();
 		expect(html).toContain('Eclipse 2026');
 		expect(html).toMatch(/<section[^>]*class="[^"]*\bcd\b/);
 	});
 
-	test('sets the document language and description', async ({ page }) => {
-		await page.goto('/');
+	test('titles and describes the page in its own language', async ({ page }) => {
+		await page.goto(localeUrl());
+		await expect(page).toHaveTitle('Sonnenfinsternis am 12. August 2026');
 		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 		await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Sonnenfinsternis/);
-		// NOTE: app.html has no <title>, so the tab and any shared link show the bare URL. Not asserted
-		// here because the fix is a copy decision, not a test one.
 	});
 });

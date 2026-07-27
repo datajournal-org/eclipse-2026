@@ -1,9 +1,9 @@
-import { test, expect, PHOTON } from './fixtures';
+import { test, expect, PHOTON, localeUrl } from './fixtures';
 
 const DIALOG = 'dialog.picker-dlg';
 
 async function openWithPin(page: import('@playwright/test').Page) {
-	await page.goto('/');
+	await page.goto(localeUrl());
 	await page.getByRole('button', { name: /Standort wählen/ }).click();
 	await expect(page.locator(DIALOG)).toBeVisible();
 	// the picker map only mounts once a place is pending

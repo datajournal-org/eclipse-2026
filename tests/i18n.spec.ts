@@ -1,76 +1,100 @@
-import { test, expect, byName } from './fixtures';
+import { test, expect, byName, localeUrl, BASE } from './fixtures';
 
-const LANGS = { de: 'Schattenlauf', en: 'Shadow run', es: 'Recorrido de la sombra' };
+const LANGS = {
+	de: { a2: 'Schattenlauf', title: 'Sonnenfinsternis am 12. August 2026' },
+	en: { a2: 'Shadow run', title: 'Solar eclipse on 12 August 2026' },
+	es: { a2: 'Recorrido de la sombra', title: 'Eclipse solar del 12 de agosto de 2026' }
+};
 
 test.describe('language switching @i18n', () => {
-	test('offers all three languages in the header', async ({ page }) => {
-		await page.goto('/');
+	test('offers all three languages as links in the header', async ({ page }) => {
+		// Links, not buttons: each language is its own prerendered URL, so switching is navigation.
+		await page.goto(localeUrl());
 		const group = page.getByRole('group', { name: /Sprache|Language|Idioma/ });
-		await expect(group.getByRole('button')).toHaveCount(3);
-		await expect(group.getByRole('button', { name: 'DE' })).toBeVisible();
-		await expect(group.getByRole('button', { name: 'EN' })).toBeVisible();
-		await expect(group.getByRole('button', { name: 'ES' })).toBeVisible();
-	});
-
-	test('switches the copy across every section', async ({ page, locatedPage }) => {
-		await locatedPage(byName('Oviedo'));
-		for (const [code, a2Title] of Object.entries(LANGS)) {
-			await page.getByRole('button', { name: code.toUpperCase(), exact: true }).click();
-			await expect(page.locator('section.a2 h2')).toHaveText(a2Title);
-			// a personalised section too, so the switch is proven beyond the static shell
-			await expect(page.locator('section.b1 h2')).not.toHaveText('');
+		await expect(group.getByRole('link')).toHaveCount(3);
+		for (const l of ['de', 'en', 'es']) {
+			await expect(group.getByRole('link', { name: l.toUpperCase(), exact: true })).toHaveAttribute(
+				'href',
+				`${BASE}/${l}/`
+			);
 		}
 	});
 
-	test('marks the active language as pressed', async ({ page }) => {
-		await page.goto('/');
-		await page.getByRole('button', { name: 'EN', exact: true }).click();
-		await expect(page.getByRole('button', { name: 'EN', exact: true })).toHaveAttribute('aria-pressed', 'true');
-		await expect(page.getByRole('button', { name: 'DE', exact: true })).toHaveAttribute('aria-pressed', 'false');
+	test('navigates to the language’s own URL', async ({ page }) => {
+		await page.goto(localeUrl('de'));
+		await page.getByRole('link', { name: 'ES', exact: true }).click();
+		await expect(page).toHaveURL(new RegExp(`${BASE}/es/$`));
+		await expect(page.locator('section.a2 h2')).toHaveText(LANGS.es.a2);
 	});
 
-	test('updates the document language', async ({ page }) => {
-		await page.goto('/');
-		await page.getByRole('button', { name: 'ES', exact: true }).click();
+	test('serves each language its own prerendered copy', async ({ page }) => {
+		for (const [code, { a2 }] of Object.entries(LANGS)) {
+			await page.goto(localeUrl(code));
+			await expect(page.locator('section.a2 h2')).toHaveText(a2);
+		}
+	});
+
+	test('translates the personalised sections too', async ({ page, locatedPage }) => {
+		await locatedPage(byName('Oviedo'), 'en');
+		await expect(page.locator('section.b1 h2')).toHaveText('Total solar eclipse');
+		await locatedPage(byName('Oviedo'), 'es');
+		await expect(page.locator('section.b1 h2')).toHaveText('Eclipse solar total');
+	});
+
+	test('marks the current language for assistive tech', async ({ page }) => {
+		await page.goto(localeUrl('en'));
+		await expect(page.getByRole('link', { name: 'EN', exact: true })).toHaveAttribute('aria-current', 'true');
+		await expect(page.getByRole('link', { name: 'DE', exact: true })).not.toHaveAttribute('aria-current', 'true');
+	});
+
+	test('updates the document language and the tab title on a switch', async ({ page }) => {
+		// A client-side navigation does not re-run the server hook, so this proves the layout keeps both
+		// in step after hydration — not just in the prerendered file.
+		await page.goto(localeUrl('de'));
+		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+		await expect(page).toHaveTitle(LANGS.de.title);
+
+		await page.getByRole('link', { name: 'ES', exact: true }).click();
 		await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+		await expect(page).toHaveTitle(LANGS.es.title);
 	});
 
-	test('remembers the choice across a reload', async ({ page }) => {
-		await page.goto('/');
-		await page.getByRole('button', { name: 'EN', exact: true }).click();
-		await expect(page.locator('section.a2 h2')).toHaveText(LANGS.en);
-		await page.reload();
-		await expect(page.locator('section.a2 h2')).toHaveText(LANGS.en);
+	test('remembers the choice for the next visit to the root', async ({ page }) => {
+		await page.goto(localeUrl('de'));
+		await page.getByRole('link', { name: 'EN', exact: true }).click();
+		await expect(page).toHaveURL(new RegExp(`${BASE}/en/$`));
 		expect(await page.evaluate(() => localStorage.getItem('locale'))).toBe('en');
 	});
 
-	test('detects the browser language on a fresh profile', async ({ page }) => {
-		// The chromium-en project runs with locale en-GB; the default projects with de-DE.
-		await page.goto('/');
-		const expected = test.info().project.name === 'chromium-en' ? LANGS.en : LANGS.de;
-		await expect(page.locator('section.a2 h2')).toHaveText(expected);
+	test('keeps the chosen location across a language switch', async ({ page, locatedPage }) => {
+		// The location lives in localStorage, so navigating between languages must not lose it — even
+		// though the language links deliberately carry no query string.
+		await locatedPage(byName('Oviedo'), 'de');
+		await page
+			.getByRole('button', { name: /Standort wählen/ })
+			.isVisible()
+			.catch(() => {});
+		await expect(page.locator('section.b1')).toBeVisible();
+		await page.getByRole('link', { name: 'EN', exact: true }).click();
+		await expect(page.locator('section.b1 h2')).toHaveText('Total solar eclipse');
 	});
 
-	test('formats times and dates in the active locale and zone', async ({ page, locatedPage }) => {
-		await locatedPage(byName('Berlin'));
-		const note = page.locator('section.b1 .note');
-		await expect(note).toContainText(/\d{1,2}:\d{2}/);
+	test('formats times in the reader’s zone, in the page’s language', async ({ page, locatedPage }) => {
+		await locatedPage(byName('Berlin'), 'de');
 		// Berlin's maximum is 18:08 UTC → 20:08 in Europe/Berlin, 14:08 in America/New_York.
-		// The app resolves to the base locale 'en', whose Intl default is a 12-hour clock → "02:08 PM".
 		const expected = test.info().project.name === 'chromium-en' ? /\b02:08\s?PM\b|14:08/ : /\b20:08\b/;
-		await expect(note).toContainText(expected);
+		await expect(page.locator('section.b1 .note')).toContainText(expected);
 	});
 
 	test('names the reader’s own time zone', async ({ page }) => {
-		await page.goto('/');
+		await page.goto(localeUrl());
 		const zone = test.info().project.name === 'chromium-en' ? /EDT|GMT-4/ : /MESZ|GMT\+2/;
 		await expect(page.locator('.tz-note')).toContainText(zone);
 	});
 
 	test('keeps the brand name untranslated', async ({ page }) => {
-		await page.goto('/');
-		for (const code of ['EN', 'ES', 'DE']) {
-			await page.getByRole('button', { name: code, exact: true }).click();
+		for (const code of ['de', 'en', 'es']) {
+			await page.goto(localeUrl(code));
 			await expect(page.locator('header.hdr .name')).toHaveText('Eclipse 2026');
 		}
 	});

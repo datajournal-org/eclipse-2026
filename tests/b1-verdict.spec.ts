@@ -1,4 +1,4 @@
-import { test, expect, REFERENCE, byName } from './fixtures';
+import { test, expect, REFERENCE, byName, localeUrl } from './fixtures';
 
 // The reference table is the shared oracle: Vitest checks the astronomy produces these numbers, this
 // spec checks they reach the screen. Times are shown in the browser's zone (Europe/Berlin = UTC+2).
@@ -58,7 +58,7 @@ test.describe('B1 verdict card', () => {
 	});
 
 	test('is absent until a location is chosen', async ({ page }) => {
-		await page.goto('/');
+		await page.goto(localeUrl());
 		await expect(page.locator('section.b1')).toHaveCount(0);
 	});
 });

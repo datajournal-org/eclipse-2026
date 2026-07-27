@@ -1,4 +1,4 @@
-import { test, expect, byName } from './fixtures';
+import { test, expect, byName, localeUrl } from './fixtures';
 
 test.describe('accessibility', () => {
 	test('gives every interactive element an accessible name', async ({ page, locatedPage }) => {
@@ -28,7 +28,7 @@ test.describe('accessibility', () => {
 	});
 
 	test('reaches every control by keyboard', async ({ page }) => {
-		await page.goto('/');
+		await page.goto(localeUrl());
 		const reached = new Set<string>();
 		for (let i = 0; i < 25; i++) {
 			await page.keyboard.press('Tab');
@@ -45,7 +45,7 @@ test.describe('accessibility', () => {
 	});
 
 	test('shows a visible focus indicator', async ({ page }) => {
-		await page.goto('/');
+		await page.goto(localeUrl());
 		const button = page.getByRole('button', { name: /Standort wählen/ });
 		await button.focus();
 		const style = await button.evaluate((el) => {
@@ -57,7 +57,7 @@ test.describe('accessibility', () => {
 	});
 
 	test('labels the language group', async ({ page }) => {
-		await page.goto('/');
+		await page.goto(localeUrl());
 		await expect(page.getByRole('group', { name: /Sprache/ })).toBeVisible();
 	});
 
@@ -93,7 +93,7 @@ test.describe('accessibility', () => {
 
 	test('keeps text legible against its background', async ({ page }) => {
 		// A coarse guard: body text must not be rendered in the background colour.
-		await page.goto('/');
+		await page.goto(localeUrl());
 		const { colour, background } = await page.evaluate(() => {
 			const el = document.querySelector('section.cd .cap')!;
 			return { colour: getComputedStyle(el).color, background: getComputedStyle(document.body).backgroundColor };
