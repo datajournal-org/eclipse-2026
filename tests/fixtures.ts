@@ -39,7 +39,11 @@ export const PHOTON = {
 type Fixtures = {
 	/** Serves tiles.versatiles.org from an on-disk cache. Automatic — see tileCache.ts for why. */
 	tileCache: void;
-	/** Every test gets the geocoder stubbed; opt out with the @live tag. */
+	/**
+	 * The geocoder, stubbed. Installed automatically for every test — leaving it opt-in meant the
+	 * no-network property held only as long as each new spec remembered to ask for it. Specs still call
+	 * it to choose a different body or status. Tests tagged `@live` get the real service instead.
+	 */
 	stubGeocoder: (body?: unknown, status?: number) => Promise<void>;
 	/** Load a language's page with a location already chosen, via the ?lat&lon debug override. */
 	locatedPage: (site: { lat: number; lon: number; name?: string }, lang?: string) => Promise<void>;
@@ -60,17 +64,25 @@ export const test = base.extend<Fixtures>({
 		{ auto: true }
 	],
 
-	stubGeocoder: async ({ page }, use) => {
-		let body: unknown = PHOTON.oviedo;
-		let status = 200;
-		await page.route(GEOCODER, (route) =>
-			route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
-		);
-		await use(async (nextBody = PHOTON.oviedo, nextStatus = 200) => {
-			body = nextBody;
-			status = nextStatus;
-		});
-	},
+	stubGeocoder: [
+		async ({ context }, use, testInfo) => {
+			// @live tests exercise the real Photon instance; anything else must not touch it.
+			if (testInfo.tags.includes('@live')) {
+				await use(async () => {});
+				return;
+			}
+			let body: unknown = PHOTON.oviedo;
+			let status = 200;
+			await context.route(GEOCODER, (route) =>
+				route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
+			);
+			await use(async (nextBody = PHOTON.oviedo, nextStatus = 200) => {
+				body = nextBody;
+				status = nextStatus;
+			});
+		},
+		{ auto: true }
+	],
 
 	locatedPage: async ({ page, stubGeocoder }, use) => {
 		await stubGeocoder();
