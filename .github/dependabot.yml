@@ -1,0 +1,43 @@
+# Dependabot keeps the toolchain current. Two ecosystems: the npm packages, and the actions pinned in
+# .github/workflows/ci.yml — the latter are easy to forget, and a deprecated action version is how a
+# working pipeline starts failing without anyone touching it.
+#
+# Every pull request here runs the full CI: five jobs, four of them macOS shards. So the grouping below
+# is deliberate — one pull request per group per week rather than one per package. Minor and patch bumps
+# travel together and are a single yes/no; majors are split out so a breaking change to Svelte, Vite or
+# MapLibre gets its own review and its own test run, rather than hiding inside a wall of version bumps.
+# That mirrors what `npm run upgrade` already does by hand (`ncu --target minor`).
+version: 2
+
+updates:
+   - package-ecosystem: npm
+     directory: /
+     schedule:
+        interval: weekly
+        day: monday
+        time: '06:00'
+        timezone: Europe/Berlin
+     open-pull-requests-limit: 5
+     # The repository uses conventional commits, so match it: `chore(deps): bump …`.
+     commit-message:
+        prefix: chore
+        prefix-development: chore
+        include: scope
+     groups:
+        npm:
+           patterns: ['*']
+     # Majors are intentionally left ungrouped, so each arrives as its own pull request.
+
+   - package-ecosystem: github-actions
+     directory: / # this is where Dependabot looks; it scans .github/workflows from here
+     schedule:
+        interval: monthly
+        timezone: Europe/Berlin
+     open-pull-requests-limit: 3
+     commit-message:
+        prefix: chore
+        include: scope
+     groups:
+        # Action majors are usually a digit change (checkout@v4 → @v5), so majors ride along here.
+        actions:
+           patterns: ['*']
