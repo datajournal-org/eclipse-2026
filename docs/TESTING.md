@@ -1,7 +1,7 @@
 # Testing
 
-**Status: implemented.** 589 Vitest tests (`npm run test:unit`, ~2 s) and 213 Playwright tests across four
-browser projects (`npm run test:e2e`, ~12 min). `npm run check` runs both. What follows is the plan the
+**Status: implemented.** 609 Vitest tests (`npm run test:unit`, ~2 s) and 319 Playwright tests across four
+browser projects (`npm run test:e2e`, ~1.5 min). `npm run check` runs both. What follows is the plan the
 suite was built from; §7 records where the implementation diverged from it and what the suite found.
 
 Two layers, no overlap:
@@ -437,3 +437,65 @@ Four are recorded by tests but left alone, because each needs a product decision
 Two more are documented in tests as deliberate behaviour rather than bugs: `radiusForCoverage(model, 1)`
 returns 0 rather than the umbra rim (every caller passes 0.999), and `sunMoonHorizon`'s `elevation`
 parameter models parallax only, not the ~1.8° horizon dip a mountain observer actually gains.
+
+---
+
+## 8. Making the browser suite fast
+
+The end-to-end suite went from 12.5 min to ~1.5 min through two changes, both of which are about the
+environment rather than the tests. Recorded here because both look like micro-optimisations and are not.
+
+### 8.1 A real GPU (`channel: 'chromium'`)
+
+Playwright's default headless chromium is `chrome-headless-shell`, a stripped binary with **no GPU stack at
+all** — so MapLibre could only obtain a WebGL context through SwiftShader, rasterising B3's terrain scene on
+the CPU. That is what pegged several cores per worker. `channel: 'chromium'` launches the full binary in
+new-headless mode, which reaches the real device. Measured on an M4 Pro, warm, repeated:
+
+| Configuration                | Renderer                   | B3 to `idle` |
+| ---------------------------- | -------------------------- | ------------ |
+| headless shell + SwiftShader | SwiftShader (software)     | 19–23 s      |
+| `channel: 'chromium'`        | ANGLE Metal — Apple M4 Pro | 1.3–1.5 s    |
+| … plus `--use-angle=metal`   | ANGLE Metal — Apple M4 Pro | 1.4–1.7 s    |
+| headed                       | ANGLE Metal — Apple M4 Pro | 1.9 s        |
+
+`--use-angle=metal` makes no measurable difference and is deliberately absent — a first, cold-cache
+measurement suggested it was 4× faster, which repeating disproved. `--enable-unsafe-swiftshader` is kept as
+a **fallback**: with a GPU present the renderer string stays ANGLE Metal, and without one (a typical Linux CI
+runner) it is what keeps WebGL available at all.
+
+Both `workers` and `timeout` are consequently CI-conditional. The worker cap and the 150 s timeout existed
+to survive software GL; locally the GPU handles the load, so the default worker count and a 60 s timeout
+give faster feedback while CI keeps its margins.
+
+### 8.2 An on-disk tile cache (`tests/tileCache.ts`)
+
+One located page load pulls ~66 objects / ~6.8 MB from `tiles.versatiles.org`. Across ~120 map-loading call
+sites that is thousands of requests per run for the same handful of tiles over Oviedo — slow, and impolite
+to a free community service that could reasonably rate-limit us.
+
+An auto fixture routes that host through `.cache/tiles/`, keyed on `sha1(method + url)`. It is incremental
+and self-healing, so there is no record/replay mode to keep in sync, and the suite runs offline once warm
+(verified: with `TILES_OFFLINE=1` turning every miss into an abort, both maps still reach `idle`).
+
+Four details that each cost a wrong turn:
+
+- **Strip `content-encoding`.** `route.fetch()` returns a decoded body and `fulfill` sets its own length, so
+  replaying the original encoding headers makes the browser try to gunzip plain bytes. Everything else is
+  preserved — CORS especially, without which these cross-origin responses are rejected outright.
+- **Store only 200s.** Caching a 404 would have permanently hidden the elevation-tile bug (§7 of
+  I18N-ROUTING.md). Errors go to the network every time.
+- **Tolerate tests ending mid-fetch.** A test can finish while tiles are in flight; the context closes, the
+  `APIResponse` is disposed, and `body()`/`fulfill()` reject — which Playwright charges to the test that just
+  passed. Symptom: six failures whose _identity changed between runs_. `ignoreIfGone()` swallows exactly
+  those two error shapes and re-throws everything else.
+- **`TILES_NOCACHE=1` bypasses it**, so a nightly `@live` job still notices upstream changes that a warm
+  cache would mask. A stale cache hides breakage the same way a stale mock does.
+
+`.cache/` is git-ignored; CI should restore it via `actions/cache` rather than commit binary tiles.
+
+### 8.3 What the speed itself exposed
+
+The disposal race above was latent in the cache from the moment it was written, and only became reachable
+once the suite was fast enough for tests to routinely end with requests outstanding. Worth remembering when
+reading a green suite as evidence: a slow suite can hide races that a fast one surfaces immediately.

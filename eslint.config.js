@@ -11,6 +11,7 @@ export default ts.config(
 		ignores: [
 			'.svelte-kit/',
 			'build/',
+			'.cache/',
 			'coverage/',
 			'test-results/',
 			'playwright-report/',

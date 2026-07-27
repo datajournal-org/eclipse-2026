@@ -35,6 +35,7 @@
 		"@sveltejs/kit": "^2.70.1",
 		"@sveltejs/vite-plugin-svelte": "^7.2.0",
 		"@types/geojson": "^7946.0.16",
+		"@types/node": "^26.1.1",
 		"@vitest/coverage-v8": "^4.1.10",
 		"eslint": "^10.8.0",
 		"eslint-config-prettier": "^10.1.8",

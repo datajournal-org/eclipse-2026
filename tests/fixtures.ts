@@ -1,4 +1,5 @@
 import { test as base, expect, type Page, type Locator } from '@playwright/test';
+import { installTileCache } from './tileCache';
 import { REFERENCE, GREATEST, byName, type ReferenceSite } from '../src/lib/testing/reference';
 
 export { expect, REFERENCE, GREATEST, byName };
@@ -36,6 +37,8 @@ export const PHOTON = {
 };
 
 type Fixtures = {
+	/** Serves tiles.versatiles.org from an on-disk cache. Automatic — see tileCache.ts for why. */
+	tileCache: void;
 	/** Every test gets the geocoder stubbed; opt out with the @live tag. */
 	stubGeocoder: (body?: unknown, status?: number) => Promise<void>;
 	/** Load a language's page with a location already chosen, via the ?lat&lon debug override. */
@@ -47,6 +50,16 @@ type Fixtures = {
 };
 
 export const test = base.extend<Fixtures>({
+	// `auto` so no spec has to remember it: the point is that the whole suite stops re-downloading the
+	// same tiles. Installed on the context, so page-level routes in specs still take precedence.
+	tileCache: [
+		async ({ context }, use) => {
+			await installTileCache(context);
+			await use();
+		},
+		{ auto: true }
+	],
+
 	stubGeocoder: async ({ page }, use) => {
 		let body: unknown = PHOTON.oviedo;
 		let status = 200;

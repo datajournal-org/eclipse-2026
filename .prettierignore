@@ -11,3 +11,4 @@ src/lib/shadow-globe/corridor.generated.ts
 
 # editor-local, ignored by git too
 *.code-workspace
+/.cache/
