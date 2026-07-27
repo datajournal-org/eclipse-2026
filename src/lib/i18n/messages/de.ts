@@ -1,7 +1,14 @@
 // German — the reference locale. Its shape defines the `Messages` type that en.ts and es.ts must match,
 // so a missing or misspelled key in any locale is a compile error.
 const messages = {
-	app: { title: 'Eclipse 2026', tagline: '12. August 2026' },
+	app: {
+		title: 'Eclipse 2026',
+		tagline: '12. August 2026',
+		page_title: 'Sonnenfinsternis am 12. August 2026',
+		page_description:
+			'Die erste totale Sonnenfinsternis über Europa seit 1999. Sieh, wie viel von der Sonne an deinem Ort bedeckt wird.',
+		og_image_alt: 'Die verfinsterte Sonne mit sichtbarer Korona'
+	},
 	nav: { about: 'Über', language: 'Sprache' },
 	countdown: {
 		to_totality: 'bis zur totalen Sonnenfinsternis',

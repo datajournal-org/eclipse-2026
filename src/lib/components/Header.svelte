@@ -1,5 +1,14 @@
 <script lang="ts">
-	import { t, locale, setLocale, LOCALES, LOCALE_NAMES } from '$lib/i18n';
+	import { resolve } from '$app/paths';
+	import { t, locale, LOCALES, LOCALE_NAMES } from '$lib/i18n';
+
+	// Switching language is navigation now, not state: each language is its own prerendered URL. The
+	// links carry no query string — prerendered markup may not depend on one — which costs nothing real:
+	// ?lat=&lon= is a debug override, and the reader's actual location lives in localStorage and survives
+	// the navigation either way.
+	//
+	// The trailing slash is appended by hand: `resolve` applies `base` but knows nothing about the
+	// `trailingSlash` page option, and a link to /de would not match the /de/ canonical.
 </script>
 
 <header class="hdr">
@@ -9,11 +18,12 @@
 	</div>
 	<div class="langs" role="group" aria-label={$t('nav.language')}>
 		{#each LOCALES as l (l)}
-			<button
+			<a
 				class:active={$locale === l}
-				aria-pressed={$locale === l}
-				title={LOCALE_NAMES[l]}
-				onclick={() => setLocale(l)}>{l.toUpperCase()}</button
+				aria-current={$locale === l ? 'true' : undefined}
+				href={`${resolve('/[lang]', { lang: l })}/`}
+				hreflang={l}
+				title={LOCALE_NAMES[l]}>{l.toUpperCase()}</a
 			>
 		{/each}
 	</div>
@@ -49,12 +59,13 @@
 		display: flex;
 		gap: 4px;
 
-		button {
+		a {
 			padding: 4px 8px;
 			font-size: 0.78rem;
 			font-weight: 600;
 			border-radius: 8px;
 			color: var(--muted);
+			text-decoration: none;
 
 			&.active {
 				color: var(--bg);

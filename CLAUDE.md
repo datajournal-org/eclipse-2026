@@ -10,6 +10,7 @@ static files to bunny.net. All personalisation — chosen location, maps, countd
 - [Concept](./docs/CONCEPT.md) — product concept and goals.
 - [Wireframes](./docs/WIREFRAMES.md) — screen layouts (source: `docs/wireframes.html`).
 - [Test plan](./docs/TESTING.md) — Vitest for `src/lib` modules, Playwright for UI and interactions.
+- [i18n routing](./docs/I18N-ROUTING.md) — proposed per-locale URLs and SEO metadata (not built yet).
 
 ## Working notes
 

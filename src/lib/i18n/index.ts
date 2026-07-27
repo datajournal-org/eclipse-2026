@@ -10,53 +10,59 @@ export type Locale = (typeof LOCALES)[number];
 
 const DICTS: Record<Locale, Messages> = { de, en, es };
 export const LOCALE_NAMES: Record<Locale, string> = { de: 'Deutsch', en: 'English', es: 'Español' };
-const DEFAULT: Locale = 'de';
 
-function isLocale(x: string): x is Locale {
-	return (LOCALES as readonly string[]).includes(x);
+/**
+ * The language the bare root (`/eclipse-2026/`) serves, and the fallback for any reader whose language
+ * we do not have. English, because the root is the international entry point — see docs/I18N-ROUTING.md.
+ */
+export const DEFAULT_LOCALE: Locale = 'en';
+
+/** Open Graph wants full territory codes, not the bare language tags used in the URLs. */
+export const OG_LOCALE: Record<Locale, string> = { de: 'de_DE', en: 'en_GB', es: 'es_ES' };
+
+export function isLocale(x: string | null | undefined): x is Locale {
+	return !!x && (LOCALES as readonly string[]).includes(x);
 }
 
 /** Resolve a BCP-47 tag (e.g. "en-GB") to a supported locale, or null. */
-function match(tag: string | null | undefined): Locale | null {
+export function match(tag: string | null | undefined): Locale | null {
 	if (!tag) return null;
 	const base = tag.toLowerCase().split('-')[0];
 	return isLocale(base) ? base : null;
 }
 
-/** Detect from localStorage, then browser languages, else default. */
-function detect(): Locale {
-	if (!browser) return DEFAULT;
-	try {
-		const m = match(localStorage.getItem('locale'));
-		if (m) return m;
-	} catch {
-		/* ignore */
-	}
-	for (const tag of navigator.languages ?? [navigator.language]) {
-		const m = match(tag);
-		if (m) return m;
-	}
-	return DEFAULT;
+/**
+ * Pick a language for a reader with no language in the URL: their stored choice first, then their
+ * browser's preference order, else the default.
+ *
+ * Kept pure and exported because the redirect that actually uses it runs as an inline script in
+ * app.html — before the bundle loads — and this is the version the tests exercise. The two are held in
+ * step by a test that reads app.html and checks the language list matches LOCALES.
+ */
+export function detectLocale(stored: string | null | undefined, languages: readonly string[]): Locale {
+	return match(stored) ?? languages.map(match).find(Boolean) ?? DEFAULT_LOCALE;
 }
 
-export const locale = writable<Locale>(DEFAULT);
+/**
+ * The active language. The URL owns it — the layout sets this from the route parameter on every
+ * navigation — so this store is a read-mostly mirror rather than the source of truth.
+ */
+export const locale = writable<Locale>(DEFAULT_LOCALE);
 
-/** Call once on the client (in the root layout onMount). */
-export function initLocale() {
-	setLocale(detect());
-}
-
-export function setLocale(l: Locale) {
+/**
+ * Mirror the route's language into the store, remember it for the next visit to the bare root, and keep
+ * <html lang> in step (the server hook only runs at prerender time, not on a client-side navigation).
+ */
+export function applyLocale(l: Locale) {
 	if (!isLocale(l)) return;
 	locale.set(l);
-	if (browser) {
-		try {
-			localStorage.setItem('locale', l);
-		} catch {
-			/* ignore */
-		}
-		document.documentElement.lang = l;
+	if (!browser) return;
+	try {
+		localStorage.setItem('locale', l);
+	} catch {
+		/* ignore — Safari private mode */
 	}
+	document.documentElement.lang = l;
 }
 
 function lookup(dict: unknown, key: string): string | undefined {

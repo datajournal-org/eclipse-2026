@@ -1,18 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { get } from 'svelte/store';
+import { detectLocale } from './index';
 import de from './messages/de';
 import en from './messages/en';
 import es from './messages/es';
 
 /** Fresh module instance — `locale` is module state and `initLocale` reads the environment once. */
-async function load(opts: { stored?: string | null; languages?: string[] } = {}) {
+async function load(opts: { stored?: string | null } = {}) {
 	vi.resetModules();
 	localStorage.clear();
 	if (opts.stored != null) localStorage.setItem('locale', opts.stored);
-	if (opts.languages) {
-		vi.spyOn(navigator, 'languages', 'get').mockReturnValue(opts.languages);
-		vi.spyOn(navigator, 'language', 'get').mockReturnValue(opts.languages[0]);
-	}
 	return await import('./index');
 }
 
@@ -22,100 +19,78 @@ beforeEach(() => {
 	vi.restoreAllMocks();
 });
 
-describe('locale detection', () => {
-	it('defaults to German', async () => {
-		const { locale } = await load();
-		expect(get(locale)).toBe('de');
+describe('detectLocale', () => {
+	// The URL owns the language now; this function only decides where the bare ROOT sends a reader.
+	it('prefers a stored choice over the browser languages', () => {
+		expect(detectLocale('es', ['en-GB', 'de'])).toBe('es');
 	});
 
-	it('prefers a stored choice over the browser languages', async () => {
-		const { locale, initLocale } = await load({ stored: 'es', languages: ['en-GB'] });
-		initLocale();
-		expect(get(locale)).toBe('es');
+	it('falls back to the browser languages in order', () => {
+		expect(detectLocale(null, ['en-GB', 'de'])).toBe('en');
+		expect(detectLocale(null, ['de-AT', 'en'])).toBe('de');
 	});
 
-	it('falls back to the browser languages', async () => {
-		const { locale, initLocale } = await load({ languages: ['en-GB', 'de'] });
-		initLocale();
-		expect(get(locale)).toBe('en');
+	it('resolves a regional tag to its base language', () => {
+		expect(detectLocale(null, ['es-419'])).toBe('es');
 	});
 
-	it('resolves a regional tag to its base language', async () => {
-		const { locale, initLocale } = await load({ languages: ['es-419'] });
-		initLocale();
-		expect(get(locale)).toBe('es');
+	it('skips languages we do not have', () => {
+		expect(detectLocale(null, ['fr-FR', 'it', 'es-ES'])).toBe('es');
 	});
 
-	it('skips unsupported languages and takes the first supported one', async () => {
-		const { locale, initLocale } = await load({ languages: ['fr-FR', 'it', 'es-ES'] });
-		initLocale();
-		expect(get(locale)).toBe('es');
+	it('falls back to English when nothing matches', () => {
+		// English, not German: the root is the international entry point.
+		expect(detectLocale(null, ['fr-FR', 'ja'])).toBe('en');
+		expect(detectLocale(null, [])).toBe('en');
 	});
 
-	it('falls back to German when nothing matches', async () => {
-		const { locale, initLocale } = await load({ languages: ['fr-FR', 'ja'] });
-		initLocale();
-		expect(get(locale)).toBe('de');
-	});
-
-	it('ignores an unsupported stored value', async () => {
-		const { locale, initLocale } = await load({ stored: 'fr', languages: ['en'] });
-		initLocale();
-		expect(get(locale)).toBe('en');
-	});
-
-	it('survives a localStorage that throws', async () => {
-		vi.resetModules();
-		vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-			throw new DOMException('denied');
-		});
-		vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en']);
-		const { locale, initLocale } = await import('./index');
-		expect(() => initLocale()).not.toThrow();
-		expect(get(locale)).toBe('en');
+	it('ignores a stored language we no longer support', () => {
+		expect(detectLocale('fr', ['de'])).toBe('de');
 	});
 });
 
-describe('setLocale', () => {
-	it('switches the active locale', async () => {
-		const { locale, setLocale } = await load();
-		setLocale('es');
+describe('applyLocale', () => {
+	it('mirrors the route language into the store', async () => {
+		const { locale, applyLocale } = await load();
+		applyLocale('es');
 		expect(get(locale)).toBe('es');
 	});
 
-	it('persists the choice', async () => {
-		const { setLocale } = await load();
-		setLocale('en');
+	it('remembers it for the next visit to the root', async () => {
+		const { applyLocale } = await load();
+		applyLocale('en');
 		expect(localStorage.getItem('locale')).toBe('en');
 	});
 
-	it('updates the document language for screen readers and hyphenation', async () => {
-		const { setLocale } = await load();
-		setLocale('es');
+	it('keeps <html lang> in step after a client-side navigation', async () => {
+		// The server hook only runs at prerender time, so this is what fixes the attribute on a switch.
+		const { applyLocale } = await load();
+		applyLocale('es');
 		expect(document.documentElement.lang).toBe('es');
 	});
 
 	it('ignores an unknown tag rather than blanking the UI', async () => {
-		const { locale, setLocale } = await load();
-		setLocale('fr' as 'de');
-		expect(get(locale)).toBe('de');
+		const { locale, applyLocale } = await load();
+		applyLocale('fr' as 'de');
+		expect(get(locale)).toBe('en');
 		expect(localStorage.getItem('locale')).toBeNull();
 	});
 
 	it('survives a localStorage that throws on write', async () => {
-		const { locale, setLocale } = await load();
+		const { locale, applyLocale } = await load();
 		vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
 			throw new DOMException('QuotaExceededError');
 		});
-		expect(() => setLocale('en')).not.toThrow();
+		expect(() => applyLocale('en')).not.toThrow();
 		expect(get(locale)).toBe('en');
-		expect(document.documentElement.lang).toBe('en'); // the lang attribute is still set
+		expect(document.documentElement.lang).toBe('en');
 	});
 });
 
 describe('t', () => {
 	it('translates in the active locale', async () => {
-		const { t, setLocale } = await load();
+		const { t, applyLocale: setLocale } = await load();
+		setLocale('de');
 		expect(get(t)('a2.title')).toBe('Schattenlauf');
 		setLocale('en');
 		expect(get(t)('a2.title')).toBe(en.a2.title);
@@ -158,8 +133,9 @@ describe('t', () => {
 	});
 
 	it('is reactive: the same $t call re-renders after a locale switch', async () => {
-		const { t, setLocale } = await load();
+		const { t, applyLocale: setLocale } = await load();
 		const seen: string[] = [];
+		setLocale('de');
 		const unsub = t.subscribe((translate) => seen.push(translate('a2.title')));
 		setLocale('en');
 		unsub();
@@ -210,14 +186,16 @@ describe('fmt', () => {
 	const instant = new Date('2026-08-12T18:08:00Z');
 
 	it('formats times in the active locale', async () => {
-		const { fmt, setLocale } = await load();
+		const { fmt, applyLocale: setLocale } = await load();
+		setLocale('de');
 		expect(get(fmt).time(instant)).toMatch(/\d{2}:\d{2}/);
 		setLocale('en');
 		expect(get(fmt).time(instant)).toMatch(/\d{1,2}:\d{2}/);
 	});
 
 	it('formats dates differently per locale', async () => {
-		const { fmt, setLocale } = await load();
+		const { fmt, applyLocale: setLocale } = await load();
+		setLocale('de');
 		const german = get(fmt).date(instant);
 		setLocale('en');
 		const english = get(fmt).date(instant);
@@ -227,14 +205,16 @@ describe('fmt', () => {
 	});
 
 	it('formats numbers with locale separators', async () => {
-		const { fmt, setLocale } = await load();
+		const { fmt, applyLocale: setLocale } = await load();
+		setLocale('de');
 		expect(get(fmt).num(1234.5)).toBe('1.234,5');
 		setLocale('en');
 		expect(get(fmt).num(1234.5)).toBe('1,234.5');
 	});
 
 	it('passes Intl options through', async () => {
-		const { fmt } = await load();
+		const { fmt, applyLocale } = await load();
+		applyLocale('de');
 		expect(get(fmt).num(0.848, { style: 'percent', maximumFractionDigits: 1 })).toContain('84,8');
 	});
 

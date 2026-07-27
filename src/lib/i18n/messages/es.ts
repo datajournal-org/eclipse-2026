@@ -2,7 +2,14 @@ import type { Messages } from './de';
 
 // Typed against the German reference: a missing or misspelled key is a compile error.
 const messages: Messages = {
-	app: { title: 'Eclipse 2026', tagline: '12 de agosto de 2026' },
+	app: {
+		title: 'Eclipse 2026',
+		tagline: '12 de agosto de 2026',
+		page_title: 'Eclipse solar del 12 de agosto de 2026',
+		page_description:
+			'El primer eclipse solar total sobre Europa desde 1999. Mira cuánto del Sol se cubre en tu ubicación.',
+		og_image_alt: 'El Sol eclipsado con su corona visible'
+	},
 	nav: { about: 'Acerca de', language: 'Idioma' },
 	countdown: {
 		to_totality: 'para el eclipse solar total',

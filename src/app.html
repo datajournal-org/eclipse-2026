@@ -1,14 +1,41 @@
 <!doctype html>
-<html lang="de" data-theme="dark">
+<html lang="%lang%" data-theme="dark">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="theme-color" content="#05070d" />
-		<meta
-			name="description"
-			content="Sonnenfinsternis am 12. August 2026 — bereite dich auf die erste totale Sonnenfinsternis über Europa seit 1999 vor."
-		/>
+		<script>
+			// Language dispatch for the bare root. Runs before first paint, so a reader never sees the
+			// English fallback flash past on the way to their own language. Deliberately NOT a redirect at
+			// the CDN: crawlers must be able to fetch this root and read its default-language metadata, and
+			// an edge rule that redirected humans but not bots would be User-Agent cloaking.
+			//
+			// The language list is duplicated from $lib/i18n (this has to run before the bundle loads); a
+			// unit test reads this file and asserts the two stay in step.
+			(function () {
+				var LOCALES = ['de', 'en', 'es'];
+				var base = '/eclipse-2026';
+				// Only ever fires on the root itself, so /de/ and friends can never loop back here.
+				if (location.pathname !== base + '/' && location.pathname !== base) return;
+				var match = function (tag) {
+					var b = tag && tag.toLowerCase().split('-')[0];
+					return LOCALES.indexOf(b) >= 0 ? b : null;
+				};
+				var stored = null;
+				try {
+					stored = localStorage.getItem('locale');
+				} catch (e) {
+					/* Safari private mode — fall through to the browser's languages */
+				}
+				var picked = match(stored);
+				var langs = navigator.languages || [navigator.language];
+				for (var i = 0; !picked && i < langs.length; i++) picked = match(langs[i]);
+				// `replace`, not `assign`: the root must not sit in the back stack, or Back from /de/ would
+				// bounce straight forward again. Query and hash carry over so ?lat=&lon= survives.
+				location.replace(base + '/' + (picked || 'en') + '/' + location.search + location.hash);
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

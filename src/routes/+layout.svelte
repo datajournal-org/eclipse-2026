@@ -5,16 +5,33 @@
 	import 'open-props/easings';
 	import '../app.css';
 	import { onMount, type Snippet } from 'svelte';
-	import { initLocale } from '$lib/i18n';
+	import { page } from '$app/state';
+	import { base } from '$app/paths';
+	import { applyLocale, isLocale, t, locale, LOCALES, OG_LOCALE, DEFAULT_LOCALE } from '$lib/i18n';
+	import { SITE_URL } from '$lib/config';
 	import Header from '$lib/components/Header.svelte';
 
 	let { children }: { children: Snippet } = $props();
 
+	// The URL owns the language. On the bare root there is no parameter, so the default applies — that is
+	// the page crawlers see, and its metadata has to be the default language's.
+	const routeLocale = $derived(isLocale(page.params.lang) ? page.params.lang : DEFAULT_LOCALE);
+	// Set synchronously as well as reactively: effects do not run during prerendering, and without the
+	// synchronous call every prerendered page would ship the DEFAULT language's metadata — which is the
+	// one thing crawlers read. The effect then covers client-side navigations (the language switcher).
+	// Reading it once here is the point: this call is what runs during prerendering, where effects never
+	// fire. The effect below owns every subsequent change.
+	// svelte-ignore state_referenced_locally
+	applyLocale(routeLocale);
+	$effect(() => applyLocale(routeLocale));
+
+	/** Absolute URL of a language's page — hreflang and canonical are ignored unless absolute. */
+	const href = (l: string) => `${SITE_URL}${base}/${l}/`;
+	const canonical = $derived(`${SITE_URL}${base}/${routeLocale}/`);
+
 	const SCROLL_KEY = 'eclipse.scroll';
 
 	onMount(() => {
-		initLocale();
-
 		// Manual scroll restoration. The located "B" state renders on the client, so on a reload the page
 		// grows past the prerendered "A" shell only AFTER SvelteKit has already restored the scroll against
 		// the short shell — landing too high. We restore it ourselves once the real layout is in place.
@@ -64,6 +81,34 @@
 		};
 	});
 </script>
+
+<svelte:head>
+	<title>{$t('app.page_title')}</title>
+	<meta name="description" content={$t('app.page_description')} />
+	<link rel="canonical" href={canonical} />
+
+	<meta property="og:title" content={$t('app.page_title')} />
+	<meta property="og:description" content={$t('app.page_description')} />
+	<meta property="og:url" content={canonical} />
+	<meta property="og:type" content="website" />
+	<meta property="og:site_name" content={$t('app.title')} />
+	<meta property="og:locale" content={OG_LOCALE[$locale]} />
+	{#each LOCALES.filter((l) => l !== $locale) as other (other)}
+		<meta property="og:locale:alternate" content={OG_LOCALE[other]} />
+	{/each}
+
+	<!-- Reciprocal and absolute, generated from one list: a single relative or one-way annotation
+	     silently invalidates the whole set. x-default is the root, which is what dispatches readers
+	     whose language we do not have. -->
+	{#each LOCALES as l (l)}
+		<link rel="alternate" hreflang={l} href={href(l)} />
+	{/each}
+	<link rel="alternate" hreflang="x-default" href={`${SITE_URL}${base}/`} />
+
+	<!-- twitter:card stays `summary` until a 1200×630 og:image exists; `summary_large_image` without a
+	     valid image renders worse than no card at all. -->
+	<meta name="twitter:card" content="summary" />
+</svelte:head>
 
 <div class="app">
 	<Header />

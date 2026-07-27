@@ -1,5 +1,11 @@
 // Central configuration for the eclipse app — the single place to tweak the event and the animation.
 
+/**
+ * Production origin. `hreflang`, `canonical` and the Open Graph URLs are ignored by crawlers unless they
+ * are absolute, so every one of them is built from this constant (plus `base` from `$app/paths`).
+ */
+export const SITE_URL = 'https://datajournal.org';
+
 /** Date of the total solar eclipse. Single source of truth for the event day. */
 export const ECLIPSE_DATE = '2026-08-12';
 
