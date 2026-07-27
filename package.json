@@ -7,7 +7,7 @@
 		"dev": "vite dev",
 		"dev:https": "DEV_HTTPS=1 vite dev",
 		"cert": "./scripts/dev-cert.sh",
-		"corridor": "tsx scripts/build-corridor.ts",
+		"corridor": "svelte-kit sync && tsx scripts/build-corridor.ts",
 		"prebuild": "npm run corridor",
 		"build": "vite build",
 		"preview": "vite preview",
