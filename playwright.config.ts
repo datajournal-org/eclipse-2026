@@ -15,8 +15,9 @@ export default defineConfig({
 	// specs fail purely from contention.
 	fullyParallel: false,
 	workers: process.env.CI ? 2 : 3,
-	// WebGL specs build a terrain scene under software GL; B3 reaches `idle` in ~10 s locally.
-	timeout: 90_000,
+	// WebGL specs build a terrain scene under software GL and then drive dozens of frames through it.
+	// B3 reaches `idle` in ~10 s on an idle machine, but several times that while workers contend.
+	timeout: 150_000,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
 	grepInvert: process.env.PWLIVE ? undefined : /@live/,

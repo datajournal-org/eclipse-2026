@@ -63,3 +63,21 @@ describe('app.html', () => {
 		expect(appHtml).not.toContain('name="description"');
 	});
 });
+
+describe('base-path discipline', () => {
+	// The site is served under /eclipse-2026/, so a root-absolute asset URL resolves against the origin
+	// root and 404s. The corona overlay shipped exactly that bug; `asset()` from $app/paths is the fix.
+	// Cheap structural check — the E2E console-error assertion is what catches it in the running app.
+	const sources = Object.entries(
+		import.meta.glob('../components/*.svelte', { query: '?raw', import: 'default', eager: true })
+	) as [string, string][];
+
+	it('finds no root-absolute src/href to a static file in any component', () => {
+		const offenders = sources.flatMap(([file, code]) =>
+			[...code.matchAll(/(?:src|href)=["']\/(?!\/)[^"']*\.(?:webp|png|jpe?g|svg|json|ico|woff2?)["']/g)].map(
+				(m) => `${file}: ${m[0]}`
+			)
+		);
+		expect(offenders).toEqual([]);
+	});
+});

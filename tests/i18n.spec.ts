@@ -1,9 +1,15 @@
 import { test, expect, byName, localeUrl, BASE } from './fixtures';
 
+// Titles come from the catalogues rather than being repeated here: the copy is expected to change, and a
+// copy edit should not fail a routing test.
+import de from '../src/lib/i18n/messages/de';
+import en from '../src/lib/i18n/messages/en';
+import es from '../src/lib/i18n/messages/es';
+
 const LANGS = {
-	de: { a2: 'Schattenlauf', title: 'Sonnenfinsternis am 12. August 2026' },
-	en: { a2: 'Shadow run', title: 'Solar eclipse on 12 August 2026' },
-	es: { a2: 'Recorrido de la sombra', title: 'Eclipse solar del 12 de agosto de 2026' }
+	de: { a2: de.a2.title, title: de.app.page_title },
+	en: { a2: en.a2.title, title: en.app.page_title },
+	es: { a2: es.a2.title, title: es.app.page_title }
 };
 
 test.describe('language switching @i18n', () => {
@@ -87,8 +93,11 @@ test.describe('language switching @i18n', () => {
 	});
 
 	test('names the reader’s own time zone', async ({ page }) => {
+		// Assert the IANA zone, not an abbreviation: the note renders both, and the abbreviation's form
+		// depends on the PAGE's language ("MESZ" in German, "UTC-4" for New York in German, "EDT" in
+		// English). Since the URL owns the language now, the browser's locale no longer changes it.
 		await page.goto(localeUrl());
-		const zone = test.info().project.name === 'chromium-en' ? /EDT|GMT-4/ : /MESZ|GMT\+2/;
+		const zone = test.info().project.name === 'chromium-en' ? 'America/New_York' : 'Europe/Berlin';
 		await expect(page.locator('.tz-note')).toContainText(zone);
 	});
 

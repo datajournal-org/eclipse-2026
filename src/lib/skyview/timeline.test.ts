@@ -36,10 +36,11 @@ describe('buildTimeline', () => {
 
 	it('opens at maximum for a shallow eclipse', () => {
 		// Below the 90 % threshold the peak is the most interesting frame, so that's where it opens.
-		const ATHENS = { lat: 37.9838, lon: 23.7275 };
-		const shallow = localCircumstances(ATHENS.lat, ATHENS.lon)!;
+		// Berlin, not somewhere further out: a location the 2026 eclipse misses now returns null, by design.
+		const site = byName('Berlin');
+		const shallow = localCircumstances(site.lat, site.lon)!;
 		expect(shallow.obscuration).toBeLessThan(0.9);
-		const { times, startFrame } = buildTimeline(ATHENS.lat, ATHENS.lon, shallow);
+		const { times, startFrame } = buildTimeline(site.lat, site.lon, shallow);
 		expect(Math.abs(times[startFrame] - shallow.peak!.time.getTime())).toBeLessThan(60_000);
 	});
 

@@ -6,6 +6,7 @@ import {
 	greatestEclipse,
 	sunMoonHorizon,
 	localCircumstances,
+	nextEclipseHere,
 	sunset
 } from './eclipse';
 import { TIMELINE_START, TIMELINE_END, FRAME_STEP_MS } from './config';
@@ -288,13 +289,75 @@ describe('localCircumstances', () => {
 		}
 	});
 
-	it('finds a later eclipse for locations this one misses', () => {
-		// Documented behaviour, not an endorsement: SearchLocalSolarEclipse scans FORWARD from eclipse
-		// day, so a location outside the 2026 event silently gets the next one it can see. Callers that
-		// care must compare the returned date against ECLIPSE_DATE.
-		const sydney = localCircumstances(-33.8688, 151.2093);
+	it.each([
+		['Sydney', -33.8688, 151.2093],
+		['Tokyo', 35.6762, 139.6503],
+		['Buenos Aires', -34.6037, -58.3816],
+		['Nairobi', -1.2921, 36.8219],
+		['Cape Town', -33.9249, 18.4241],
+		['Athens', 37.9838, 23.7275]
+	])('returns null for %s, which this eclipse misses', (_name, lat, lon) => {
+		// SearchLocalSolarEclipse scans FORWARD until it finds an eclipse the observer can see, so without
+		// a guard these locations get a *different* eclipse — and every consumer would render it as this
+		// one, complete with a time-only "Maximum um …" that hides the year.
+		expect(localCircumstances(lat, lon)).toBeNull();
+	});
+
+	it('only ever returns an eclipse on eclipse day', () => {
+		// Sweep the globe: whatever comes back must be THIS event.
+		for (let lat = -80; lat <= 80; lat += 20) {
+			for (let lon = -180; lon < 180; lon += 30) {
+				const c = localCircumstances(lat, lon);
+				if (!c) continue;
+				expect(c.peak!.time.toISOString().slice(0, 10), `${lat}/${lon}`).toBe(ECLIPSE_DATE);
+			}
+		}
+	});
+
+	it('keeps every location the eclipse does reach', () => {
+		// The guard must not be so tight that it drops real viewers — including one where the maximum
+		// happens below the horizon (Moscow), which is a different kind of "not visible".
+		for (const site of REFERENCE) expect(localCircumstances(site.lat, site.lon), site.name).not.toBeNull();
+		expect(localCircumstances(40.7128, -74.006), 'New York').not.toBeNull(); // 9 %, the shallow edge
+		expect(localCircumstances(55.7558, 37.6173), 'Moscow').not.toBeNull(); // maximum below the horizon
+	});
+});
+
+describe('nextEclipseHere', () => {
+	it('returns the 2026 event for a location on the path', () => {
+		const site = byName('Oviedo');
+		const next = nextEclipseHere(site.lat, site.lon)!;
+		expect(hhmmUtc(next.peak!.time)).toBe(site.maxUtc);
+		expect(next.peak!.time.toISOString().slice(0, 10)).toBe(ECLIPSE_DATE);
+	});
+
+	it('returns a later eclipse where 2026 is not visible', () => {
+		// The escape hatch: the data localCircumstances now refuses to return, available on request so a
+		// visitor outside Europe can be told what they *would* see instead.
+		const sydney = nextEclipseHere(-33.8688, 151.2093)!;
 		expect(sydney).not.toBeNull();
-		expect(sydney!.peak!.time.toISOString().slice(0, 10)).not.toBe(ECLIPSE_DATE);
+		expect(sydney.peak!.time.toISOString().slice(0, 10)).toBe('2028-07-22');
+		expect(sydney.kind).toBe('total');
+	});
+
+	it('never looks backwards', () => {
+		for (const [lat, lon] of [
+			[-33.8688, 151.2093],
+			[35.6762, 139.6503],
+			[0, 0]
+		]) {
+			const next = nextEclipseHere(lat, lon)!;
+			expect(next.peak!.time.getTime()).toBeGreaterThanOrEqual(Date.parse(`${ECLIPSE_DATE}T00:00:00Z`));
+		}
+	});
+
+	it('agrees with localCircumstances wherever this eclipse is visible', () => {
+		for (const site of REFERENCE) {
+			const guarded = localCircumstances(site.lat, site.lon)!;
+			const next = nextEclipseHere(site.lat, site.lon)!;
+			expect(next.obscuration, site.name).toBe(guarded.obscuration);
+			expect(next.peak!.time.getTime(), site.name).toBe(guarded.peak!.time.getTime());
+		}
 	});
 });
 

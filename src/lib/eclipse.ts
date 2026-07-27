@@ -107,8 +107,22 @@ export function sunMoonHorizon(lat: number, lon: number, date: Date, elevation =
 	return out;
 }
 
-/** Local circumstances: contact times, altitudes, obscuration for an observer. */
-export function localCircumstances(lat: number, lon: number, elevation = 0) {
+export type LocalCircumstances = {
+	kind: string;
+	obscuration: number;
+	partialBegin: { time: Date; alt: number } | null;
+	totalBegin: { time: Date; alt: number } | null;
+	peak: { time: Date; alt: number } | null;
+	totalEnd: { time: Date; alt: number } | null;
+	partialEnd: { time: Date; alt: number } | null;
+};
+
+/**
+ * `SearchLocalSolarEclipse` scans FORWARD from its start time until it finds an eclipse the observer can
+ * actually see. For anywhere the 2026 event misses, that is a *different eclipse* — Sydney gets 2028,
+ * Tokyo 2030 — so the raw result cannot be shown as "your eclipse" without checking which one it is.
+ */
+function searchLocalEclipse(lat: number, lon: number, elevation: number): LocalCircumstances | null {
 	const obs = new A.Observer(lat, lon, elevation);
 	const start = A.MakeTime(new Date(ECLIPSE_DATE + 'T00:00:00Z'));
 	let e: A.LocalSolarEclipseInfo;
@@ -127,6 +141,39 @@ export function localCircumstances(lat: number, lon: number, elevation = 0) {
 		totalEnd: ev(e.total_end),
 		partialEnd: ev(e.partial_end)
 	};
+}
+
+// Greatest eclipse is a fixed instant; the search behind it costs a couple of ms, so resolve it once.
+let greatestPeakMs: number | null = null;
+const greatestPeak = () => (greatestPeakMs ??= greatestEclipse().date.getTime());
+
+/**
+ * A local peak is within ~2 h of greatest eclipse, and the nearest other solar eclipse is ~half a year
+ * away — so a day is a wide margin that cannot confuse two events. Comparing against the instant rather
+ * than the UTC date also holds if a future event's local peaks were to straddle midnight.
+ */
+const SAME_ECLIPSE_WINDOW_MS = 24 * 3600_000;
+
+/**
+ * Local circumstances of **the 2026 eclipse** for an observer: contact times, altitudes, obscuration.
+ * `null` when this eclipse is not visible from there at all — see `nextEclipseHere` for what that
+ * observer would see instead.
+ */
+export function localCircumstances(lat: number, lon: number, elevation = 0): LocalCircumstances | null {
+	const found = searchLocalEclipse(lat, lon, elevation);
+	if (!found?.peak) return null;
+	// The guard that keeps a different eclipse from being presented as this one.
+	if (Math.abs(found.peak.time.getTime() - greatestPeak()) > SAME_ECLIPSE_WINDOW_MS) return null;
+	return found;
+}
+
+/**
+ * The next solar eclipse visible from this location at or after eclipse day — which for anywhere on the
+ * 2026 path is the 2026 event itself, and elsewhere is a later one. Read `peak.time` for the date; it is
+ * the only function here that may return an eclipse other than 2026, and callers must say which they mean.
+ */
+export function nextEclipseHere(lat: number, lon: number, elevation = 0): LocalCircumstances | null {
+	return searchLocalEclipse(lat, lon, elevation);
 }
 
 /** Local sunset instant on eclipse day for an observer, or null if the Sun doesn't set that day. */

@@ -2,6 +2,9 @@
      and the two tangent "leader" lines that funnel from the loupe to it. The parent drives these each render
      frame via place(): it owns the map, this component owns the overlay DOM + its visibility. -->
 <script lang="ts">
+	// asset(), not a root-absolute path: the site is served under a base path (/eclipse-2026/), so a
+	// literal "/corona_512.webp" resolves against the origin root and 404s.
+	import { asset } from '$app/paths';
 	import { bridgeSegments } from '$lib/skyview/overlay';
 	import { SKY_PALETTE } from '$lib/config';
 
@@ -86,7 +89,7 @@
 		<circle class="loupe-moon" cx={crescent.x} cy={crescent.y} r={crescent.r} />
 		<rect class="loupe-glow" x="-50" y={horizonY - 80} width="100" height="80" />
 		<image
-			href="/corona_512.webp"
+			href={asset('/corona_512.webp')}
 			x={-coronaSize / 2}
 			y={-coronaSize / 2}
 			width={coronaSize}

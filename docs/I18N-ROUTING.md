@@ -291,6 +291,10 @@ Things the plan did not anticipate, all found by building it:
   link previews as.
 - **The 1200×630 social image**, and with it `og:image`, `og:image:alt` and `twitter:card`'s upgrade to
   `summary_large_image`.
+- **A base-path trap to watch for.** `paths.base` means a root-absolute asset URL resolves against the
+  origin root and 404s. `SkyLoupe` shipped exactly that (`href="/corona_512.webp"`); the fix is `asset()`
+  from `$app/paths`. Two things now catch it: the console-error assertion in `shell.spec.ts`, and a
+  structural check over every component in `rootDispatch.test.ts`.
 - **Verify on the real host.** bunny.net has to serve `de/index.html` for `/eclipse-2026/de/`; every
   internal link and the canonical use the trailing-slash form, so directory indexes must resolve.
 

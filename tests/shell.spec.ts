@@ -1,4 +1,5 @@
 import { test, expect, mapReady, localeUrl } from './fixtures';
+import de from '../src/lib/i18n/messages/de';
 
 test.describe('app shell', () => {
 	test('renders the brand, the un-located sections and the safety footer', async ({ page, locatedPage }) => {
@@ -12,6 +13,9 @@ test.describe('app shell', () => {
 
 	test('keeps the sections in the order the wireframes define', async ({ page, locatedPage }) => {
 		await locatedPage({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
+		// The B sections only exist once the client has read the location, so wait for hydration rather
+		// than racing it — WebKit is slow enough to lose that race reliably.
+		await expect(page.locator('section.b6')).toBeVisible();
 		const order = await page.evaluate(() =>
 			[...document.querySelectorAll('section, footer.safety')]
 				.map((el) => [...el.classList].find((c) => /^(cd|a2|b1|b3|b6|safety)$/.test(c)))
@@ -40,8 +44,8 @@ test.describe('app shell', () => {
 
 	test('titles and describes the page in its own language', async ({ page }) => {
 		await page.goto(localeUrl());
-		await expect(page).toHaveTitle('Sonnenfinsternis am 12. August 2026');
+		await expect(page).toHaveTitle(de.app.page_title);
 		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
-		await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Sonnenfinsternis/);
+		await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', de.app.page_description);
 	});
 });
