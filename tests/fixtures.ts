@@ -81,6 +81,11 @@ export const test = base.extend<Fixtures>({
 		await use(async (site, lang = LANG) => {
 			const name = site.name ? `&name=${encodeURIComponent(site.name)}` : '';
 			await page.goto(localeUrl(lang, `?lat=${site.lat}&lon=${site.lon}${name}`));
+			// The B sections exist only once hydration has read the location out of the URL. Several
+			// specs then inspect the page with reads that do NOT auto-retry — `page.evaluate`, `count()`,
+			// `allInnerTexts()` — unlike `expect(locator)`. Waiting here fixes the whole class centrally
+			// instead of leaving each spec to race hydration on a slow or loaded machine.
+			await page.locator('section.b1').waitFor({ state: 'visible' });
 		});
 	},
 
@@ -186,7 +191,15 @@ export async function freezeClock(page: Page, at: 'T-30d' | 'T-90s' | 'T+1h') {
 	await page.clock.install({ time: new Date(peak + offsets[at]) });
 }
 
-/** The four countdown numbers, as rendered. */
+/**
+ * The four countdown numbers, as rendered.
+ *
+ * `.units` is absent from the prerendered HTML: `$now` is 0 during SSR, so `diff` is 0 and the countdown
+ * renders its "happening now" branch until hydration swaps in a real clock. `allInnerTexts` takes a
+ * snapshot rather than retrying, so wait for the digits to exist first.
+ */
 export async function countdownDigits(page: Page): Promise<string[]> {
-	return page.locator('section.cd .units .n').allInnerTexts();
+	const digits = page.locator('section.cd .units .n');
+	await digits.first().waitFor({ state: 'visible' });
+	return digits.allInnerTexts();
 }

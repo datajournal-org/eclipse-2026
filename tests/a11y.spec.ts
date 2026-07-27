@@ -145,6 +145,9 @@ test.describe('accessibility', () => {
 	test('keeps text legible against its background', async ({ page }) => {
 		// A coarse guard: body text must not be rendered in the background colour.
 		await page.goto(localeUrl());
+		// `.cap` only appears once hydration flips the countdown out of its "happening now" branch, and
+		// page.evaluate below does not retry.
+		await page.locator('section.cd .cap').waitFor({ state: 'visible' });
 		const { colour, background } = await page.evaluate(() => {
 			const el = document.querySelector('section.cd .cap')!;
 			return { colour: getComputedStyle(el).color, background: getComputedStyle(document.body).backgroundColor };
