@@ -4,9 +4,9 @@ const messages = {
 	app: {
 		title: 'Eclipse 2026',
 		tagline: '12. August 2026',
-		page_title: 'Sonnenfinsternis am 12. August 2026',
+		page_title: 'Sonnenfinsternis 12. August 2026 — was du von hier siehst',
 		page_description:
-			'Die erste totale Sonnenfinsternis über Europa seit 1999. Sieh, wie viel von der Sonne an deinem Ort bedeckt wird.',
+			'Wie viel wird an deinem Ort bedeckt, wann ist das Maximum, und hast du freie Sicht nach Westen? Die erste totale Finsternis über Europa seit 1999.',
 		og_image_alt: 'Die verfinsterte Sonne mit sichtbarer Korona'
 	},
 	nav: { about: 'Über', language: 'Sprache' },

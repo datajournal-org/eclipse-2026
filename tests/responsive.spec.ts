@@ -26,9 +26,9 @@ test.describe('mobile layout @mobile', () => {
 		expect(wide).toEqual([]);
 	});
 
-	test('keeps the language buttons reachable', async ({ page }) => {
+	test('keeps the language links reachable', async ({ page }) => {
 		await page.goto(localeUrl());
-		const en = page.getByRole('button', { name: 'EN', exact: true });
+		const en = page.getByRole('link', { name: 'EN', exact: true });
 		await expect(en).toBeVisible();
 		await en.click();
 		await expect(page.locator('html')).toHaveAttribute('lang', 'en');

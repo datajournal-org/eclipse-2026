@@ -34,8 +34,12 @@ so every one of them is built from this constant.
 
 Still outstanding, and not blocking the routing work:
 
-- **Copy** for `app.page_title` / `app.page_description`. Composed for now from strings already in the
-  catalogues (`app.tagline`, `countdown.since`) rather than invented — replace with real copy when ready.
+- ~~Copy for `app.page_title` / `app.page_description`.~~ Done: the personalisation hook — the title names
+  the event, date and "what you'll see from here"; the description leads with coverage, timing and the
+  clear-view-west question, closing on the since-1999 rarity. Chosen over a rarity-first or
+  horizon-event-first framing because it is what distinguishes the page from a generic astronomy table in
+  a search result. Unit tests hold the 60/155-character caps that search results and preview cards
+  truncate at.
 - **A 1200×630 social image.** Until it exists, `twitter:card` stays `summary` and no `og:image` is emitted;
   a `summary_large_image` card with no valid image renders worse than no card at all.
 
@@ -282,10 +286,22 @@ Things the plan did not anticipate, all found by building it:
 
 ### Still open
 
-- **Copy.** `app.page_title` / `app.page_description` are composed from strings already in the catalogues
-  (`app.tagline`, `countdown.since`), not written for the purpose. Replace when real copy exists; the
-  length caps asserted in the unit tests are what search results and preview cards will truncate at.
+- ~~Copy.~~ Written (personalisation hook, see §1). The English strings carry the most weight: they are
+  what the root serves, what `x-default` gives readers whose language we lack, and what every shared root
+  link previews as.
 - **The 1200×630 social image**, and with it `og:image`, `og:image:alt` and `twitter:card`'s upgrade to
   `summary_large_image`.
 - **Verify on the real host.** bunny.net has to serve `de/index.html` for `/eclipse-2026/de/`; every
   internal link and the canonical use the trailing-slash form, so directory indexes must resolve.
+
+### A pre-existing accessibility problem this uncovered
+
+Turning the language switcher from buttons into links exposed, rather than caused, a real defect: on
+**WebKit the tab order is captured by the A2 MapLibre canvas** — it cycles `BODY ↔ canvas` indefinitely
+and never reaches any button on the page, including the location call to action. Safari's default is also
+that Tab visits form controls only and skips links, so the switcher itself is not a tab stop there either.
+
+Before the change, the three header `<button>`s happened to sit _before_ the trap, which is the only
+reason the keyboard-traversal test passed on WebKit. The links are still the right call — they are what
+makes the per-language navigation crawlable — so `a11y.spec.ts` skips WebKit with the reason spelled out,
+and the canvas focus trap needs fixing on its own terms.

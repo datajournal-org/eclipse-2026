@@ -9,9 +9,12 @@ import { defineConfig, devices } from '@playwright/test';
 // so an upstream API change shows up in a nightly run rather than as a red PR.
 export default defineConfig({
 	testDir: 'tests',
-	// File-level parallelism only. With fullyParallel the WebGL specs run several software-GL contexts
-	// at once and starve each other — B3 then never reaches `idle` inside the timeout.
+	// File-level parallelism only, and a hard worker cap. Software GL is the bottleneck: several
+	// concurrent WebGL contexts starve each other badly enough that B3 never reaches `idle` inside the
+	// timeout. With fullyParallel on, or with the default worker count across four projects, the @webgl
+	// specs fail purely from contention.
 	fullyParallel: false,
+	workers: process.env.CI ? 2 : 3,
 	// WebGL specs build a terrain scene under software GL; B3 reaches `idle` in ~10 s locally.
 	timeout: 90_000,
 	forbidOnly: !!process.env.CI,

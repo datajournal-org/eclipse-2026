@@ -141,7 +141,8 @@ test.describe('prerendered SEO metadata', () => {
 		// costs a redirect on every cold hit and muddies which URL gets indexed.
 		for (const path of PAGES) {
 			const html = await fetchHtml(request, path);
-			const internal = attr(html, /<a href="(\/eclipse-2026\/[a-z]{2}[^"]*)"/g);
+			// `href` is not always the first attribute — aria-current precedes it on the active link.
+			const internal = attr(html, /<a [^>]*href="(\/eclipse-2026\/[a-z]{2}[^"]*)"/g);
 			expect(internal.length, path).toBeGreaterThanOrEqual(3);
 			for (const href of internal) expect(href, `${path} → ${href}`).toMatch(/\/[a-z]{2}\/$/);
 		}

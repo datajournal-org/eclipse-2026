@@ -5,9 +5,9 @@ const messages: Messages = {
 	app: {
 		title: 'Eclipse 2026',
 		tagline: '12 August 2026',
-		page_title: 'Solar eclipse on 12 August 2026',
+		page_title: "Solar eclipse 12 August 2026 — what you'll see from here",
 		page_description:
-			'The first total solar eclipse over Europe since 1999. See how much of the Sun is covered where you are.',
+			'How much gets covered where you are, when the maximum falls, and whether you have a clear view west. The first total eclipse over Europe since 1999.',
 		og_image_alt: 'The eclipsed Sun with its corona visible'
 	},
 	nav: { about: 'About', language: 'Language' },
