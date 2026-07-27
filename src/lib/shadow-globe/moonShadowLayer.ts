@@ -55,6 +55,27 @@ interface MoonShadowLayer extends CustomLayerInterface {
 // Segments per axis of the full-globe overlay mesh.
 const GRID_RESOLUTION = 200;
 
+/**
+ * Encoding gamma of the satellite tiles — **the globe's main brightness dial.**
+ *
+ * `brightness` below is a *linear* light factor (Lambert × eclipse coverage), but the tiles it darkens
+ * are sRGB-encoded. Multiplying an sRGB value by a linear factor over-darkens: half the light is not
+ * half the stored value, it is ~73 % of it. Compositing straight through made the whole globe read as
+ * dusk — at 30° solar elevation the tiles came out at 53 % brightness where the eye expects ~74 %.
+ *
+ * Raising the factor to `1/gamma` before use puts the multiply back in the space the tiles are stored
+ * in. 2.2 is the physically right value for sRGB; **lower it toward 1.0 for a darker globe** (1.0 is
+ * exactly the old behaviour). Nothing else needs touching to retune this.
+ *
+ * The subsolar point and the terminator are fixed points of the curve, so this brightens the middle of
+ * the day side without washing out either end — and because it applies to the *product*, the umbra
+ * stays black while the penumbra's gradient opens up.
+ */
+const DISPLAY_GAMMA = 2.2;
+
+/** Overlay opacity on the unlit side. Below 1 so night reads as dark rather than as a hole. */
+const NIGHT_MAX_ALPHA = 0.95;
+
 // Fragment shader: coverage from the profile LUT (by off-axis distance) → day/night + shadow tint.
 const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
@@ -88,7 +109,10 @@ void main() {
   // The eclipse dims the sunlight further (from space, ground brightness ≈ 1 − coverage).
   float brightness = sunBrightness * (1.0 - coverage);
 
-  float alpha = clamp(1.0 - brightness, 0.0, 1.0) * 0.95; // overlay opacity over the tiles
+  // Linear light factor → sRGB, so darkening the tiles matches what the eye expects (DISPLAY_GAMMA).
+  float shade = pow(clamp(brightness, 0.0, 1.0), 1.0 / ${DISPLAY_GAMMA.toFixed(4)});
+
+  float alpha = clamp(1.0 - shade, 0.0, 1.0) * ${NIGHT_MAX_ALPHA.toFixed(4)}; // overlay opacity over the tiles
   alpha += (ign(gl_FragCoord.xy) - 0.5) / 255.0; // dither away 8-bit banding
   if (alpha < 0.004) discard; // bright, uneclipsed noon: leave tiles
   fragColor = vec4(0.0, 0.0, 0.0, clamp(alpha, 0.0, 1.0));
