@@ -13,9 +13,13 @@ import { test, expect, localeUrl, mapReady, byName, PHOTON } from './fixtures';
 const OVIEDO = byName('Oviedo'); // total, 100 %, maximum 20:27 local
 const BERLIN = byName('Berlin'); // partial, ~85 %, maximum 20:08 local
 
-/** Everything on the page that depends on where you are. */
+/** Everything that depends on where you are — what the page shows, plus what the device remembers. */
 async function snapshot(page: import('@playwright/test').Page) {
 	return {
+		// The persisted record belongs in here rather than in a test of its own: a change that repaints
+		// every section but never reaches storage looks perfect until the next visit, when the app comes
+		// back with the old place. Storage is simply one more thing that must stop saying "Oviedo".
+		stored: (await page.evaluate(() => window.localStorage.getItem('eclipse.location'))) ?? '',
 		place: (await page.locator('.place .pname').innerText()).trim(),
 		verdict: await page.locator('section.b1 h2').innerText(),
 		coverage: await page.locator('section.b1 .obsc').innerText(),
@@ -65,6 +69,7 @@ test.describe('changing the location @webgl', () => {
 		const after = await snapshot(page);
 
 		// Berlin's numbers, and none of Oviedo's.
+		expect(JSON.parse(after.stored)).toMatchObject({ lat: 52.52, lon: 13.405 });
 		expect(after.place).toContain('Berlin');
 		expect(after.verdict).toBe('Partielle Sonnenfinsternis');
 		expect(after.skyReadout).toContain('20:08'); // Berlin's maximum, not Oviedo's 20:27
@@ -114,5 +119,27 @@ test.describe('changing the location @webgl', () => {
 		await changeTo(page, 'Berlin');
 		await expect(page.locator('section.b1 h2')).toHaveText('Partielle Sonnenfinsternis');
 		await expect(page.locator('section.b3 .readout')).toContainText('20:08');
+
+		// The only place in the suite where storage is written twice: the second write must replace the
+		// first outright, not merge into it and leave Oviedo's name attached to Berlin's coordinates.
+		const stored = await page.evaluate(() => window.localStorage.getItem('eclipse.location'));
+		expect(JSON.parse(stored!)).toEqual({ lat: 52.52, lon: 13.405, name: 'Berlin' });
+	});
+
+	test('the new place survives a fresh load with no URL parameters', async ({ page, locatedPage, stubGeocoder }) => {
+		// The round trip, end to end: written by the app, read back by the app. Every other persistence
+		// test either checks the string in storage or reads a value the *fixture* seeded — and the
+		// storedPage fixture re-seeds on every navigation, so it cannot notice a write that never happened.
+		await locatedPage(OVIEDO);
+		await mapReady(page, 'section.b3');
+
+		await stubGeocoder(PHOTON.bare);
+		await changeTo(page, 'Berlin');
+
+		// Leaving ?lat&lon behind matters: it seeded Oviedo and takes precedence over storage, so on this
+		// load the only thing that can produce Berlin is what the app itself wrote.
+		await page.goto(localeUrl());
+		await expect(page.locator('section.b1 h2')).toHaveText('Partielle Sonnenfinsternis');
+		await expect(page.locator('.place .pname')).toContainText('Berlin');
 	});
 });

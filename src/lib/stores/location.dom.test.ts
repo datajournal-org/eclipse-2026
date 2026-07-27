@@ -93,6 +93,15 @@ describe('setLocation', () => {
 		expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
 	});
 
+	it('replaces the previous place rather than merging into it', async () => {
+		// A merge would carry the old name across to the new coordinates — a place called "Oviedo" sitting
+		// at Berlin's position, which reads as correct everywhere except on the map.
+		const { setLocation } = await loadWith();
+		setLocation({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
+		setLocation({ lat: 52.52, lon: 13.405, name: null });
+		expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({ lat: 52.52, lon: 13.405, name: null });
+	});
+
 	it('coerces numeric strings that slipped in from an input field', async () => {
 		const { userLocation, setLocation } = await loadWith();
 		setLocation({ lat: '43.36' as unknown as number, lon: '-5.84' as unknown as number, name: null });

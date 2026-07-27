@@ -28,8 +28,16 @@ test.describe('location privacy', () => {
 
 		const stored = await page.evaluate(() => window.localStorage.getItem('eclipse.location'));
 		expect(JSON.parse(stored!)).toMatchObject({ lat: 43.3603, lon: -5.8448 });
+
+		// Nothing seeded this page, so the reload proves the app can read back what it wrote — the two
+		// halves are in the same module, but a change to the stored shape has to break one of these.
+		await page.reload();
+		await expect(page.locator('section.b1 h2')).toHaveText('Totale Sonnenfinsternis');
 	});
 
+	// Reads what the fixture seeded, so it covers the READ half of persistence only — storedPage re-seeds
+	// via addInitScript on every navigation, and would keep this green even if the app never wrote at all.
+	// The write half is the reload in the test above and the round trip in location-change.spec.ts.
 	test('restores the located state on reload, with no URL parameters', async ({ page, storedPage }) => {
 		await storedPage({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
 		await expect(page.locator('section.b1 h2')).toHaveText('Totale Sonnenfinsternis');
