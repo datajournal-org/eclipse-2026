@@ -44,7 +44,7 @@ type Fixtures = {
 	 * no-network property held only as long as each new spec remembered to ask for it. Specs still call
 	 * it to choose a different body or status. Tests tagged `@live` get the real service instead.
 	 */
-	stubGeocoder: (body?: unknown, status?: number) => Promise<void>;
+	stubGeocoder: (body?: unknown, status?: number, delayMs?: number) => Promise<void>;
 	/** Load a language's page with a location already chosen, via the ?lat&lon debug override. */
 	locatedPage: (site: { lat: number; lon: number; name?: string }, lang?: string) => Promise<void>;
 	/** Load the app with a location seeded into localStorage instead of the URL. */
@@ -119,12 +119,17 @@ export const test = base.extend<Fixtures>({
 export async function stubGeocoderOn(context: BrowserContext) {
 	let body: unknown = PHOTON.oviedo;
 	let status = 200;
-	await context.route(GEOCODER, (route) =>
-		route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
-	);
-	return async (nextBody: unknown = PHOTON.oviedo, nextStatus = 200) => {
+	let delayMs = 0;
+	await context.route(GEOCODER, async (route) => {
+		// An optional delay lets a spec stage the "response lands after the user moved on" races that an
+		// instant stub can never reproduce.
+		if (delayMs) await new Promise((r) => setTimeout(r, delayMs));
+		await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
+	});
+	return async (nextBody: unknown = PHOTON.oviedo, nextStatus = 200, nextDelayMs = 0) => {
 		body = nextBody;
 		status = nextStatus;
+		delayMs = nextDelayMs;
 	};
 }
 

@@ -55,23 +55,30 @@ test.describe('location search', () => {
 		await expect(page.locator('.results li .sub')).toHaveCount(0);
 	});
 
-	test('shows no result list when nothing matches', async ({ page, stubGeocoder }) => {
-		// NOTE the a4.no_results message ("Nichts gefunden") is currently unreachable: the list is only
-		// rendered `{#if searching || searchErr || results.length}`, so zero hits removes the whole <ul>
-		// before that branch can run. The user gets silence instead of an answer. Asserted as-is so the
-		// behaviour is pinned; making the message appear needs a "has searched" flag in the component.
+	test('says so when nothing matches', async ({ page, stubGeocoder }) => {
 		await stubGeocoder(PHOTON.empty);
 		const input = await open(page);
 		await input.fill('Zzzzzzz');
-		await expect(page.locator('.results .hint')).toHaveText('Suche …');
-		await expect(page.locator('.results')).toHaveCount(0);
+		await expect(page.locator('.results .hint')).toHaveText('Nichts gefunden');
 	});
 
-	test('shows an error rather than an empty list when the service fails', async ({ page, stubGeocoder }) => {
+	test('reports a failed search, not a failed device location', async ({ page, stubGeocoder }) => {
+		// Two different failures with two different remedies; they used to share one message.
 		await stubGeocoder({}, 500);
 		const input = await open(page);
 		await input.fill('Oviedo');
-		await expect(page.locator('.results .hint')).toContainText('Standort nicht verfügbar');
+		await expect(page.locator('.results .hint')).toHaveText('Suche fehlgeschlagen. Bitte versuch es noch einmal.');
+	});
+
+	test('does not repopulate a cleared field when a slow response lands', async ({ page, stubGeocoder }) => {
+		// The race the instant stub could never stage: type, clear, and only then let the response arrive.
+		await stubGeocoder(PHOTON.oviedo, 200, 1200);
+		const input = await open(page);
+		await input.fill('Oviedo');
+		await expect(page.locator('.results .hint')).toHaveText('Suche …');
+		await input.fill('');
+		await page.waitForTimeout(2000); // well past the stubbed delay
+		await expect(page.locator('.results')).toHaveCount(0);
 	});
 
 	test('picking a hit puts it in the footer summary', async ({ page, stubGeocoder }) => {

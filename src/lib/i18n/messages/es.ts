@@ -46,6 +46,7 @@ const messages: Messages = {
 		searching: 'Buscando …',
 		no_results: 'Nada encontrado',
 		geo_error: 'Ubicación no disponible. Busca un lugar o toca el mapa.',
+		search_error: 'La búsqueda falló. Inténtalo de nuevo.',
 		adjust_hint: 'Arrastra el pin o toca el mapa para ajustar el punto.',
 		use_here: 'Usar esta ubicación',
 		verdict_total: 'Totalidad',

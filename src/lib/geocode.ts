@@ -4,6 +4,9 @@ const BASE = 'https://geocode.versatiles.org';
 
 export type GeoHit = { lat: number; lon: number; label: string; sub: string };
 
+/** Shortest query worth sending: one character matches most of the planet. */
+export const MIN_QUERY_LENGTH = 2;
+
 type PhotonProps = Record<string, unknown>;
 type PhotonFeature = { geometry: { coordinates: [number, number] }; properties?: PhotonProps };
 type PhotonResponse = { features?: PhotonFeature[] };
@@ -27,11 +30,11 @@ function formatPlace(p: PhotonProps): { label: string; sub: string } {
 	return { label, sub: [...new Set(context)].join(', ') };
 }
 
-export async function searchPlaces(query: string, locale = 'de', limit = 6): Promise<GeoHit[]> {
+export async function searchPlaces(query: string, locale = 'de', limit = 6, signal?: AbortSignal): Promise<GeoHit[]> {
 	const q = query.trim();
-	if (q.length < 2) return [];
+	if (q.length < MIN_QUERY_LENGTH) return [];
 	const url = `${BASE}/api?q=${encodeURIComponent(q)}&limit=${limit}&lang=${photonLang(locale)}`;
-	const res = await fetch(url);
+	const res = await fetch(url, { signal });
 	if (!res.ok) throw new Error(`geocode ${res.status}`);
 	const data = (await res.json()) as PhotonResponse;
 	return (data.features ?? [])

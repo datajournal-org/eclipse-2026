@@ -7,7 +7,8 @@
 	import { t, locale } from '$lib/i18n';
 	import { userLocation, setLocation } from '$lib/stores/location';
 	import { localCircumstances } from '$lib/eclipse';
-	import { searchPlaces, reverseGeocode, type GeoHit } from '$lib/geocode';
+	import { reverseGeocode, type GeoHit } from '$lib/geocode';
+	import { createPlaceSearch } from '$lib/placeSearch';
 	import LocationPicker from './LocationPicker.svelte';
 
 	let { open = $bindable(false) }: { open?: boolean } = $props();
@@ -36,7 +37,8 @@
 			const start = loc ?? defaultPoint();
 			setPending(start.lat, start.lon, loc?.name ?? null);
 			query = '';
-			results = [];
+			geoErr = false;
+			placeSearch.reset();
 		} else if (dlgEl.open) {
 			dlgEl.close();
 		}
@@ -70,41 +72,19 @@
 
 	// ---- city/address search (debounced) ----
 	let query = $state('');
-	let results = $state<GeoHit[]>([]);
-	let searching = $state(false);
-	let searchErr = $state(false);
-	let searchTimer: ReturnType<typeof setTimeout> | undefined;
-	let searchSeq = 0;
+	// The search owns its own debounce, cancellation and outcome states — see $lib/placeSearch.
+	const placeSearch = createPlaceSearch();
+	const searchState = placeSearch.state;
+	// Deliberately NOT part of the search state: a device-location failure has nothing to do with the
+	// geocoder, and folding it into the search error is what made both hard to reason about.
+	let geoErr = $state(false);
 
 	function onSearchInput() {
-		clearTimeout(searchTimer);
-		searchErr = false;
-		if (query.trim().length < 2) {
-			results = [];
-			searching = false;
-			return;
-		}
-		searching = true;
-		const q = query;
-		searchTimer = setTimeout(async () => {
-			const seq = ++searchSeq;
-			try {
-				const hits = await searchPlaces(q, get(locale));
-				if (seq === searchSeq) {
-					results = hits;
-					searching = false;
-				}
-			} catch {
-				if (seq === searchSeq) {
-					results = [];
-					searching = false;
-					searchErr = true;
-				}
-			}
-		}, 300);
+		geoErr = false;
+		placeSearch.setQuery(query, get(locale));
 	}
 	function pick(h: GeoHit) {
-		results = [];
+		placeSearch.reset();
 		const name = h.sub ? `${h.label}, ${h.sub}` : h.label;
 		query = name;
 		setPending(h.lat, h.lon, name);
@@ -114,11 +94,11 @@
 	let geoBusy = $state(false);
 	function useGeo() {
 		if (!navigator.geolocation) {
-			searchErr = true;
+			geoErr = true;
 			return;
 		}
 		geoBusy = true;
-		results = [];
+		placeSearch.reset();
 		navigator.geolocation.getCurrentPosition(
 			(pos) => {
 				geoBusy = false;
@@ -126,7 +106,7 @@
 			},
 			() => {
 				geoBusy = false;
-				searchErr = true;
+				geoErr = true;
 			},
 			{ enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
 		);
@@ -194,16 +174,18 @@
 				</button>
 			</div>
 
-			{#if searching || searchErr || results.length}
+			{#if geoErr || $searchState.status !== 'idle'}
 				<ul class="results">
-					{#if searching}
-						<li class="hint">{$t('a4.searching')}</li>
-					{:else if searchErr}
+					{#if geoErr}
 						<li class="hint">{$t('a4.geo_error')}</li>
-					{:else if !results.length}
+					{:else if $searchState.status === 'searching'}
+						<li class="hint">{$t('a4.searching')}</li>
+					{:else if $searchState.status === 'error'}
+						<li class="hint">{$t('a4.search_error')}</li>
+					{:else if $searchState.status === 'empty'}
 						<li class="hint">{$t('a4.no_results')}</li>
-					{:else}
-						{#each results as h (h.lat + ',' + h.lon)}
+					{:else if $searchState.status === 'results'}
+						{#each $searchState.hits as h (h.lat + ',' + h.lon)}
 							<li>
 								<button type="button" onclick={() => pick(h)}>
 									<span class="ico" aria-hidden="true">📍</span>

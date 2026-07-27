@@ -45,6 +45,7 @@ const messages = {
 		searching: 'Suche …',
 		no_results: 'Nichts gefunden',
 		geo_error: 'Standort nicht verfügbar. Bitte suche einen Ort oder tippe auf die Karte.',
+		search_error: 'Suche fehlgeschlagen. Bitte versuch es noch einmal.',
 		adjust_hint: 'Pin ziehen oder auf die Karte tippen, um den Ort anzupassen.',
 		use_here: 'Diesen Ort verwenden',
 		verdict_total: 'Totalität',

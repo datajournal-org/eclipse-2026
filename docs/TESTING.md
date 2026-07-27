@@ -428,9 +428,8 @@ Four are recorded by tests but left alone, because each needs a product decision
 - **`localCircumstances` silently returns a different eclipse** for locations the 2026 event misses — it
   searches forward from eclipse day, so Sydney gets the 2028 one. Callers that care must compare the
   returned date against `ECLIPSE_DATE`. Pinned in `eclipse.test.ts`.
-- **The "Nichts gefunden" message is unreachable.** `LocationDialog` renders the result list only
-  `{#if searching || searchErr || results.length}`, so zero hits removes the `<ul>` before the no-results
-  branch can run — the user gets silence. Pinned in `location-search.spec.ts`.
+- ~~The "Nichts gefunden" message is unreachable.~~ Fixed, along with two more bugs found in the same
+  function — see §9.
 - **The time scrubber's track is 18 px tall**, under WCAG 2.5.8's 24×24 target guidance. It does work by
   touch (`responsive.spec.ts` proves it), but it is smaller than the guideline wants.
 
@@ -574,3 +573,40 @@ far outside it, which is why that change stands on solid ground while the parall
 The disposal race above was latent in the cache from the moment it was written, and only became reachable
 once the suite was fast enough for tests to routinely end with requests outstanding. Worth remembering when
 reading a green suite as evidence: a slow suite can hide races that a fast one surfaces immediately.
+
+---
+
+## 9. The search: why it moved out of the component
+
+`LocationDialog` held the whole place-search interaction inline — a debounce timer, a sequence counter and
+three booleans (`searching`, `searchErr`, `results.length`) that the template combined by hand. It carried
+three bugs at once:
+
+1. **"Nichts gefunden" was unreachable.** The list rendered only `{#if searching || searchErr ||
+results.length}`, so a search that matched nothing removed the `<ul>` before the no-results branch could
+   run. The user got silence.
+2. **A cleared field could repopulate itself.** The sequence counter advanced when a request _started_, not
+   when the user's intent changed — so clearing the box left an in-flight response still considered
+   current, and its results appeared under an empty input. The existing test passed only because the stub
+   answered instantly; against real latency it would have failed.
+3. **A geolocation failure set the _search_ error flag**, so a GPS problem was reported inside the search
+   results list, in copy that told the user to search for a place.
+
+The common cause is structural rather than careless: interaction logic inside a component is reachable
+only from an end-to-end test, and these are exactly the states a browser test is least likely to stage —
+an empty result set, a response arriving after a clear, an error from a superseded request.
+
+**`src/lib/placeSearch.ts`** now owns it as a plain factory over a Svelte store, with `status` as a
+discriminated union (`idle | searching | empty | error | results`) so contradictory combinations cannot be
+represented. It debounces, aborts superseded requests via `AbortSignal`, and advances its generation
+counter **on every change of user intent** — which is what makes a late response impossible to apply. The
+component became a renderer of one value, and `searchPlaces` gained an optional `AbortSignal`.
+
+Device-location failures are now their own `geoErr`, with their own message: `a4.search_error` for a
+geocoder failure ("Suche fehlgeschlagen"), `a4.geo_error` for a GPS one. Two failures with two different
+remedies.
+
+`placeSearch.test.ts` covers it in 24 unit tests with fake timers and a hand-resolved search double —
+including one per bug above, which is the point: all three are now cheap to express and impossible to
+express before. The end-to-end layer keeps only what it is good for — that each state reaches the screen —
+plus one race test, since `stubGeocoder` can now delay its response.
