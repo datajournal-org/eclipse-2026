@@ -88,7 +88,9 @@ test.describe('language switching @i18n', () => {
 	test('formats times in the reader’s zone, in the page’s language', async ({ page, locatedPage }) => {
 		await locatedPage(byName('Berlin'), 'de');
 		// Berlin's maximum is 18:08 UTC → 20:08 in Europe/Berlin, 14:08 in America/New_York.
-		const expected = test.info().project.name === 'chromium-en' ? /\b02:08\s?PM\b|14:08/ : /\b20:08\b/;
+		// The 12-hour form is `2:08 PM`, never `02:08 PM`: the hour is formatted `numeric`, so no locale
+		// pads it. Both forms are allowed here because en-GB picks the 24-hour clock.
+		const expected = test.info().project.name === 'chromium-en' ? /\b2:08\s?PM\b|\b14:08\b/ : /\b20:08\b/;
 		await expect(page.locator('section.b1 .note')).toContainText(expected);
 	});
 

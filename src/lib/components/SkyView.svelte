@@ -45,6 +45,7 @@
 	let loupe = $state<{ place: (screen: [number, number] | null) => void }>();
 	let setFrame: (i: number) => void = () => {};
 
+	let clockCh = $state('0'); // widest clock string in this window, so the chips beside it never shift
 	let scrubFrame = 0; // pending rAF id for the coalesced scrub update (0 = none)
 
 	onMount(() => {
@@ -68,6 +69,7 @@
 			const lc = localCircumstances(LAT, LON);
 			const { N, times, startFrame } = buildTimeline(LAT, LON, lc);
 			frameIndex = startFrame;
+			clockCh = get(fmt).clockWidthCh(times);
 			// event markers for the slider (labels/times baked here from the current locale + timezone)
 			axis = buildTimeAxis({
 				lc,
@@ -275,7 +277,7 @@
 
 	<div class="timebar">
 		<div class="readout tnum">
-			<span class="clock">{clock}</span>
+			<span class="clock" style:--clock-ch={clockCh}>{clock}</span>
 			<span>☀ {$t('b3.altitude')} <b>{altTxt}</b></span>
 			<span>{$t('b3.azimuth')} <b>{azTxt}</b></span>
 			<span>◐ {$t('b3.coverage')} <b>{obscTxt}</b></span>

@@ -103,6 +103,9 @@
 	let frameIndex = $state(START_INDEX);
 	// Clock label for the current frame — derived, so it re-formats on both scrub and locale change.
 	const clock = $derived($fmt.time(shadowFrames[frameIndex].time));
+	// Width to reserve for it, so the zone label beside it does not step sideways as the hour gains a
+	// digit. Derived alongside `clock` so a locale switch (12h ⇄ 24h) re-measures it.
+	const clockCh = $derived($fmt.clockWidthCh(shadowFrames.map((f) => f.time)));
 	let mapReady = $state(false);
 	let loadError = $state(false); // dynamic-import / map init failed → show a message instead of a stuck loader
 	/** Set once the map has loaded; renders the frame at `index`. */
@@ -311,7 +314,10 @@
 
 		<div class="timebar">
 			<div class="readout tnum">
-				<span class="clock">{clock} <small>{$fmt.zone(timelineStart)}</small></span>
+				<span class="clock"
+					><span style:--clock-ch={clockCh} class="clock-time">{clock}</span>
+					<small>{$fmt.zone(timelineStart)}</small></span
+				>
 			</div>
 			<TimeScrubber
 				value={frameIndex}

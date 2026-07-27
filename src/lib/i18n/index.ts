@@ -89,8 +89,11 @@ export const t: Readable<Translate> = derived(locale, ($l) => {
 
 /** Reactive Intl formatters bound to the current locale. */
 export const fmt = derived(locale, ($l) => ({
+	// `numeric` hour, not `2-digit`: a padded hour is wrong in English ("07:30 AM" reads as a timetable,
+	// not a clock) and unidiomatic in German and Spanish too. Each locale keeps its own 12/24-hour
+	// convention — only the padding goes. Minutes stay `2-digit`, which every locale wants.
 	time: (d: Date | number, opts?: Intl.DateTimeFormatOptions) =>
-		new Intl.DateTimeFormat($l, { hour: '2-digit', minute: '2-digit', ...opts }).format(d),
+		new Intl.DateTimeFormat($l, { hour: 'numeric', minute: '2-digit', ...opts }).format(d),
 	date: (d: Date | number, opts?: Intl.DateTimeFormatOptions) =>
 		new Intl.DateTimeFormat($l, { dateStyle: 'long', ...opts }).format(d),
 	num: (n: number, opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat($l, opts).format(n),
@@ -100,5 +103,20 @@ export const fmt = derived(locale, ($l) => ({
 			.formatToParts(d)
 			.find((p) => p.type === 'timeZoneName')?.value ?? '',
 	/** The IANA time-zone name resolved from the browser, e.g. "Europe/Berlin". */
-	zoneName: () => Intl.DateTimeFormat().resolvedOptions().timeZone
+	zoneName: () => Intl.DateTimeFormat().resolvedOptions().timeZone,
+	/**
+	 * Width, in `ch`, of the widest clock string a set of instants can produce — for the `--clock-ch`
+	 * custom property that stops a readout shifting when the hour gains a digit (see `.clock` in
+	 * base.css). Samples rather than formats every frame: the length only changes with the hour's digit
+	 * count and the AM/PM marker, so a dozen probes across the window cannot miss a case.
+	 */
+	clockWidthCh: (instants: readonly (Date | number)[], samples = 12) => {
+		if (instants.length === 0) return '0';
+		const f = new Intl.DateTimeFormat($l, { hour: 'numeric', minute: '2-digit' });
+		let widest = 0;
+		const step = Math.max(1, Math.floor(instants.length / samples));
+		for (let i = 0; i < instants.length; i += step) widest = Math.max(widest, f.format(instants[i]).length);
+		widest = Math.max(widest, f.format(instants[instants.length - 1]).length);
+		return `${widest}ch`;
+	}
 }));

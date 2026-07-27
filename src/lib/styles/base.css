@@ -180,6 +180,18 @@ button {
 		font-size: 1.1rem;
 		color: var(--fg);
 		white-space: nowrap;
+		/* Reserve the widest clock this screen can show, so nothing to the right of it moves while
+		   scrubbing. The hour is unpadded (see i18n `fmt.time`), so "9:43 AM" is a digit narrower than
+		   "10:26 AM" and the chips after it would step sideways as the window crosses the hour. The
+		   component sets --clock-ch from the longest string its own time window produces; the fallback
+		   reserves nothing, which is right for a clock that never changes width. */
+	}
+	/* `.clock` when it holds only the time (B3); `.clock-time` when a zone label sits beside it (A2). */
+	.clock,
+	.clock-time {
+		display: inline-block;
+		min-width: var(--clock-ch, 0);
+		text-align: left;
 	}
 	b {
 		color: var(--accent);

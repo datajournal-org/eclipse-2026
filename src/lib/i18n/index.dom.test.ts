@@ -188,9 +188,27 @@ describe('fmt', () => {
 	it('formats times in the active locale', async () => {
 		const { fmt, applyLocale: setLocale } = await load();
 		setLocale('de');
-		expect(get(fmt).time(instant)).toMatch(/\d{2}:\d{2}/);
+		expect(get(fmt).time(instant)).toMatch(/\d{1,2}:\d{2}/);
 		setLocale('en');
 		expect(get(fmt).time(instant)).toMatch(/\d{1,2}:\d{2}/);
+	});
+
+	it('never pads the hour with a leading zero', async () => {
+		// "07:30 AM" reads as a timetable rather than a clock. The hour is `numeric`, so each locale
+		// still chooses 12- vs 24-hour; only the padding is gone.
+		const { fmt, applyLocale } = await load();
+		const morning = new Date('2026-08-12T05:30:00Z'); // 07:30 in Europe/Berlin, the suite's zone
+		for (const l of ['de', 'en', 'es'] as const) {
+			applyLocale(l);
+			const formatted = get(fmt).time(morning);
+			expect(formatted, `${l}: ${formatted}`).toMatch(/^7:30\b/);
+		}
+	});
+
+	it('leaves a two-digit hour alone', async () => {
+		const { fmt, applyLocale } = await load();
+		applyLocale('de');
+		expect(get(fmt).time(instant)).toBe('20:08'); // 18:08 UTC in Europe/Berlin
 	});
 
 	it('formats dates differently per locale', async () => {
