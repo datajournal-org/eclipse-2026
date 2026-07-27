@@ -70,6 +70,10 @@ export default defineConfig({
 		{
 			name: 'mobile',
 			grep: /@mobile/,
+			// seo.spec.ts fetches raw HTML and never opens a page, so it only needs to run once —
+			// chromium carries it.
+			testIgnore: '**/seo.spec.ts',
+
 			use: { ...devices['Pixel 7'], ...GPU }
 		},
 		{
@@ -78,6 +82,10 @@ export default defineConfig({
 			// listing only /@webgl/ silently let the live-network specs run on this project.
 			name: 'webkit',
 			grepInvert: process.env.PWLIVE ? /@webgl/ : /@webgl|@live/,
+			// seo.spec.ts fetches raw HTML and never opens a page, so it only needs to run once —
+			// chromium carries it.
+			testIgnore: '**/seo.spec.ts',
+
 			use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 900 } }
 		},
 		{
@@ -85,6 +93,10 @@ export default defineConfig({
 			// different path, and a tester outside Europe should not see a red suite.
 			name: 'chromium-en',
 			grep: /@i18n/,
+			// seo.spec.ts fetches raw HTML and never opens a page, so it only needs to run once —
+			// chromium carries it.
+			testIgnore: '**/seo.spec.ts',
+
 			use: {
 				...devices['Desktop Chrome'],
 				viewport: { width: 1440, height: 900 },

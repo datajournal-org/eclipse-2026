@@ -1,4 +1,4 @@
-import { test as base, expect, type Page, type Locator } from '@playwright/test';
+import { test as base, expect, type Browser, type BrowserContext, type Page, type Locator } from '@playwright/test';
 import { installTileCache } from './tileCache';
 import { REFERENCE, GREATEST, byName, type ReferenceSite } from '../src/lib/testing/reference';
 
@@ -71,15 +71,7 @@ export const test = base.extend<Fixtures>({
 				await use(async () => {});
 				return;
 			}
-			let body: unknown = PHOTON.oviedo;
-			let status = 200;
-			await context.route(GEOCODER, (route) =>
-				route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
-			);
-			await use(async (nextBody = PHOTON.oviedo, nextStatus = 200) => {
-				body = nextBody;
-				status = nextStatus;
-			});
+			await use(await stubGeocoderOn(context));
 		},
 		{ auto: true }
 	],
@@ -119,6 +111,43 @@ export const test = base.extend<Fixtures>({
 });
 
 // --- helpers ---
+
+/**
+ * Install the geocoder stub on a context and return the setter that changes what it answers. Shared by
+ * the auto fixture and by `openSharedPage`, which builds its own context and so misses the fixture.
+ */
+export async function stubGeocoderOn(context: BrowserContext) {
+	let body: unknown = PHOTON.oviedo;
+	let status = 200;
+	await context.route(GEOCODER, (route) =>
+		route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
+	);
+	return async (nextBody: unknown = PHOTON.oviedo, nextStatus = 200) => {
+		body = nextBody;
+		status = nextStatus;
+	};
+}
+
+/**
+ * One page shared by every test in a file, for the map-heavy specs.
+ *
+ * Building a MapLibre scene costs ~2 s, and these files each drive the *same* scene from many angles —
+ * paying that per test was ~75 % of their runtime. The page is created once in `beforeAll`; each test
+ * resets whatever it might have disturbed (camera pose, slider frame) in `beforeEach`, and the file runs
+ * in `serial` mode so a failure does not leave the next test looking at unexplained state.
+ *
+ * The trade-off is real: tests in these files are no longer independent, and a failure part-way through
+ * makes the ones after it harder to read. It is worth it only where setup dominates, which is why the
+ * cheap specs still get a fresh page each.
+ */
+export async function openSharedPage(browser: Browser, path: string) {
+	const context = await browser.newContext();
+	await installTileCache(context);
+	await stubGeocoderOn(context);
+	const page = await context.newPage();
+	await page.goto(path);
+	return page;
+}
 
 /** Wait for a section's MapLibre instance to reach `idle` (the data-map-ready hook in the components). */
 export async function mapReady(page: Page, selector: string, timeout = 60_000) {

@@ -1,5 +1,4 @@
-import { test, expect, mapReady, byName, BASE } from './fixtures';
-import { installTileCache } from './tileCache';
+import { test, expect, mapReady, byName, localeUrl, openSharedPage } from './fixtures';
 
 const B3 = 'section.b3';
 const OVIEDO = byName('Oviedo');
@@ -34,10 +33,7 @@ test.describe('B3 camera @webgl', () => {
 	let page: import('@playwright/test').Page;
 
 	test.beforeAll(async ({ browser }) => {
-		const context = await browser.newContext();
-		await installTileCache(context);
-		page = await context.newPage();
-		await page.goto(`${BASE}/de/?lat=${OVIEDO.lat}&lon=${OVIEDO.lon}`);
+		page = await openSharedPage(browser, localeUrl('de', `?lat=${OVIEDO.lat}&lon=${OVIEDO.lon}`));
 		await mapReady(page, B3);
 	});
 

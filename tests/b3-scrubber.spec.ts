@@ -1,22 +1,37 @@
-import { test, expect, mapReady, slider, maxFrame, setFrame, byName } from './fixtures';
+import { test, expect, mapReady, slider, maxFrame, setFrame, byName, localeUrl, openSharedPage } from './fixtures';
 
 const B3 = 'section.b3';
 const OVIEDO = byName('Oviedo');
 
 test.describe('B3 time scrubber @webgl', () => {
-	test.beforeEach(async ({ page, locatedPage }) => {
-		await locatedPage(OVIEDO);
+	// One B3 scene for the whole file — every test here drives the same slider over the same location.
+	test.describe.configure({ mode: 'serial' });
+	let page: import('@playwright/test').Page;
+	let initialFrame: string;
+
+	test.beforeAll(async ({ browser }) => {
+		page = await openSharedPage(browser, localeUrl('de', `?lat=${OVIEDO.lat}&lon=${OVIEDO.lon}`));
 		await mapReady(page, B3);
+		initialFrame = await slider(page, B3).inputValue();
 	});
 
-	test('is a labelled range input over the local eclipse', async ({ page }) => {
+	test.afterAll(async () => {
+		await page.context().close();
+	});
+
+	test.beforeEach(async () => {
+		// Restore the opening frame so one test's scrubbing cannot change what the next one sees.
+		await setFrame(page, B3, Number(initialFrame));
+	});
+
+	test('is a labelled range input over the local eclipse', async () => {
 		const input = slider(page, B3);
 		await expect(input).toHaveAttribute('aria-label', /\S/);
 		await expect(input).toHaveAttribute('min', '0');
 		expect(await maxFrame(page, B3)).toBe(240);
 	});
 
-	test('moves with the arrow keys', async ({ page }) => {
+	test('moves with the arrow keys', async () => {
 		const input = slider(page, B3);
 		await input.focus();
 		const before = await input.inputValue();
@@ -27,7 +42,7 @@ test.describe('B3 time scrubber @webgl', () => {
 		expect(Number(await input.inputValue())).toBe(Number(before) + 1);
 	});
 
-	test('jumps to the ends with Home and End', async ({ page }) => {
+	test('jumps to the ends with Home and End', async () => {
 		const input = slider(page, B3);
 		await input.focus();
 		await page.keyboard.press('Home');
@@ -36,7 +51,7 @@ test.describe('B3 time scrubber @webgl', () => {
 		expect(await input.inputValue()).toBe(String(await maxFrame(page, B3)));
 	});
 
-	test('updates the readout as the slider moves', async ({ page }) => {
+	test('updates the readout as the slider moves', async () => {
 		const clock = page.locator(`${B3} .readout .clock`);
 		await setFrame(page, B3, 0);
 		const first = await clock.innerText();
@@ -45,7 +60,7 @@ test.describe('B3 time scrubber @webgl', () => {
 		expect(first).toMatch(/\d\d:\d\d/);
 	});
 
-	test('jumps to a phase when its label is clicked', async ({ page }) => {
+	test('jumps to a phase when its label is clicked', async () => {
 		const input = slider(page, B3);
 		await setFrame(page, B3, 0);
 		const label = page.locator(`${B3} .labels .lab`).first();
@@ -54,7 +69,7 @@ test.describe('B3 time scrubber @webgl', () => {
 		expect(Number(await input.inputValue())).toBeGreaterThan(0);
 	});
 
-	test('jumps to maximum from the totality band label', async ({ page }) => {
+	test('jumps to maximum from the totality band label', async () => {
 		const input = slider(page, B3);
 		await setFrame(page, B3, 0);
 		// at a total location "Maximum" is carried by the totality band, not a standalone tick
@@ -72,7 +87,7 @@ test.describe('B3 time scrubber @webgl', () => {
 		expect(coverage).toBeGreaterThan(95);
 	});
 
-	test('labels every phase for screen readers', async ({ page }) => {
+	test('labels every phase for screen readers', async () => {
 		const labels = page.locator(`${B3} .labels .lab`);
 		const count = await labels.count();
 		expect(count).toBeGreaterThan(1);
@@ -81,7 +96,14 @@ test.describe('B3 time scrubber @webgl', () => {
 		}
 	});
 
-	test('scrubs across the whole range without error', async ({ page, pageProblems }) => {
+	test('scrubs across the whole range without error', async () => {
+		// The pageProblems fixture watches the fixture's page, not this file's shared one, so collect
+		// console errors here instead.
+		const errors: string[] = [];
+		const onConsole = (msg: import('@playwright/test').ConsoleMessage) => {
+			if (msg.type() === 'error') errors.push(msg.text());
+		};
+		page.on('console', onConsole);
 		// The "check scrubbing performance" risk in ARCHITECTURE.md: every frame recomputes the geometry
 		// and redraws the scene. No wall-clock budget is asserted — under headless software GL the time
 		// is dominated by rasterisation, so a threshold here would measure swiftshader, not this app.
@@ -92,11 +114,12 @@ test.describe('B3 time scrubber @webgl', () => {
 			await setFrame(page, B3, frame);
 			readouts.add(await page.locator(`${B3} .readout .clock`).innerText());
 		}
+		page.off('console', onConsole);
 		expect(readouts.size).toBeGreaterThan(10); // every sampled frame produced a distinct time
-		expect(pageProblems.errors).toEqual([]);
+		expect(errors).toEqual([]);
 	});
 
-	test('keeps the A2 and B3 sliders independent', async ({ page }) => {
+	test('keeps the A2 and B3 sliders independent', async () => {
 		await setFrame(page, B3, 10);
 		await setFrame(page, 'section.a2', 200);
 		expect(await slider(page, B3).inputValue()).toBe('10');
