@@ -21,38 +21,43 @@ env:
    NODE_VERSION: '24'
 
 jobs:
-   # The whole end-to-end suite runs on every push and pull request, split by COST rather than by test
-   # count. Playwright's own --shard divides by number of tests, which lumps all the WebGL specs into one
-   # shard: measured 192s / 81s / 27s / 18s across four, so four runners bought only 1.7x. Without a GPU
-   # those 47 specs rasterise B3's terrain scene on the CPU and dominate everything else.
+   # Static gate and unit tests: seconds, no browsers, no GPU. Its own job so an eslint or unit failure
+   # cannot stop the end-to-end shards from reporting — which is exactly what happened when these shared
+   # a job: a timezone bug in one unit test meant 226 browser tests never ran at all.
+   checks:
+      runs-on: ubuntu-latest
+      timeout-minutes: 10
+      steps:
+         - uses: actions/checkout@v4
+         - uses: actions/setup-node@v4
+           with:
+              node-version: ${{ env.NODE_VERSION }}
+              cache: npm
+         - run: npm ci
+         # `corridor` runs `svelte-kit sync` itself, so the generated tsconfig the type checks need exists.
+         - run: npm run corridor
+         - run: npm run check:format
+         - run: npm run check:ts
+         - run: npm run lint
+         - run: npm run check:svelte
+         - run: npm run test:unit
+
+   # Every Playwright test, sharded four ways on macOS.
    #
-   # Splitting them out gives three jobs — ~59s / ~143s / ~151s in a local simulation of a GPU-less
-   # runner — so wall-clock is the slowest job rather than the sum. If the macOS legs below turn out to
-   # have a real GPU, the WebGL work collapses and `rest` becomes the long pole; rebalance then.
-   test:
-      runs-on: ${{ matrix.os }}
-      timeout-minutes: 45
+   # macOS because those runners expose a real GPU — verified from a run: ANGLE Metal Renderer (Apple
+   # Paravirtual device). On the GPU-less Ubuntu runner the WebGL specs never finished at all: one leg
+   # failed at 9m, the other was cancelled at 19m. On macOS the same specs took ~2m.
+   #
+   # Four plain count-based shards, rather than the cost-based split this replaces. That split existed
+   # only because WebGL dominated without a GPU — measured 192s / 81s / 27s / 18s across four shards.
+   # With a GPU the distortion is gone and count-based sharding balances: 29s / 33s / 23s / 20s locally.
+   e2e:
+      runs-on: macos-latest
+      timeout-minutes: 30
       strategy:
          fail-fast: false
          matrix:
-            include:
-               # The non-WebGL leg has no GPU work at all, so the cheaper Linux runner is right for it.
-               - name: rest
-                 os: ubuntu-latest
-                 shard: --grep-invert @webgl
-                 browsers: chromium webkit
-               # The WebGL legs go to macOS. On the Ubuntu runner B3's terrain scene is rasterised by
-               # SwiftShader on two cores and did not reach `idle` inside 60 s; Apple Silicon runners are
-               # faster per core and may expose Metal, which locally was the difference between ~20 s and
-               # ~1.4 s. The renderer step below records which of the two we are actually getting.
-               - name: webgl-1
-                 os: macos-latest
-                 shard: --grep @webgl --shard=1/2
-                 browsers: chromium
-               - name: webgl-2
-                 os: macos-latest
-                 shard: --grep @webgl --shard=2/2
-                 browsers: chromium
+            shard: [1, 2, 3, 4]
 
       steps:
          - uses: actions/checkout@v4
@@ -64,64 +69,45 @@ jobs:
 
          - run: npm ci
 
-         - run: npm run sync
-
          # The map tiles. One located page load pulls ~66 objects from tiles.versatiles.org; across the
          # suite that is thousands of requests for the same handful of tiles. Restoring this keeps the run
          # fast and keeps us from hammering a free community service on every push.
          #
-         # The key is unique per run so it never hits, and restore-keys falls back to the most recent
-         # cache — the standard "always restore the latest, always save an updated copy" pattern. New
-         # tiles a run happens to need are fetched once and folded in, rather than the cache freezing.
+         # Keyed per shard, since each shard needs a different subset. The key is unique per run so it
+         # never hits, and restore-keys falls back to the most recent — the standard "restore the latest,
+         # save an updated copy" pattern, so newly needed tiles are fetched once and folded in.
          - name: Cache map tiles
            uses: actions/cache@v4
            with:
               path: .cache/tiles
-              key: tiles-${{ runner.os }}-${{ matrix.name }}-${{ github.run_id }}
+              key: tiles-${{ runner.os }}-${{ matrix.shard }}-${{ github.run_id }}
               restore-keys: |
-                 tiles-${{ runner.os }}-${{ matrix.name }}-
+                 tiles-${{ runner.os }}-${{ matrix.shard }}-
 
-         # corridor.generated.ts is git-ignored and written by `prebuild`, so a fresh clone has no such
-         # file — and the type checks below run before anything builds.
          - run: npm run corridor
 
-         # Shard-independent, so run them once rather than three times over.
-         - if: matrix.name == 'rest'
-           run: npm run check:format
-         - if: matrix.name == 'rest'
-           run: npm run check:ts
-         - if: matrix.name == 'rest'
-           run: npm run lint
-         - if: matrix.name == 'rest'
-           run: npm run check:svelte
-         - if: matrix.name == 'rest'
-           run: npm run test:unit
-
          # Browsers are ~400 MB and unchanged between runs; key on the Playwright version so a bump
-         # invalidates it. The WebGL shards only run the chromium project, so they skip WebKit entirely.
+         # invalidates it. Playwright stores them under ~/Library/Caches on macOS, not ~/.cache.
          - name: Resolve the Playwright version
            id: pw
            run: echo "version=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
 
          - uses: actions/cache@v4
            with:
-              # Playwright stores browsers under ~/Library/Caches on macOS and ~/.cache on Linux.
-              path: ${{ runner.os == 'macOS' && '~/Library/Caches/ms-playwright' || '~/.cache/ms-playwright' }}
-              key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ matrix.name }}
+              path: ~/Library/Caches/ms-playwright
+              key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
-         # `--with-deps` still runs on a cache hit — on Linux the system libraries live outside the cached
-         # directory. It is a no-op on macOS.
          - name: Install browsers
-           run: npx playwright install --with-deps ${{ matrix.browsers }}
+           run: npx playwright install chromium webkit
 
-         # Which renderer Chromium actually gets here. Metal means the GPU is available; SwiftShader means
-         # we are paying for macOS and rasterising on the CPU anyway, and the legs should move back.
+         # Records whether this runner still has a GPU. If it ever prints SwiftShader instead of Metal,
+         # the timings above stop holding and the shape of this workflow needs revisiting.
          - name: Report the WebGL renderer
-           if: matrix.name != 'rest'
+           if: matrix.shard == 1
            run: |
               cat > tests/renderer-report.spec.ts <<'EOF'
               import { test } from './fixtures';
-              test('renderer @webgl', async ({ page }) => {
+              test('renderer', async ({ page }) => {
                 await page.goto('about:blank');
                 const renderer = await page.evaluate(() => {
                   const gl = document.createElement('canvas').getContext('webgl2');
@@ -129,26 +115,26 @@ jobs:
                   const dbg = gl.getExtension('WEBGL_debug_renderer_info');
                   return dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : 'no debug ext';
                 });
-                console.log(`::notice title=WebGL on ${process.env.RUNNER_OS}::${renderer}`);
+                console.log(`::notice title=WebGL::${renderer}`);
               });
               EOF
               npx playwright test tests/renderer-report.spec.ts --project chromium --reporter=list
               rm -f tests/renderer-report.spec.ts
 
          - name: End-to-end tests
-           run: npx playwright test ${{ matrix.shard }}
+           run: npx playwright test --shard=${{ matrix.shard }}/4
            env:
               CI: true
 
          - uses: actions/upload-artifact@v4
            if: ${{ !cancelled() }}
            with:
-              name: playwright-report-${{ matrix.name }}
+              name: playwright-report-${{ matrix.shard }}
               path: playwright-report/
               retention-days: 7
 
    build:
-      needs: test
+      needs: [checks, e2e]
       if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       runs-on: ubuntu-latest
       timeout-minutes: 15
