@@ -95,8 +95,10 @@
 			preserveAspectRatio="xMidYMid meet"
 		/>
 		<!-- ground silhouette below the horizon → the Sun / corona sink into it at sunset (tall enough to
-		     always reach the bottom of the frame, even once the horizon has risen well above centre) -->
-		<rect class="loupe-ground" x="-50" y={horizonY} width="100" height={300 - horizonY} />
+		     always reach the bottom of the frame, even once the horizon has risen well above centre).
+		     Clamped at 0: with the Sun high, horizonY runs to several hundred units and a negative height
+		     is invalid SVG — the browser rejects the attribute and logs an error every frame. -->
+		<rect class="loupe-ground" x="-50" y={horizonY} width="100" height={Math.max(0, 300 - horizonY)} />
 	</svg>
 </div>
 
