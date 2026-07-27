@@ -1,6 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import type { Vec3 } from '$lib/types';
-import { dot, cross, length, normalize, sub, negate, lerp, offset, clamp, toLonLat, latLonToUnitVector, destPoint } from './vec3';
+import {
+	dot,
+	cross,
+	length,
+	normalize,
+	sub,
+	negate,
+	lerp,
+	offset,
+	clamp,
+	toLonLat,
+	latLonToUnitVector,
+	destPoint
+} from './vec3';
 import { DEG_TO_RAD, EARTH_RADIUS_M } from '$lib/constants';
 
 const X: Vec3 = [1, 0, 0];
@@ -171,11 +184,14 @@ describe('destPoint', () => {
 		// Reverse bearing along a great circle is not simply bearing+180 over long distances, so
 		// walk back with the bearing measured at the destination.
 		const initial = 33 * DEG_TO_RAD;
-		const back = (Math.atan2(
-			Math.sin((11.5756 - lon1) * DEG_TO_RAD) * Math.cos(48.1372 * DEG_TO_RAD),
-			Math.cos(lat1 * DEG_TO_RAD) * Math.sin(48.1372 * DEG_TO_RAD) -
-				Math.sin(lat1 * DEG_TO_RAD) * Math.cos(48.1372 * DEG_TO_RAD) * Math.cos((11.5756 - lon1) * DEG_TO_RAD)
-		) * 180) / Math.PI;
+		const back =
+			(Math.atan2(
+				Math.sin((11.5756 - lon1) * DEG_TO_RAD) * Math.cos(48.1372 * DEG_TO_RAD),
+				Math.cos(lat1 * DEG_TO_RAD) * Math.sin(48.1372 * DEG_TO_RAD) -
+					Math.sin(lat1 * DEG_TO_RAD) * Math.cos(48.1372 * DEG_TO_RAD) * Math.cos((11.5756 - lon1) * DEG_TO_RAD)
+			) *
+				180) /
+			Math.PI;
 		const [lon2, lat2] = destPoint(lat1, lon1, back, 40_000);
 		expect(lat2).toBeCloseTo(48.1372, 6);
 		expect(lon2).toBeCloseTo(11.5756, 6);

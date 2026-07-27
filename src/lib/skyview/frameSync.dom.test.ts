@@ -13,7 +13,8 @@ const emptySun = (): SunState => ({
 	angRad: 0,
 	moon: [0, 0],
 	moonR: 1,
-	visible: false
+	visible: false,
+	screen: null
 });
 
 const OVIEDO = byName('Oviedo');

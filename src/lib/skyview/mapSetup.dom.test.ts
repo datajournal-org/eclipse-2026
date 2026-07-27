@@ -42,8 +42,16 @@ describe('buildMapStyle', () => {
 			type: 'raster-dem',
 			tiles: ['https://tiles.versatiles.org/tiles/elevation/{z}/{x}/{y}'],
 			tileSize: 512,
+			maxzoom: 12,
 			encoding: 'terrarium'
 		});
+	});
+
+	it('caps the DEM at the zoom the source actually has', () => {
+		// The elevation tiles stop at z12 (its tiles.json says so). Without the cap MapLibre requests
+		// z13+ at B3's zoom 16 and every one of them 404s — which also stopped the map ever settling.
+		const { style } = buildMapStyle(fakeColorful as unknown as Colorful);
+		expect((style.sources.dem as { maxzoom: number }).maxzoom).toBe(12);
 	});
 
 	it('keeps the base tile source', () => {
@@ -172,7 +180,7 @@ describe('sunArcEnvelope', () => {
 		for (let i = 0; i <= N; i += 10) {
 			const { az, alt } = sunMoonHorizon(site.lat, site.lon, new Date(times[i])).sun;
 			// azimuth may be unwrapped, so compare modulo 360
-			const wrapped = ((az - arc.azMin) % 360 + 360) % 360;
+			const wrapped = (((az - arc.azMin) % 360) + 360) % 360;
 			expect(wrapped, `sample ${i}`).toBeLessThanOrEqual(arc.azMax - arc.azMin + 1e-9);
 			expect(alt, `sample ${i}`).toBeLessThanOrEqual(arc.altMax + 1e-9);
 		}

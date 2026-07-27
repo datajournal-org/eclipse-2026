@@ -40,8 +40,7 @@ describe('buildTimeAxis', () => {
 
 	it('keeps the totality band narrow', () => {
 		const { axis } = axisFor('Oviedo');
-		expect(axis.band!.to - axis.band!.from).toBeLessThan
-			(0.02);
+		expect(axis.band!.to - axis.band!.from).toBeLessThan(0.02);
 		expect(axis.band!.to - axis.band!.from).toBeGreaterThan(0);
 	});
 

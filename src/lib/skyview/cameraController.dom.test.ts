@@ -7,7 +7,11 @@ import { byName } from '$lib/testing/reference';
 const OVIEDO = byName('Oviedo');
 const FRAMING = { fov: 60, meanAz: 280 };
 
-type Rig = { m: FakeMap; controller: ReturnType<typeof createCameraController>; raf: ReturnType<typeof installFakeRaf> };
+type Rig = {
+	m: FakeMap;
+	controller: ReturnType<typeof createCameraController>;
+	raf: ReturnType<typeof installFakeRaf>;
+};
 
 let rigs: Rig[] = [];
 
@@ -32,7 +36,12 @@ function makeRig(opts: { terrainElevation?: number | null; altMax?: number } = {
 function lastPose(m: FakeMap) {
 	const call = m.lastCall('calculateCameraOptionsFromTo');
 	if (!call) return null;
-	const [from, fromAlt, to, toAlt] = call.args as [{ lng: number; lat: number }, number, { lng: number; lat: number }, number];
+	const [from, fromAlt, to, toAlt] = call.args as [
+		{ lng: number; lat: number },
+		number,
+		{ lng: number; lat: number },
+		number
+	];
 	return { from, camAlt: fromAlt, to, groundAlt: toAlt };
 }
 
@@ -254,7 +263,12 @@ describe('zoom', () => {
 		controller.applyFraming();
 		m.canvas.emit('wheel', { deltaY: -300, deltaMode: 0 });
 		expect(raf.pending()).toBe(1);
-		m.canvas.emit('touchstart', { touches: [{ clientX: 0, clientY: 0 }, { clientX: 80, clientY: 0 }] });
+		m.canvas.emit('touchstart', {
+			touches: [
+				{ clientX: 0, clientY: 0 },
+				{ clientX: 80, clientY: 0 }
+			]
+		});
 		expect(raf.cancel).toHaveBeenCalled();
 	});
 

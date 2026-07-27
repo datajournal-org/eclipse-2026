@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { DEG_TO_RAD, RAD_TO_DEG, norm180, AU_KM, SUN_RADIUS_KM, MOON_RADIUS_KM, EARTH_RADIUS_KM, EARTH_RADIUS_M } from './constants';
+import {
+	DEG_TO_RAD,
+	RAD_TO_DEG,
+	norm180,
+	AU_KM,
+	SUN_RADIUS_KM,
+	MOON_RADIUS_KM,
+	EARTH_RADIUS_KM,
+	EARTH_RADIUS_M
+} from './constants';
 
 describe('angle conversion', () => {
 	it('round-trips degrees through radians', () => {
@@ -64,7 +73,7 @@ describe('physical constants', () => {
 		expect(EARTH_RADIUS_M).toBe(EARTH_RADIUS_KM * 1000);
 	});
 
-	it("gives the Sun an apparent radius of about a quarter degree at 1 AU", () => {
+	it('gives the Sun an apparent radius of about a quarter degree at 1 AU', () => {
 		expect(Math.asin(SUN_RADIUS_KM / AU_KM) * RAD_TO_DEG).toBeCloseTo(0.2666, 3);
 	});
 });

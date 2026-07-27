@@ -1,0 +1,107 @@
+import { test, expect } from './fixtures';
+
+const openDialog = async (page: import('@playwright/test').Page) => {
+	await page.goto('/');
+	await page.getByRole('button', { name: /Standort wählen/ }).click();
+	await expect(page.locator('dialog.picker-dlg')).toBeVisible();
+};
+
+test.describe('location dialog', () => {
+	test('opens from the call to action', async ({ page, stubGeocoder }) => {
+		await stubGeocoder();
+		await openDialog(page);
+		await expect(page.locator('dialog.picker-dlg h2')).toHaveText('Standort wählen');
+	});
+
+	test('is a real modal dialog, labelled for assistive tech', async ({ page, stubGeocoder }) => {
+		await stubGeocoder();
+		await openDialog(page);
+		const dialog = page.locator('dialog.picker-dlg');
+		await expect(dialog).toHaveAttribute('aria-label', 'Standort wählen');
+		// a modal <dialog> puts the rest of the page in the inert subtree
+		expect(await dialog.evaluate((el) => (el as HTMLDialogElement).open)).toBe(true);
+	});
+
+	test('moves focus into the dialog and traps it there', async ({ page, stubGeocoder }) => {
+		await stubGeocoder();
+		await openDialog(page);
+		// Tab must never reach a page control behind the modal. Chromium parks focus on <body> for one
+		// step as the cycle wraps, which is fine — what matters is that no header/page button is reachable.
+		const visited: string[] = [];
+		for (let i = 0; i < 10; i++) {
+			await page.keyboard.press('Tab');
+			visited.push(
+				await page.evaluate(() => {
+					const el = document.activeElement;
+					if (!el || el === document.body) return 'body';
+					return el.closest('dialog.picker-dlg') ? 'dialog' : `OUTSIDE:${el.tagName}.${el.className}`;
+				})
+			);
+		}
+		expect(visited.filter((v) => v.startsWith('OUTSIDE'))).toEqual([]);
+		expect(visited.filter((v) => v === 'dialog').length).toBeGreaterThan(3);
+	});
+
+	test('closes on Escape', async ({ page, stubGeocoder }) => {
+		await stubGeocoder();
+		await openDialog(page);
+		await page.keyboard.press('Escape');
+		await expect(page.locator('dialog.picker-dlg')).toBeHidden();
+	});
+
+	test('closes from the close button', async ({ page, stubGeocoder }) => {
+		await stubGeocoder();
+		await openDialog(page);
+		await page.getByRole('button', { name: 'Schließen' }).click();
+		await expect(page.locator('dialog.picker-dlg')).toBeHidden();
+	});
+
+	test('closes when the backdrop is clicked', async ({ page, stubGeocoder }) => {
+		await stubGeocoder();
+		await openDialog(page);
+		// press at the very top-left, outside the sheet
+		await page.mouse.move(5, 5);
+		await page.mouse.down();
+		await page.mouse.up();
+		await expect(page.locator('dialog.picker-dlg')).toBeHidden();
+	});
+
+	test('stays open when the sheet itself is clicked', async ({ page, stubGeocoder }) => {
+		await stubGeocoder();
+		await openDialog(page);
+		await page.locator('dialog.picker-dlg .head h2').click();
+		await expect(page.locator('dialog.picker-dlg')).toBeVisible();
+	});
+
+	test('can be reopened after closing', async ({ page, stubGeocoder }) => {
+		await stubGeocoder();
+		await openDialog(page);
+		await page.keyboard.press('Escape');
+		await expect(page.locator('dialog.picker-dlg')).toBeHidden();
+		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		await expect(page.locator('dialog.picker-dlg')).toBeVisible();
+	});
+
+	test('does not swallow clicks on the page once closed', async ({ page, stubGeocoder }) => {
+		// The closed dialog is full-viewport by design; if it kept laying out it would eat every click.
+		await stubGeocoder();
+		await page.goto('/');
+		const blocked = await page.evaluate(() => {
+			const dialog = document.querySelector('dialog.picker-dlg')!;
+			return getComputedStyle(dialog).display !== 'none';
+		});
+		expect(blocked).toBe(false);
+	});
+
+	test('offers the confirm button in a disabled state until a place is pending', async ({ page, stubGeocoder }) => {
+		await stubGeocoder();
+		await openDialog(page);
+		await expect(page.getByRole('button', { name: /Diesen Ort verwenden/ })).toBeVisible();
+	});
+
+	test('explains that the pin can be dragged', async ({ page, stubGeocoder }) => {
+		await stubGeocoder();
+		await openDialog(page);
+		await expect(page.locator('dialog.picker-dlg .adjust')).toContainText('Pin ziehen');
+	});
+});

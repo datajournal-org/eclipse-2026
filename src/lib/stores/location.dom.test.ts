@@ -43,7 +43,9 @@ describe('initial value', () => {
 	});
 
 	it('restores from localStorage', async () => {
-		const { userLocation } = await loadWith({ stored: JSON.stringify({ lat: 48.1372, lon: 11.5756, name: 'München' }) });
+		const { userLocation } = await loadWith({
+			stored: JSON.stringify({ lat: 48.1372, lon: 11.5756, name: 'München' })
+		});
 		expect(get(userLocation)).toEqual({ lat: 48.1372, lon: 11.5756, name: 'München' });
 	});
 

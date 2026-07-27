@@ -144,10 +144,11 @@ describe('computeCorridor', () => {
 		expect(computeCorridor()).toEqual(edges);
 	});
 
-	it('keeps both edges outside the umbra centre line', () => {
+	it('is built from an instant where the umbra really reaches Earth', () => {
+		// Precondition for everything above: with the axis foot outside the unit sphere there would be
+		// no umbra footprint to take the union of, and the corridor would come back empty.
 		const model = computeShadowModel(sunMoonECEF(new Date(GREATEST.utc)));
-		const footLen = length(model.center as Vec3);
-		expect(footLen).toBeLessThan(1); // sanity: the umbra does reach Earth at that instant
+		expect(length(model.center as Vec3)).toBeLessThan(1);
 	});
 });
 
@@ -162,7 +163,6 @@ describe('corridor.generated.ts', () => {
 		try {
 			generated = (await import('./corridor.generated')).corridorEdges;
 		} catch {
-			// eslint-disable-next-line no-console
 			console.warn('corridor.generated.ts is absent — run `npm run corridor`; skipping staleness check');
 			return;
 		}

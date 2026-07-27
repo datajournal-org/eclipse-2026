@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { ECLIPSE_DATE, shadowCenter, sunMoonECEF, greatestEclipse, sunMoonHorizon, localCircumstances, sunset } from './eclipse';
+import {
+	ECLIPSE_DATE,
+	shadowCenter,
+	sunMoonECEF,
+	greatestEclipse,
+	sunMoonHorizon,
+	localCircumstances,
+	sunset
+} from './eclipse';
 import { TIMELINE_START, TIMELINE_END, FRAME_STEP_MS } from './config';
 import { RAD_TO_DEG, EARTH_RADIUS_KM } from './constants';
 import { REFERENCE, GREATEST, hhmmUtc, byName } from './testing/reference';
@@ -38,7 +46,8 @@ describe('shadowCenter', () => {
 		// there) must land on the same spot — this is the calibration test for the whole shadow track.
 		const p = shadowCenter(new Date(GREATEST.utc));
 		expect(p).not.toBeNull();
-		expect(distKm(p!, greatestEclipse())).toBeLessThan(5);
+		const g = greatestEclipse();
+		expect(distKm(p!, { lat: g.lat!, lon: g.lon! })).toBeLessThan(5);
 	});
 
 	it('returns null while the umbra has not reached Earth', () => {
@@ -82,7 +91,8 @@ describe('shadowCenter', () => {
 		let prevT = 0;
 		for (let t = at('17:00:00').getTime(); t <= at('18:35:00').getTime(); t += FRAME_STEP_MS) {
 			const p = shadowCenter(new Date(t));
-			if (p && prev) speeds.push({ t: new Date(t).toISOString(), v: (distKm(prev, p) * 1000) / ((t - prevT) / 1000) });
+			if (p && prev)
+				speeds.push({ t: new Date(t).toISOString(), v: (distKm(prev, p) * 1000) / ((t - prevT) / 1000) });
 			if (p) {
 				prev = p;
 				prevT = t;
@@ -207,8 +217,7 @@ describe('sunMoonHorizon', () => {
 		// in the app that promises "you'll see it from the summit" needs its own dip term.
 		const low = sunMoonHorizon(39.5696, 2.6502, at('18:31:00'), 0).sun.alt;
 		const high = sunMoonHorizon(39.5696, 2.6502, at('18:31:00'), 3000).sun.alt;
-		expect(Math.abs(high - low)).toBeLessThan
-			(0.01);
+		expect(Math.abs(high - low)).toBeLessThan(0.01);
 	});
 });
 
@@ -265,8 +274,8 @@ describe('localCircumstances', () => {
 	});
 
 	it('sweeps the maximum from west to east across the path', () => {
-		const order = ['Reykjavík', 'Berlin', 'München', 'Oviedo', 'Palma'].map(
-			(n) => localCircumstances(byName(n).lat, byName(n).lon)!.peak!.time.getTime()
+		const order = ['Reykjavík', 'Berlin', 'München', 'Oviedo', 'Palma'].map((n) =>
+			localCircumstances(byName(n).lat, byName(n).lon)!.peak!.time.getTime()
 		);
 		expect(order).toEqual([...order].sort((a, b) => a - b));
 	});

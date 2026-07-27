@@ -43,11 +43,14 @@ describe('discOverlapFraction', () => {
 			[1, 1, 1],
 			[1, 1, 0.5],
 			[1, 1.05, 0.7],
-			[0.2631, 0.2710, 0.3],
-			[0.2631, 0.2710, 0.5],
+			[0.2631, 0.271, 0.3],
+			[0.2631, 0.271, 0.5],
 			[1, 0.9, 1.5]
 		]) {
-			expect(discOverlapFraction(rs, rm, d), `${rs}/${rm}/${d}`).toBeCloseTo(lensArea(rs, rm, d) / (Math.PI * rs * rs), 12);
+			expect(discOverlapFraction(rs, rm, d), `${rs}/${rm}/${d}`).toBeCloseTo(
+				lensArea(rs, rm, d) / (Math.PI * rs * rs),
+				12
+			);
 		}
 	});
 

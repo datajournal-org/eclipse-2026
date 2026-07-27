@@ -77,7 +77,11 @@ describe('attach', () => {
 		// Anchoring to the viewport is what stops the text from tipping over with the globe.
 		attached();
 		for (const marker of FakeMarker.instances) {
-			expect(marker.options).toMatchObject({ anchor: 'top', rotationAlignment: 'viewport', pitchAlignment: 'viewport' });
+			expect(marker.options).toMatchObject({
+				anchor: 'top',
+				rotationAlignment: 'viewport',
+				pitchAlignment: 'viewport'
+			});
 		}
 	});
 

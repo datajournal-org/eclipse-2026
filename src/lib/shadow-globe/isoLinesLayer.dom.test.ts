@@ -163,7 +163,9 @@ describe('render', () => {
 		gl.reset();
 		layer.render(gl, input);
 
-		expect((gl.callsTo('bufferData')[0].args[1] as Float32Array).length).toBe(a.positions.length + b.positions.length);
+		expect((gl.callsTo('bufferData')[0].args[1] as Float32Array).length).toBe(
+			a.positions.length + b.positions.length
+		);
 		// the second primitive's draw range starts after the first one's vertices
 		const draws = gl.drawCalls();
 		expect(draws).toHaveLength(2);

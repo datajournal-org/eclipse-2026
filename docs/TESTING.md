@@ -1,4 +1,8 @@
-# Test plan
+# Testing
+
+**Status: implemented.** 589 Vitest tests (`npm run test:unit`, ~2 s) and 213 Playwright tests across four
+browser projects (`npm run test:e2e`, ~12 min). `npm run check` runs both. What follows is the plan the
+suite was built from; §7 records where the implementation diverged from it and what the suite found.
 
 Two layers, no overlap:
 
@@ -380,3 +384,56 @@ Each step ends green, so the suite is useful before it is complete.
   `astronomy-engine`. An upstream ephemeris change would move both. Cross-checking two or three values
   against an independent source (e.g. NASA's eclipse pages) once, by hand, is worth doing before the table
   becomes load-bearing for the whole suite.
+
+---
+
+## 7. What the implementation changed, and what it found
+
+### Divergences from the plan above
+
+- **`fullyParallel: false`.** With it on, several software-GL contexts starve each other and B3 never
+  reaches `idle`. Parallelism is now per file, which is enough.
+- **Playwright projects** are `chromium` (full suite), `mobile` (`@mobile` specs), `webkit` (everything
+  except `@webgl`) and `chromium-en` (`@i18n` specs in en-GB / America/New_York).
+- **No B2 spec.** There is no separate phase-timeline component; the B3 scrubber's ticks and totality band
+  carry that information, and `b3-scrubber.spec.ts` covers them.
+- **No checklist toggling.** B6's items are static `<li>`s, not checkboxes, so the spec covers the list, the
+  countdown and the `.ics` download instead.
+- **No screenshots.** The three planned visual comparisons were dropped: under headless software GL the
+  output is not stable enough for a 2 % threshold to mean anything. The behavioural assertions (loupe
+  horizon, veil luminance, locator tracking) cover the same ground without the flake.
+- **No wall-clock scrub budget.** Under swiftshader the time is dominated by rasterisation, so a threshold
+  would measure the renderer rather than the app. `b3-scrubber.spec.ts` sweeps the full range and asserts a
+  live readout and no console errors instead.
+- **`corridorModule.ts`** was extracted from `scripts/build-corridor.ts` so the generated-file rendering is
+  testable without touching the filesystem, as §2.7 proposed.
+
+### Defects the suite found
+
+Three were fixed as part of building it:
+
+1. **`norm180` was wrong below -540°** (`constants.ts`) — JS `%` keeps the dividend's sign, so a single
+   `(deg + 540) % 360` returned out-of-range values. Both call sites happened to stay just inside the safe
+   range. Fixed with an inner `% 360`.
+2. **The DEM source requested zoom levels that do not exist** (`skyview/mapSetup.ts`) — the VersaTiles
+   elevation tiles stop at z12, but the source declared no `maxzoom`, so B3 (zoom 16) fired a stream of
+   404s and the map never reached `idle`. Fixed with `maxzoom: 12`.
+3. **The loupe emitted an invalid negative `<rect height>`** (`components/SkyLoupe.svelte`) — with the Sun
+   well up, `300 - horizonY` goes negative, the browser rejects the attribute and logs an error every
+   frame. Fixed with a `Math.max(0, …)` clamp.
+
+Four are recorded by tests but left alone, because each needs a product decision rather than a fix:
+
+- **`app.html` has no `<title>`.** The browser tab and any shared link show the bare URL.
+- **`localCircumstances` silently returns a different eclipse** for locations the 2026 event misses — it
+  searches forward from eclipse day, so Sydney gets the 2028 one. Callers that care must compare the
+  returned date against `ECLIPSE_DATE`. Pinned in `eclipse.test.ts`.
+- **The "Nichts gefunden" message is unreachable.** `LocationDialog` renders the result list only
+  `{#if searching || searchErr || results.length}`, so zero hits removes the `<ul>` before the no-results
+  branch can run — the user gets silence. Pinned in `location-search.spec.ts`.
+- **The time scrubber's track is 18 px tall**, under WCAG 2.5.8's 24×24 target guidance. It does work by
+  touch (`responsive.spec.ts` proves it), but it is smaller than the guideline wants.
+
+Two more are documented in tests as deliberate behaviour rather than bugs: `radiusForCoverage(model, 1)`
+returns 0 rather than the umbra rim (every caller passes 0.999), and `sunMoonHorizon`'s `elevation`
+parameter models parallax only, not the ~1.8° horizon dip a mountain observer actually gains.

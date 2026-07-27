@@ -9,11 +9,10 @@ const feature = (properties: Record<string, unknown>, coordinates: [number, numb
 
 /** Stub `fetch` with a JSON body; returns the spy so tests can inspect the request URL. */
 const stubJson = (body: unknown, init: { ok?: boolean; status?: number } = {}) => {
-	const spy = vi.fn(async () => ({
-		ok: init.ok ?? true,
-		status: init.status ?? 200,
-		json: async () => body
-	}));
+	const spy = vi.fn(async (url: string) => {
+		void url;
+		return { ok: init.ok ?? true, status: init.status ?? 200, json: async () => body };
+	});
 	vi.stubGlobal('fetch', spy);
 	return spy;
 };
@@ -34,7 +33,7 @@ describe('searchPlaces', () => {
 	it('queries the VersaTiles Photon instance', async () => {
 		const spy = stubJson({ features: [] });
 		await searchPlaces('Oviedo');
-		const url = new URL(spy.mock.calls[0][0] as unknown as string);
+		const url = new URL(spy.mock.calls[0][0]);
 		expect(url.origin).toBe('https://geocode.versatiles.org');
 		expect(url.pathname).toBe('/api');
 		expect(url.searchParams.get('q')).toBe('Oviedo');
@@ -44,20 +43,20 @@ describe('searchPlaces', () => {
 	it('encodes the query rather than splicing it into the URL', async () => {
 		const spy = stubJson({ features: [] });
 		await searchPlaces('Sant Julià & Cia');
-		const url = new URL(spy.mock.calls[0][0] as unknown as string);
+		const url = new URL(spy.mock.calls[0][0]);
 		expect(url.searchParams.get('q')).toBe('Sant Julià & Cia');
 	});
 
 	it('trims the query', async () => {
 		const spy = stubJson({ features: [] });
 		await searchPlaces('  Palma  ');
-		expect(new URL(spy.mock.calls[0][0] as unknown as string).searchParams.get('q')).toBe('Palma');
+		expect(new URL(spy.mock.calls[0][0]).searchParams.get('q')).toBe('Palma');
 	});
 
 	it('honours the limit', async () => {
 		const spy = stubJson({ features: [] });
 		await searchPlaces('Berlin', 'de', 12);
-		expect(new URL(spy.mock.calls[0][0] as unknown as string).searchParams.get('limit')).toBe('12');
+		expect(new URL(spy.mock.calls[0][0]).searchParams.get('limit')).toBe('12');
 	});
 
 	it.each([
@@ -70,7 +69,7 @@ describe('searchPlaces', () => {
 	])('maps locale %s to Photon language %s', async (locale, expected) => {
 		const spy = stubJson({ features: [] });
 		await searchPlaces('Madrid', locale);
-		expect(new URL(spy.mock.calls[0][0] as unknown as string).searchParams.get('lang')).toBe(expected);
+		expect(new URL(spy.mock.calls[0][0]).searchParams.get('lang')).toBe(expected);
 	});
 
 	it('flattens a full address into label and context', async () => {
@@ -138,10 +137,7 @@ describe('searchPlaces', () => {
 
 	it('skips features with no usable geometry', async () => {
 		stubJson({
-			features: [
-				{ geometry: {}, properties: { name: 'broken' } },
-				feature({ name: 'good' })
-			]
+			features: [{ geometry: {}, properties: { name: 'broken' } }, feature({ name: 'good' })]
 		});
 		expect((await searchPlaces('query')).map((h) => h.label)).toEqual(['good']);
 	});
@@ -181,7 +177,7 @@ describe('reverseGeocode', () => {
 	it('queries the reverse endpoint with lon and lat', async () => {
 		const spy = stubJson({ features: [feature({ name: 'Cudillero' })] });
 		await reverseGeocode(43.5465, -6.5321);
-		const url = new URL(spy.mock.calls[0][0] as unknown as string);
+		const url = new URL(spy.mock.calls[0][0]);
 		expect(url.pathname).toBe('/reverse');
 		expect(url.searchParams.get('lat')).toBe('43.5465');
 		expect(url.searchParams.get('lon')).toBe('-6.5321');
@@ -205,7 +201,7 @@ describe('reverseGeocode', () => {
 	it('honours the locale', async () => {
 		const spy = stubJson({ features: [] });
 		await reverseGeocode(0, 0, 'it');
-		expect(new URL(spy.mock.calls[0][0] as unknown as string).searchParams.get('lang')).toBe('it');
+		expect(new URL(spy.mock.calls[0][0]).searchParams.get('lang')).toBe('it');
 	});
 
 	it('returns null rather than throwing on an HTTP error', async () => {

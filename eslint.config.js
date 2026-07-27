@@ -6,8 +6,17 @@ import globals from 'globals';
 import svelteConfig from './svelte.config.js';
 
 export default ts.config(
-	// Not linted: build output, SvelteKit cache, and the generated corridor data.
-	{ ignores: ['.svelte-kit/', 'build/', 'src/lib/shadow-globe/corridor.generated.ts'] },
+	// Not linted: build output, SvelteKit cache, test artefacts, and the generated corridor data.
+	{
+		ignores: [
+			'.svelte-kit/',
+			'build/',
+			'coverage/',
+			'test-results/',
+			'playwright-report/',
+			'src/lib/shadow-globe/corridor.generated.ts'
+		]
+	},
 
 	js.configs.recommended,
 	...ts.configs.recommended,

@@ -61,7 +61,9 @@ describe('isoRing', () => {
 		const outer = radiusForCoverage(model, 0.2)!;
 		const centre = umbraGroundPoint(model)!;
 		const angTo = ([lon, lat]: [number, number]) =>
-			Math.acos(Math.max(-1, Math.min(1, dot(latLonToUnitVector(lat, lon), latLonToUnitVector(centre[1], centre[0])))));
+			Math.acos(
+				Math.max(-1, Math.min(1, dot(latLonToUnitVector(lat, lon), latLonToUnitVector(centre[1], centre[0]))))
+			);
 		const maxInner = Math.max(...allPoints(isoRing(model, inner)).map(angTo));
 		const minOuter = Math.min(...allPoints(isoRing(model, outer)).map(angTo));
 		expect(minOuter).toBeGreaterThan(maxInner);
@@ -192,8 +194,9 @@ describe('umbraGroundPoint', () => {
 		const p = umbraGroundPoint(model)!;
 		const ref = shadowCenter(new Date(GREATEST.utc))!;
 		const sep =
-			Math.acos(Math.max(-1, Math.min(1, dot(latLonToUnitVector(p[1], p[0]), latLonToUnitVector(ref.lat, ref.lon))))) *
-			EARTH_RADIUS_KM;
+			Math.acos(
+				Math.max(-1, Math.min(1, dot(latLonToUnitVector(p[1], p[0]), latLonToUnitVector(ref.lat, ref.lon))))
+			) * EARTH_RADIUS_KM;
 		expect(sep).toBeLessThan(40);
 	});
 
@@ -226,7 +229,7 @@ describe('labelPoint', () => {
 		const dir = tangent();
 		const p = labelPoint(model, radius, dir)!;
 		const c = latLonToUnitVector(centre[1], centre[0]);
-		const towards = normalize((latLonToUnitVector(p[1], p[0]).map((v, i) => v - c[i]) as Vec3));
+		const towards = normalize(latLonToUnitVector(p[1], p[0]).map((v, i) => v - c[i]) as Vec3);
 		expect(dot(towards, dir)).toBeGreaterThan(0.9);
 	});
 
@@ -253,9 +256,7 @@ describe('labelPoint', () => {
 	it('returns null when the crossing would be on the night side', () => {
 		// Aim away from the Sun: the ray leaves the day side before reaching the ring.
 		const c = latLonToUnitVector(centre[1], centre[0]);
-		const away = normalize(
-			(model.sunDir.map((v, i) => -v + dot(model.sunDir, c) * c[i]) as Vec3)
-		);
+		const away = normalize(model.sunDir.map((v, i) => -v + dot(model.sunDir, c) * c[i]) as Vec3);
 		const p = labelPoint(model, radiusForCoverage(model, 0.02)!, away);
 		if (p !== null) expect(dot(latLonToUnitVector(p[1], p[0]), model.sunDir)).toBeGreaterThan(0);
 	});

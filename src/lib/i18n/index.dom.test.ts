@@ -262,6 +262,9 @@ function allKeys(dict: unknown, prefix = ''): string[] {
 function lookup(dict: unknown, key: string): string | undefined {
 	const value = key
 		.split('.')
-		.reduce<unknown>((o, k) => (o != null && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined), dict);
+		.reduce<unknown>(
+			(o, k) => (o != null && typeof o === 'object' ? (o as Record<string, unknown>)[k] : undefined),
+			dict
+		);
 	return typeof value === 'string' ? value : undefined;
 }

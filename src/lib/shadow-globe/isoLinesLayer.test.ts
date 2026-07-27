@@ -80,12 +80,30 @@ describe('linePrimitiveFromSegments', () => {
 	});
 
 	it('defaults to line mode', () => {
-		const prim = linePrimitiveFromSegments([[[0, 0], [1, 1]]], RED, 1);
+		const prim = linePrimitiveFromSegments(
+			[
+				[
+					[0, 0],
+					[1, 1]
+				]
+			],
+			RED,
+			1
+		);
 		expect(prim.mode).toBeUndefined();
 	});
 
 	it('projects each vertex', () => {
-		const prim = linePrimitiveFromSegments([[[0, 0], [90, 0]]], RED, 1);
+		const prim = linePrimitiveFromSegments(
+			[
+				[
+					[0, 0],
+					[90, 0]
+				]
+			],
+			RED,
+			1
+		);
 		expect([...prim.positions]).toEqual([0.5, 0.5, 0.75, 0.5]);
 	});
 
@@ -93,7 +111,14 @@ describe('linePrimitiveFromSegments', () => {
 		// A one-vertex LINE_STRIP renders nothing but would still consume a draw call and shift the
 		// `first` offsets of everything after it.
 		const prim = linePrimitiveFromSegments(
-			[[[0, 0]], [[0, 0], [10, 10]], []],
+			[
+				[[0, 0]],
+				[
+					[0, 0],
+					[10, 10]
+				],
+				[]
+			],
 			RED,
 			1
 		);
@@ -104,9 +129,16 @@ describe('linePrimitiveFromSegments', () => {
 	it('keeps segment offsets contiguous after dropping one', () => {
 		const prim = linePrimitiveFromSegments(
 			[
-				[[0, 0], [10, 0]],
+				[
+					[0, 0],
+					[10, 0]
+				],
 				[[20, 0]],
-				[[30, 0], [40, 0], [50, 0]]
+				[
+					[30, 0],
+					[40, 0],
+					[50, 0]
+				]
 			],
 			RED,
 			1
