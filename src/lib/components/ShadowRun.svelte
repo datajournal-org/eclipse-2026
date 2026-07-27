@@ -40,6 +40,20 @@
 	const INITIAL_VIEW = { center: [-18, 50] as [number, number], zoom: 1.21 };
 	const TERMINATOR_OPACITY = 0.35;
 
+	/**
+	 * The region the opening shot must contain: the Atlantic leg of the path, from Greenland/Iceland down
+	 * to Iberia and the Balearics. Used as a *zoom* constraint only — see `fitZoom` below.
+	 *
+	 * Under globe projection the rendered globe is a fixed pixel size for a given zoom: its radius depends
+	 * on the zoom and (weakly) on the container's height, and **not at all on its width**. So `INITIAL_VIEW.zoom`
+	 * draws a 406 px globe whether the stage is 680 px wide or 390 px — which is why a value framed on a
+	 * desktop overflows a phone, clipped left and right.
+	 */
+	const FRAME_BOUNDS: [[number, number], [number, number]] = [
+		[-73, 22.5],
+		[37, 77.5]
+	];
+
 	// Coverage rings drawn live around the current shadow. `level` = obscuration threshold (0..1);
 	// `percent` drives both the ring opacity and the label text.
 	const ISO_RINGS = [
@@ -170,6 +184,10 @@
 							attribution: '© <a href="https://versatiles.org/sources/">VersaTiles sources</a>'
 						}
 					},
+					// Stated rather than relied upon: globe happens to be MapLibre's default, but the whole
+					// A2 design (shadow layer, iso rings, the fit below) assumes a sphere, and a changed
+					// default would silently turn it into a flat map.
+					projection: { type: 'globe' },
 					layers: [
 						{ id: 'bg', type: 'background', paint: { 'background-color': brand.bg.hex } },
 						{ id: 'sat', type: 'raster', source: 'sat', paint: { 'raster-brightness-max': 0.9 } }
@@ -177,6 +195,26 @@
 				}
 			});
 			map = m;
+
+			// Shrink the globe on a narrow stage so it is never clipped, using MapLibre's own bounds fit —
+			// which, unlike a fixed zoom, reads the container. Three things this has to get right:
+			//
+			//  · Only the ZOOM is taken from it. `fitBounds` also recentres, and derives the centre in
+			//    mercator space, so FRAME_BOUNDS' mid-latitude lands at 59.7°N, not the 50°N this shot is
+			//    framed on.
+			//  · `maxZoom` pins the wide case to the hand-tuned value, so anything from a tablet up stays
+			//    pixel-identical to before and only phones get a smaller globe.
+			//  · It must run AFTER the style resolves. `cameraForBounds` dispatches to a per-projection
+			//    camera helper, and until the style applies, the map is still mercator — the fit then comes
+			//    back ~1.26 for a phone (a mercator answer), the cap swallows it, and the globe is clipped
+			//    exactly as before. `style.load` is early enough that no frame has been painted.
+			const applyFit = () => {
+				const fit = m.cameraForBounds(FRAME_BOUNDS, { padding: 8, maxZoom: INITIAL_VIEW.zoom });
+				if (fit) m.jumpTo({ center: INITIAL_VIEW.center, zoom: fit.zoom });
+			};
+			if (m.isStyleLoaded()) applyFit();
+			else m.once('style.load', applyFit);
+
 			if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { __map: m });
 			// Surface style/tile/WebGL errors that would otherwise be swallowed (and can stall loading).
 			m.on('error', (e) => console.error('[A2] map error:', (e as { error?: unknown }).error ?? e));

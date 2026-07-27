@@ -1,4 +1,5 @@
 import { test, expect, mapReady, setFrame, maxFrame, slider, localeUrl, openSharedPage } from './fixtures';
+import type { Map as MlMap } from 'maplibre-gl';
 
 const A2 = 'section.a2';
 
@@ -93,5 +94,64 @@ test.describe('A2 shadow run @webgl', () => {
 
 	test('keeps its attribution visible', async () => {
 		await expect(page.locator(`${A2} .maplibregl-ctrl-attrib`)).toBeVisible();
+	});
+});
+
+/**
+ * The opening shot must fit the stage it is drawn on. Under globe projection a zoom level fixes the
+ * globe's size in PIXELS — the container's width does not enter into it — so a value framed on a desktop
+ * stage drew a 406 px globe into a 390 px phone stage and lost its left and right edges. These run at
+ * real viewport sizes rather than through the shared page, because the whole point is the container.
+ */
+test.describe('A2 opening framing', () => {
+	/** Radius of the globe's silhouette in CSS pixels: centre → the point 90° of arc away. */
+	const globeDiameter = (page: import('@playwright/test').Page) =>
+		page.evaluate(() => {
+			const m = (window as unknown as { __map: MlMap }).__map;
+			const c = m.getCenter();
+			const edge = m.project([c.lng + 90, c.lat]);
+			const mid = m.project([c.lng, c.lat]);
+			return 2 * Math.hypot(edge.x - mid.x, edge.y - mid.y);
+		});
+
+	const stageBox = (page: import('@playwright/test').Page) =>
+		page.locator(`${A2} .stage-canvas`).evaluate((el) => {
+			const r = el.getBoundingClientRect();
+			return { width: r.width, height: r.height };
+		});
+
+	for (const size of [
+		{ label: 'desktop', width: 1440, height: 900 },
+		{ label: 'phone', width: 390, height: 844 },
+		{ label: 'small phone', width: 320, height: 690 }
+	]) {
+		test(`fits the stage on ${size.label} @webgl`, async ({ page }) => {
+			await page.setViewportSize({ width: size.width, height: size.height });
+			await page.goto(localeUrl('de', '?debug'));
+			await mapReady(page, A2);
+			const [diameter, stage] = await Promise.all([globeDiameter(page), stageBox(page)]);
+			const shortest = Math.min(stage.width, stage.height);
+			expect(
+				diameter,
+				`globe ⌀${Math.round(diameter)} in a ${Math.round(stage.width)}×${Math.round(stage.height)} px stage`
+			).toBeLessThanOrEqual(stage.width);
+			// ...and still fills it: a globe that fits by being tiny is not a fix. Measured against the
+			// stage's SHORTEST side, which is the height on a desktop and the width on a phone.
+			expect(diameter).toBeGreaterThan(shortest * 0.7);
+		});
+	}
+
+	test('keeps the hand-tuned framing where there is room @webgl', async ({ page }) => {
+		// maxZoom pins the wide case, so a desktop opens exactly as it did before the fit was added.
+		await page.setViewportSize({ width: 1440, height: 900 });
+		await page.goto(localeUrl('de', '?debug'));
+		await mapReady(page, A2);
+		const view = await page.evaluate(() => {
+			const m = (window as unknown as { __map: MlMap }).__map;
+			return { zoom: m.getZoom(), lat: m.getCenter().lat, lng: m.getCenter().lng };
+		});
+		expect(view.zoom).toBeCloseTo(1.21, 2);
+		expect(view.lat).toBeCloseTo(50, 1); // not the 59.7° a plain fitBounds would have produced
+		expect(view.lng).toBeCloseTo(-18, 1);
 	});
 });
