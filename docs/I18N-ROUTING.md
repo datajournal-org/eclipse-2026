@@ -294,14 +294,20 @@ Things the plan did not anticipate, all found by building it:
 - **Verify on the real host.** bunny.net has to serve `de/index.html` for `/eclipse-2026/de/`; every
   internal link and the canonical use the trailing-slash form, so directory indexes must resolve.
 
-### A pre-existing accessibility problem this uncovered
+### WebKit and the keyboard: a browser preference, not a defect
 
-Turning the language switcher from buttons into links exposed, rather than caused, a real defect: on
-**WebKit the tab order is captured by the A2 MapLibre canvas** — it cycles `BODY ↔ canvas` indefinitely
-and never reaches any button on the page, including the location call to action. Safari's default is also
-that Tab visits form controls only and skips links, so the switcher itself is not a tab stop there either.
+`a11y.spec.ts` skips its keyboard-traversal test on WebKit. The reason is Safari's, not this app's.
 
-Before the change, the three header `<button>`s happened to sit _before_ the trap, which is the only
-reason the keyboard-traversal test passed on WebKit. The links are still the right call — they are what
-makes the per-language navigation crawlable — so `a11y.spec.ts` skips WebKit with the reason spelled out,
-and the canvas focus trap needs fixing on its own terms.
+macOS Safari ships with **"Press Tab to highlight each item on a webpage" turned off**, and under that
+restricted tab order Tab visits _form controls only_ — `<button>` and `<a>` are both skipped. Verified
+directly: injecting a bare `<input type="text">`, `<button>` and `<a>` into the page and tabbing reaches
+the input and nothing else. So on WebKit the page has effectively no tab stops until a dialog with a text
+field is open, and Tab appears to cycle because it is wrapping an almost-empty tab order.
+
+This is true of every site in that configuration and is not affected by the switcher being links rather
+than buttons, nor by the A2 map canvas. On Chromium the order is exactly as intended: the three language
+links, then the map canvas, then the map's own controls. Readers who want full keyboard traversal in Safari
+enable the preference; VoiceOver reaches links regardless.
+
+(An earlier note here claimed the MapLibre canvas captured the tab order. That was a misreading of the
+`BODY ↔ canvas` cycle — the cause is the empty tab order above.)

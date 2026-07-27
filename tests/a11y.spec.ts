@@ -28,12 +28,15 @@ test.describe('accessibility', () => {
 	});
 
 	test('reaches the language switcher by keyboard', async ({ page }) => {
-		// WebKit is excluded deliberately, not because the markup differs. Two things bite there:
-		// Safari's default is that Tab visits form controls only, skipping links, and the MapLibre canvas
-		// captures the tab order after that (it cycles BODY ↔ canvas indefinitely — verified, and true
-		// before the switcher became links too). That is a real, PRE-EXISTING accessibility problem in the
-		// A2 map, tracked separately; asserting it here would only mask it behind a red test.
-		test.skip(test.info().project.name === 'webkit', 'Safari skips links on Tab; the A2 canvas traps focus');
+		// WebKit is excluded because of a Safari preference, not anything in this page. macOS Safari ships
+		// with "Press Tab to highlight each item on a webpage" off, and under that restricted tab order Tab
+		// visits form controls only — both <button> and <a> are skipped. Verified by injecting a bare
+		// input, button and link into the page: only the input takes focus. So there is no meaningful tab
+		// order to assert on WebKit until a text field is on screen.
+		test.skip(
+			test.info().project.name === 'webkit',
+			'Safari’s restricted tab order visits form controls only — a browser preference, not a page defect'
+		);
 
 		await page.goto(localeUrl());
 		const reached: string[] = [];
