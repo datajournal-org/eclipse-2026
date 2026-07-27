@@ -633,3 +633,36 @@ follow: 9 px → 12 px.
 `a11y.spec.ts` now encodes 2.5.8 including the spacing exception, rather than a bare 24 px threshold. The
 phase labels are 32×13 and rely on that exception deliberately; a naive assertion would either fail on a
 conformant layout or pass on a cramped one.
+
+---
+
+## 11. Changing the location, as opposed to setting it
+
+Every spec loaded a page per location via `?lat&lon`, so nothing exercised changing an _existing_ one —
+and that gap hid a bug reachable in a single click, since the "ändern" button sits directly above the
+affected section.
+
+`SkyView` read the location once in `onMount` and captured `LAT`/`LON` as constants for its map, timeline,
+camera framing and marker. `{#if $userLocation}` stays truthy when the location merely _changes_, so
+Svelte kept the same instance and `onMount` never ran again. `Verdict` and `Checklist` use
+`$derived($localEclipse)` and updated correctly; A2 already had an explicit `$effect` moving its pin. B3
+alone was frozen:
+
+| after Oviedo → Berlin                                          |               |
+| -------------------------------------------------------------- | ------------- |
+| place label, B1 verdict, B1 safety line, B6 countdown          | updated       |
+| **B3 readout** `20:22 · 11.2° · 280° · 91 %`                   | **unchanged** |
+| **B3 phase ticks** `Maximum 20:27 / Beginn 19:31 / Ende 21:20` | **unchanged** |
+
+Two sections on one screen disagreeing about the same place by 19 minutes is worse than either being
+wrong alone, which is why `location-change.spec.ts` asserts they _agree_, not merely that each moved.
+
+Fixed by keying the component on the coordinates in `+page.svelte`, which forces a rebuild. It costs ~1.5 s
+of scene setup — the right trade for a rare, deliberate interaction. Keying on the store object instead
+would also rebuild when the same place is re-selected. If the rebuild ever feels heavy, the alternative is
+an `$effect` inside `SkyView` that re-derives the timeline and re-frames the camera without recreating the
+map; that is more code and more state to get right, so it was not the place to start.
+
+The spec snapshots every location-dependent field and requires all of them to change, rather than checking
+whichever card comes to mind — the failure mode here was precisely that the obvious card was fine.
+**Verified by reverting the fix: three of the five tests fail, reporting `skyReadout did not update`.**
