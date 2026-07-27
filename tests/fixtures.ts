@@ -195,9 +195,14 @@ export async function maxFrame(page: Page, section: string): Promise<number> {
  */
 export async function freezeClock(page: Page, at: 'T-30d' | 'T-90s' | 'T+1h') {
 	const peak = Date.parse(GREATEST.utc);
-	// T-30d is deliberately offset a few hours off the exact day boundary. Landing on it makes the day
-	// digit flip between 30 and 29 on a millisecond of drift, which showed up as a rare webkit flake.
-	const offsets = { 'T-30d': -(30 * 86_400 + 5 * 3_600) * 1000, 'T-90s': -90_000, 'T+1h': 3_600_000 };
+	// Deliberately round at NO unit: 30 d 5 h 30 m 30 s. An instant that is exact at any granularity makes
+	// that digit flip on a millisecond of drift — first seen as a day-boundary flake, then reintroduced at
+	// the hour boundary when the offset was a whole number of hours.
+	const offsets = {
+		'T-30d': -(30 * 86_400 + 5 * 3_600 + 30 * 60 + 30) * 1000,
+		'T-90s': -90_000,
+		'T+1h': 3_600_000
+	};
 	await page.clock.install({ time: new Date(peak + offsets[at]) });
 }
 
