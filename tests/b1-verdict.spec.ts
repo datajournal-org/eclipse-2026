@@ -49,12 +49,14 @@ test.describe('B1 verdict card', () => {
 	});
 
 	test('says so when the eclipse is below the horizon', async ({ page, locatedPage }) => {
-		// Eastern Europe: the maximum happens after the Sun has set.
+		// Eastern Europe: the eclipse DOES reach Moscow, but the maximum falls after sunset. A different
+		// answer from "does not reach you" — and no next-eclipse redirect, because this one is theirs.
 		await locatedPage({ lat: 55.7558, lon: 37.6173, name: 'Moskau' });
 		const card = page.locator('section.b1');
 		await expect(card.locator('h2')).toHaveText('Von hier aus nicht sichtbar');
 		await expect(card.locator('.note')).toContainText('unter dem Horizont');
 		await expect(card.locator('.obsc')).toHaveCount(0);
+		await expect(card.locator('.next')).toHaveCount(0);
 	});
 
 	test.describe('a location this eclipse misses', () => {
@@ -75,6 +77,33 @@ test.describe('B1 verdict card', () => {
 				await expect(page.locator('section.b6')).toHaveCount(0);
 			});
 		}
+
+		test('points a Sydney visitor at the eclipse they can actually see', async ({ page, locatedPage }) => {
+			// CONCEPT.md's fourth question — "should I travel for it?" — answered from the other side: the
+			// data is already computed, so a dead end becomes the most useful line on the page.
+			await locatedPage({ lat: -33.8688, lon: 151.2093, name: 'Sydney' });
+			const next = page.locator('section.b1 .next');
+			await expect(next).toBeVisible();
+			await expect(next).toContainText('2028'); // 22 July 2028
+			await expect(next).toContainText('total');
+			await expect(next).toContainText('100');
+		});
+
+		test('names the right kind and coverage for a partial one', async ({ page, locatedPage }) => {
+			await locatedPage({ lat: 35.6762, lon: 139.6503, name: 'Tokio' });
+			const next = page.locator('section.b1 .next');
+			await expect(next).toContainText('2030');
+			await expect(next).toContainText('partiell');
+			await expect(next).toContainText('72');
+		});
+
+		test('says the eclipse does not reach here, not that the Sun has set', async ({ page, locatedPage }) => {
+			// The old copy claimed "at maximum the Sun is already below the horizon" for Sydney, which is
+			// simply false — the eclipse never gets there at all.
+			await locatedPage({ lat: -33.8688, lon: 151.2093, name: 'Sydney' });
+			const note = page.locator('section.b1 .note').first();
+			await expect(note).toHaveText('Diese Finsternis erreicht deinen Ort nicht.');
+		});
 
 		test('offers no calendar entry for the wrong eclipse', async ({ page, locatedPage }) => {
 			// The .ics used to be written from the found eclipse's peak — a 2028 DTSTART for Sydney.

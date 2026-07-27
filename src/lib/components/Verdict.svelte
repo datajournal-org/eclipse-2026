@@ -3,6 +3,8 @@
 <script lang="ts">
 	import { t, fmt } from '$lib/i18n';
 	import { localEclipse } from '$lib/stores/localEclipse';
+	import { userLocation } from '$lib/stores/location';
+	import { nextEclipseHere } from '$lib/eclipse';
 
 	const lc = $derived($localEclipse);
 	const peak = $derived(lc?.peak ?? null);
@@ -11,6 +13,22 @@
 	const peakAlt = $derived(peak?.alt ?? -99);
 	const visible = $derived(!!lc && !!peak && peakAlt > 0 && pct > 0);
 	const isTotal = $derived(kind === 'total' && visible);
+
+	// Two different reasons the card can say "not visible from here", and they need different answers:
+	// the 2026 eclipse never reaches this place (localCircumstances is null), or it does but the Sun is
+	// below the horizon at maximum. Only the first is a dead end worth redirecting.
+	const missed = $derived(!!$userLocation && !lc);
+
+	// For a visitor the 2026 event misses, the useful answer is which eclipse they *can* see from home.
+	const next = $derived.by(() => {
+		if (!missed || !$userLocation) return null;
+		const n = nextEclipseHere($userLocation.lat, $userLocation.lon);
+		const nextPct = n ? Math.round(n.obscuration * 100) : 0;
+		// astronomy-engine reports eclipses all the way down to a 0 % graze and to peaks below the
+		// horizon; neither is something anyone could actually watch, so say nothing rather than tease.
+		if (!n?.peak || n.peak.alt <= 0 || nextPct < 1) return null;
+		return { time: n.peak.time, kind: n.kind, pct: nextPct };
+	});
 </script>
 
 <section class="block b1" class:total={isTotal}>
@@ -32,7 +50,16 @@
 			{/if}
 		</p>
 	{:else}
-		<p class="note">{$t('b1.not_visible_note')}</p>
+		<p class="note">{missed ? $t('b1.not_reached') : $t('b1.not_visible_note')}</p>
+		{#if next}
+			<p class="next note tnum">
+				{$t('b1.next_here', {
+					date: $fmt.date(next.time),
+					kind: $t(`b1.kind_${next.kind}`),
+					pct: next.pct
+				})}
+			</p>
+		{/if}
 	{/if}
 </section>
 
@@ -45,6 +72,9 @@
 		.b1.total & {
 			color: var(--accent-2, var(--accent));
 		}
+	}
+	.next {
+		margin-block-start: 0.5rem;
 	}
 	.safety {
 		margin-top: 12px;
