@@ -3,8 +3,13 @@
 /**
  * Production origin. `hreflang`, `canonical` and the Open Graph URLs are ignored by crawlers unless they
  * are absolute, so every one of them is built from this constant (plus `base` from `$app/paths`).
+ *
+ * Overridable at build time with `VITE_SITE_URL`, so a deployment to somewhere other than the primary
+ * host advertises its own URLs rather than pointing every canonical tag at a site it is not.
  */
-export const SITE_URL = 'https://datajournal.org';
+// Optional chaining is load-bearing: this module is also imported by scripts/build-corridor.ts, which
+// runs under plain Node via tsx, where `import.meta.env` does not exist at all.
+export const SITE_URL: string = import.meta.env?.VITE_SITE_URL ?? 'https://datajournal.org';
 
 /** Date of the total solar eclipse. Single source of truth for the event day. */
 export const ECLIPSE_DATE = '2026-08-12';

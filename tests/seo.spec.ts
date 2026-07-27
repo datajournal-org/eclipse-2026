@@ -1,11 +1,13 @@
 import { test, expect, BASE } from './fixtures';
+import { SITE_URL } from '../src/lib/config';
 
 /**
  * Every assertion here runs against the RAW prerendered HTML, never the live DOM. A DOM assertion would
  * pass even if the tags only appeared after hydration — which is exactly what a crawler cannot see, and
  * the whole reason these pages exist per language.
  */
-const ORIGIN = 'https://datajournal.org';
+// Imported rather than repeated: if the origin ever moves, a stale copy here would assert the old one.
+const ORIGIN = SITE_URL;
 const PAGES = ['/', '/de/', '/en/', '/es/'];
 const LOCALES = ['de', 'en', 'es'] as const;
 

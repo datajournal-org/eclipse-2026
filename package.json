@@ -12,6 +12,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"sync": "svelte-kit sync",
+		"precheck": "npm run corridor",
 		"check": "npm run check:format && npm run check:ts && npm run lint && npm run check:svelte && npm run test",
 		"check:svelte": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:ts": "tsc --noEmit",
