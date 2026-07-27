@@ -1,4 +1,5 @@
-import { test, expect, mapReady, byName } from './fixtures';
+import { test, expect, mapReady, byName, BASE } from './fixtures';
+import { installTileCache } from './tileCache';
 
 const B3 = 'section.b3';
 const OVIEDO = byName('Oviedo');
@@ -27,12 +28,30 @@ async function locatorState(page: import('@playwright/test').Page) {
 }
 
 test.describe('B3 camera @webgl', () => {
-	test.beforeEach(async ({ page, locatedPage }) => {
-		await locatedPage(OVIEDO);
+	// Serial + one shared page: building the B3 scene costs ~2 s and every test here drives that same
+	// scene. Each test restores the camera first, so they stay independent of each other's gestures.
+	test.describe.configure({ mode: 'serial' });
+	let page: import('@playwright/test').Page;
+
+	test.beforeAll(async ({ browser }) => {
+		const context = await browser.newContext();
+		await installTileCache(context);
+		page = await context.newPage();
+		await page.goto(`${BASE}/de/?lat=${OVIEDO.lat}&lon=${OVIEDO.lon}`);
 		await mapReady(page, B3);
 	});
 
-	test('orbits the scene when the canvas is dragged sideways', async ({ page }) => {
+	test.afterAll(async () => {
+		await page.context().close();
+	});
+
+	test.beforeEach(async () => {
+		// Reset the camera so one test's drag cannot leak into the next.
+		await page.locator(`${B3} .maplibregl-ctrl-group`).last().locator('button').last().click();
+		await page.waitForTimeout(400);
+	});
+
+	test('orbits the scene when the canvas is dragged sideways', async () => {
 		const before = await locatorState(page);
 		expect(before.visible).toBe(true);
 		const { x, y } = await stageCentre(page);
@@ -48,20 +67,20 @@ test.describe('B3 camera @webgl', () => {
 		expect(after.visible !== before.visible || after.transform !== before.transform).toBe(true);
 	});
 
-	test('shows a grab cursor over the canvas', async ({ page }) => {
+	test('shows a grab cursor over the canvas', async () => {
 		await stageCentre(page);
 		const cursor = await page.locator(`${B3} canvas`).evaluate((el) => getComputedStyle(el).cursor);
 		expect(cursor).toBe('grab');
 	});
 
-	test('offers zoom and recentre controls', async ({ page }) => {
+	test('offers zoom and recentre controls', async () => {
 		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-in`)).toBeVisible();
 		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-out`)).toBeVisible();
 		const buttons = page.locator(`${B3} .maplibregl-ctrl button`);
 		expect(await buttons.count()).toBeGreaterThanOrEqual(3); // zoom in, zoom out, recentre
 	});
 
-	test('labels the camera controls', async ({ page }) => {
+	test('labels the camera controls', async () => {
 		// Translated at runtime, so assert that each carries a non-empty label rather than pinning copy.
 		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-in`)).toHaveAttribute('aria-label', /\S/);
 		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-out`)).toHaveAttribute('aria-label', /\S/);
@@ -69,7 +88,7 @@ test.describe('B3 camera @webgl', () => {
 		await expect(recentre).toHaveAttribute('aria-label', /\S/);
 	});
 
-	test('dollies the camera from the zoom buttons', async ({ page }) => {
+	test('dollies the camera from the zoom buttons', async () => {
 		// Zoom is a dolly: the camera moves toward the marker, so the projected Sun shifts even though
 		// the sky and the Sun's angular size do not scale.
 		const before = await locatorState(page);
@@ -79,7 +98,7 @@ test.describe('B3 camera @webgl', () => {
 		expect(after.transform).not.toBe(before.transform);
 	});
 
-	test('zooms on the wheel without scrolling the page', async ({ page }) => {
+	test('zooms on the wheel without scrolling the page', async () => {
 		// The wheel is captured by the dolly (as on the A2 globe), so the page must stay put.
 		const { x, y } = await stageCentre(page);
 		const scrollBefore = await page.evaluate(() => window.scrollY);
@@ -91,7 +110,7 @@ test.describe('B3 camera @webgl', () => {
 		expect((await locatorState(page)).transform).not.toBe(before.transform);
 	});
 
-	test('restores the framing from the recentre button', async ({ page }) => {
+	test('restores the framing from the recentre button', async () => {
 		const before = await locatorState(page);
 		expect(before.visible).toBe(true);
 		const { x, y } = await stageCentre(page);
@@ -113,7 +132,7 @@ test.describe('B3 camera @webgl', () => {
 		expect(after.transform).toBe(before.transform);
 	});
 
-	test('leaves the page scrollable outside the stage', async ({ page }) => {
+	test('leaves the page scrollable outside the stage', async () => {
 		await page.evaluate(() => window.scrollTo(0, 0));
 		await page.mouse.move(10, 300); // the page margin, clear of any map
 		await page.mouse.wheel(0, 400);
