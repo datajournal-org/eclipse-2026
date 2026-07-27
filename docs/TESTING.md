@@ -430,8 +430,7 @@ Four are recorded by tests but left alone, because each needs a product decision
   returned date against `ECLIPSE_DATE`. Pinned in `eclipse.test.ts`.
 - ~~The "Nichts gefunden" message is unreachable.~~ Fixed, along with two more bugs found in the same
   function — see §9.
-- **The time scrubber's track is 18 px tall**, under WCAG 2.5.8's 24×24 target guidance. It does work by
-  touch (`responsive.spec.ts` proves it), but it is smaller than the guideline wants.
+- ~~The time scrubber's track is 18 px tall.~~ Now 24 px — see §10.
 
 Two more are documented in tests as deliberate behaviour rather than bugs: `radiusForCoverage(model, 1)`
 returns 0 rather than the umbra rim (every caller passes 0.999), and `sunMoonHorizon`'s `elevation`
@@ -610,3 +609,27 @@ remedies.
 including one per bug above, which is the point: all three are now cheap to express and impossible to
 express before. The end-to-end layer keeps only what it is good for — that each state reaches the screen —
 plus one race test, since `stubGeocoder` can now delay its response.
+
+---
+
+## 10. Scrubber target size
+
+The slider thumb and its input were 18 px. Two separate reasons to change that, and the second is the one
+that actually decided it:
+
+- **WCAG 2.5.8** asks for 24×24 CSS px. At 18 px the control only conformed by way of the **spacing
+  exception** — measured on the mobile project, the slider's centre sits 28.5 px from the phase labels'
+  centres, so the 24 px circles clear. Conformant, but by margin rather than by design.
+- **It did not read as interactive.** The accent colour is recognisable but an 18 px dot barely taller
+  than the 6 px track looks like a marker, not a handle. Compared side by side at the same crop, 24 px is
+  visibly a grip.
+
+The CSS comment already noted that input height must equal thumb height for the thumb to centre without
+per-browser margin tweaks, so raising the thumb raised the hit area with it — the size fix and the
+affordance fix are the same change. Everything drawn on the track (`.fill`, `.band`, `.peak`, `.tick`,
+`.sun`, `.dusk`) positions itself against `.track`, so `.track { top }` was the only other number to
+follow: 9 px → 12 px.
+
+`a11y.spec.ts` now encodes 2.5.8 including the spacing exception, rather than a bare 24 px threshold. The
+phase labels are 32×13 and rely on that exception deliberately; a naive assertion would either fail on a
+conformant layout or pass on a cramped one.

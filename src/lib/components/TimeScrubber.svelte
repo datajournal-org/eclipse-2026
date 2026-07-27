@@ -98,12 +98,14 @@
 		margin-top: 10px;
 	}
 
-	/* decorative track, vertically centred under the range thumb (input is 18px tall → centre at 9px) */
+	/* decorative track, vertically centred under the range thumb (input is 24px tall → centre at 12px).
+	   Everything drawn on the track positions itself against THIS element, so this offset is the only
+	   number that has to follow the input's height. */
 	.track {
 		position: absolute;
 		left: 0;
 		right: 0;
-		top: 9px;
+		top: 12px;
 		height: 6px;
 		transform: translateY(-50%);
 		border-radius: 3px;
@@ -172,31 +174,34 @@
 		border: 2px solid var(--muted);
 	}
 
-	/* the control: transparent track (decoration shows through), a round accent thumb. Input height ==
-	   thumb height so the thumb centres on the track with no per-browser margin tweaks. */
+	/* The control: transparent track (the decoration above shows through), a round accent thumb. Input
+	   height == thumb height so the thumb centres on the track with no per-browser margin tweaks.
+	   24px, not the 18 it used to be, for two reasons: at 18 the thumb read as a dot rather than
+	   something you grab, and 24 is WCAG 2.5.8's target-size minimum — which the old size only met by
+	   way of the spacing exception. */
 	input[type='range'] {
 		position: relative;
 		z-index: 1;
 		-webkit-appearance: none;
 		appearance: none;
 		width: 100%;
-		height: 18px;
+		height: 24px;
 		margin: 0;
 		background: transparent;
 		cursor: pointer;
 	}
 	input[type='range']::-webkit-slider-runnable-track {
-		height: 18px;
+		height: 24px;
 		background: transparent;
 	}
 	input[type='range']::-moz-range-track {
-		height: 18px;
+		height: 24px;
 		background: transparent;
 	}
 	input[type='range']::-webkit-slider-thumb {
 		-webkit-appearance: none;
-		width: 18px;
-		height: 18px;
+		width: 24px;
+		height: 24px;
 		border-radius: 50%;
 		background: var(--accent);
 		border: 2px solid var(--bg);
@@ -204,8 +209,8 @@
 	}
 	input[type='range']::-moz-range-thumb {
 		box-sizing: border-box;
-		width: 18px;
-		height: 18px;
+		width: 24px;
+		height: 24px;
 		border-radius: 50%;
 		background: var(--accent);
 		border: 2px solid var(--bg);

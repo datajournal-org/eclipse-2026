@@ -87,6 +87,46 @@ test.describe('accessibility', () => {
 		}
 	});
 
+	test('meets WCAG 2.5.8 target size for the scrubber and its phase labels', async ({ page, locatedPage }) => {
+		// 2.5.8 wants 24x24 CSS px, but an undersized target still conforms under the SPACING exception:
+		// a 24px circle centred on it must not reach another target. The phase labels are deliberately
+		// small and rely on that, so the test encodes the rule rather than a bare threshold — otherwise
+		// it would either fail on a conformant layout or pass on a cramped one.
+		await locatedPage(byName('Oviedo'));
+		const boxes = await page.evaluate(() => {
+			const section = document.querySelector('section.a2')!;
+			const els = [...section.querySelectorAll('input[type=range], .lab')];
+			return els.map((el) => {
+				const r = el.getBoundingClientRect();
+				return {
+					tag: el.tagName + '.' + el.className,
+					w: r.width,
+					h: r.height,
+					cx: r.x + r.width / 2,
+					cy: r.y + r.height / 2
+				};
+			});
+		});
+		expect(boxes.length).toBeGreaterThan(1);
+
+		const slider = boxes.find((b) => b.tag.startsWith('INPUT'))!;
+		expect(slider.h, 'the scrubber is the primary control and should meet the size outright').toBeGreaterThanOrEqual(
+			24
+		);
+
+		for (const box of boxes) {
+			if (box.w >= 24 && box.h >= 24) continue; // conforms on size alone
+			for (const other of boxes) {
+				if (other === box) continue;
+				const gap = Math.hypot(box.cx - other.cx, box.cy - other.cy);
+				expect(
+					gap,
+					`${box.tag} is ${box.w}x${box.h} and only ${gap.toFixed(0)}px from ${other.tag}`
+				).toBeGreaterThanOrEqual(24);
+			}
+		}
+	});
+
 	test('gives both sliders a descriptive label', async ({ page, locatedPage }) => {
 		await locatedPage(byName('Oviedo'));
 		for (const section of ['section.a2', 'section.b3']) {
