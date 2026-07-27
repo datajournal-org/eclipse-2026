@@ -25,22 +25,40 @@ jobs:
    # cannot stop the end-to-end shards from reporting — which is exactly what happened when these shared
    # a job: a timezone bug in one unit test meant 226 browser tests never ran at all.
    checks:
+      name: Lint, types and unit tests
       runs-on: ubuntu-latest
       timeout-minutes: 10
       steps:
-         - uses: actions/checkout@v4
-         - uses: actions/setup-node@v4
+         - name: Check out the repository
+           uses: actions/checkout@v4
+
+         - name: Set up Node.js
+           uses: actions/setup-node@v4
            with:
               node-version: ${{ env.NODE_VERSION }}
               cache: npm
-         - run: npm ci
+
+         - name: Install dependencies
+           run: npm ci
+
          # `corridor` runs `svelte-kit sync` itself, so the generated tsconfig the type checks need exists.
-         - run: npm run corridor
-         - run: npm run check:format
-         - run: npm run check:ts
-         - run: npm run lint
-         - run: npm run check:svelte
-         - run: npm run test:unit
+         - name: Generate the totality corridor
+           run: npm run corridor
+
+         - name: Check formatting (Prettier)
+           run: npm run check:format
+
+         - name: Check types (tsc)
+           run: npm run check:ts
+
+         - name: Lint (ESLint)
+           run: npm run lint
+
+         - name: Check Svelte components (svelte-check)
+           run: npm run check:svelte
+
+         - name: Unit tests (Vitest)
+           run: npm run test:unit
 
    # Every Playwright test, sharded four ways on macOS.
    #
@@ -52,6 +70,7 @@ jobs:
    # only because WebGL dominated without a GPU — measured 192s / 81s / 27s / 18s across four shards.
    # With a GPU the distortion is gone and count-based sharding balances: 29s / 33s / 23s / 20s locally.
    e2e:
+      name: Browser tests ${{ matrix.shard }}/4
       runs-on: macos-latest
       timeout-minutes: 30
       strategy:
@@ -60,14 +79,17 @@ jobs:
             shard: [1, 2, 3, 4]
 
       steps:
-         - uses: actions/checkout@v4
+         - name: Check out the repository
+           uses: actions/checkout@v4
 
-         - uses: actions/setup-node@v4
+         - name: Set up Node.js
+           uses: actions/setup-node@v4
            with:
               node-version: ${{ env.NODE_VERSION }}
               cache: npm # caches ~/.npm keyed on package-lock.json
 
-         - run: npm ci
+         - name: Install dependencies
+           run: npm ci
 
          # The map tiles. One located page load pulls ~66 objects from tiles.versatiles.org; across the
          # suite that is thousands of requests for the same handful of tiles. Restoring this keeps the run
@@ -76,7 +98,7 @@ jobs:
          # Keyed per shard, since each shard needs a different subset. The key is unique per run so it
          # never hits, and restore-keys falls back to the most recent — the standard "restore the latest,
          # save an updated copy" pattern, so newly needed tiles are fetched once and folded in.
-         - name: Cache map tiles
+         - name: Restore the map tile cache
            uses: actions/cache@v4
            with:
               path: .cache/tiles
@@ -84,7 +106,8 @@ jobs:
               restore-keys: |
                  tiles-${{ runner.os }}-${{ matrix.shard }}-
 
-         - run: npm run corridor
+         - name: Generate the totality corridor
+           run: npm run corridor
 
          # Browsers are ~400 MB and unchanged between runs; key on the Playwright version so a bump
          # invalidates it. Playwright stores them under ~/Library/Caches on macOS, not ~/.cache.
@@ -92,17 +115,18 @@ jobs:
            id: pw
            run: echo "version=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
 
-         - uses: actions/cache@v4
+         - name: Restore the Playwright browser cache
+           uses: actions/cache@v4
            with:
               path: ~/Library/Caches/ms-playwright
               key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
-         - name: Install browsers
+         - name: Install Playwright browsers (Chromium, WebKit)
            run: npx playwright install chromium webkit
 
          # Records whether this runner still has a GPU. If it ever prints SwiftShader instead of Metal,
          # the timings above stop holding and the shape of this workflow needs revisiting.
-         - name: Report the WebGL renderer
+         - name: Report the WebGL renderer this runner offers
            if: matrix.shard == 1
            run: |
               cat > tests/renderer-report.spec.ts <<'EOF'
@@ -121,12 +145,13 @@ jobs:
               npx playwright test tests/renderer-report.spec.ts --project chromium --reporter=list
               rm -f tests/renderer-report.spec.ts
 
-         - name: End-to-end tests
+         - name: Run Playwright tests (shard ${{ matrix.shard }} of 4)
            run: npx playwright test --shard=${{ matrix.shard }}/4
            env:
               CI: true
 
-         - uses: actions/upload-artifact@v4
+         - name: Upload the Playwright report
+           uses: actions/upload-artifact@v4
            if: ${{ !cancelled() }}
            with:
               name: playwright-report-${{ matrix.shard }}
@@ -134,33 +159,43 @@ jobs:
               retention-days: 7
 
    build:
+      name: Build the static site
       needs: [checks, e2e]
       if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       runs-on: ubuntu-latest
       timeout-minutes: 15
 
       steps:
-         - uses: actions/checkout@v4
-         - uses: actions/setup-node@v4
+         - name: Check out the repository
+           uses: actions/checkout@v4
+
+         - name: Set up Node.js
+           uses: actions/setup-node@v4
            with:
               node-version: ${{ env.NODE_VERSION }}
               cache: npm
-         - run: npm ci
+
+         - name: Install dependencies
+           run: npm ci
 
          # Every canonical, hreflang and og:url is absolute, so the build has to know where it will live.
          # Without this the deployed pages would tell crawlers the real copy is on another host entirely.
          # `paths.base` is '/eclipse-2026' and must match the repository name for a project Pages site.
-         - name: Build
+         - name: Prerender the site with absolute URLs
            run: npm run build
            env:
               VITE_SITE_URL: ${{ format('https://{0}.github.io', github.repository_owner) }}
 
-         - uses: actions/configure-pages@v5
-         - uses: actions/upload-pages-artifact@v3
+         - name: Configure GitHub Pages
+           uses: actions/configure-pages@v5
+
+         - name: Upload the site as a Pages artifact
+           uses: actions/upload-pages-artifact@v3
            with:
               path: build
 
    deploy:
+      name: Deploy to GitHub Pages
       needs: build
       runs-on: ubuntu-latest
       timeout-minutes: 10
@@ -168,5 +203,6 @@ jobs:
          name: github-pages
          url: ${{ steps.deployment.outputs.page_url }}
       steps:
-         - id: deployment
+         - name: Publish to GitHub Pages
+           id: deployment
            uses: actions/deploy-pages@v4
