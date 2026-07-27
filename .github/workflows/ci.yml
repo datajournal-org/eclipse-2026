@@ -30,10 +30,10 @@ jobs:
       timeout-minutes: 10
       steps:
          - name: Check out the repository
-           uses: actions/checkout@v4
+           uses: actions/checkout@v7
 
          - name: Set up Node.js
-           uses: actions/setup-node@v4
+           uses: actions/setup-node@v7
            with:
               node-version: ${{ env.NODE_VERSION }}
               cache: npm
@@ -80,10 +80,10 @@ jobs:
 
       steps:
          - name: Check out the repository
-           uses: actions/checkout@v4
+           uses: actions/checkout@v7
 
          - name: Set up Node.js
-           uses: actions/setup-node@v4
+           uses: actions/setup-node@v7
            with:
               node-version: ${{ env.NODE_VERSION }}
               cache: npm # caches ~/.npm keyed on package-lock.json
@@ -99,7 +99,7 @@ jobs:
          # never hits, and restore-keys falls back to the most recent — the standard "restore the latest,
          # save an updated copy" pattern, so newly needed tiles are fetched once and folded in.
          - name: Restore the map tile cache
-           uses: actions/cache@v4
+           uses: actions/cache@v6
            with:
               path: .cache/tiles
               key: tiles-${{ runner.os }}-${{ matrix.shard }}-${{ github.run_id }}
@@ -116,7 +116,7 @@ jobs:
            run: echo "version=$(node -p "require('./node_modules/@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
 
          - name: Restore the Playwright browser cache
-           uses: actions/cache@v4
+           uses: actions/cache@v6
            with:
               path: ~/Library/Caches/ms-playwright
               key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
@@ -151,7 +151,7 @@ jobs:
               CI: true
 
          - name: Upload the Playwright report
-           uses: actions/upload-artifact@v4
+           uses: actions/upload-artifact@v7
            if: ${{ !cancelled() }}
            with:
               name: playwright-report-${{ matrix.shard }}
@@ -167,10 +167,10 @@ jobs:
 
       steps:
          - name: Check out the repository
-           uses: actions/checkout@v4
+           uses: actions/checkout@v7
 
          - name: Set up Node.js
-           uses: actions/setup-node@v4
+           uses: actions/setup-node@v7
            with:
               node-version: ${{ env.NODE_VERSION }}
               cache: npm
@@ -187,10 +187,10 @@ jobs:
               VITE_SITE_URL: ${{ format('https://{0}.github.io', github.repository_owner) }}
 
          - name: Configure GitHub Pages
-           uses: actions/configure-pages@v5
+           uses: actions/configure-pages@v6
 
          - name: Upload the site as a Pages artifact
-           uses: actions/upload-pages-artifact@v3
+           uses: actions/upload-pages-artifact@v5
            with:
               path: build
 
@@ -205,4 +205,4 @@ jobs:
       steps:
          - name: Publish to GitHub Pages
            id: deployment
-           uses: actions/deploy-pages@v4
+           uses: actions/deploy-pages@v5
