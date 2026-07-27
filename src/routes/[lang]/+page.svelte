@@ -30,7 +30,15 @@
 			<button onclick={() => (pickerOpen = true)}>{$t('b.change')}</button>
 		</div>
 		<Verdict />
-		<SkyView />
+		<!-- SkyView builds its map, timeline and camera framing once, from the location it sees at mount —
+		     and `{#if $userLocation}` stays truthy when the location merely CHANGES, so Svelte would keep
+		     the old instance and B3 would go on showing the previous place's sky under the new place's
+		     heading. Keying on the coordinates forces a rebuild. It costs ~1.5 s of scene setup, which is
+		     the right trade for a rare, deliberate interaction; keying on the object identity instead
+		     would also rebuild when the same place is re-selected. -->
+		{#key `${$userLocation.lat},${$userLocation.lon}`}
+			<SkyView />
+		{/key}
 
 		<SectionDivider label={$t('b.prep')} />
 		<Checklist />
