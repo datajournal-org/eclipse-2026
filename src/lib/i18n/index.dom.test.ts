@@ -219,9 +219,12 @@ describe('fmt', () => {
 	});
 
 	it('names the time zone', async () => {
+		// The suite pins TZ=Europe/Berlin (see the test:unit script). Without that this asserted whatever
+		// the machine happened to be set to: it passed locally and failed on CI, where runners are UTC and
+		// the IANA name has no "Region/City" form at all.
 		const { fmt } = await load();
 		expect(get(fmt).zone(instant)).toBeTruthy();
-		expect(get(fmt).zoneName()).toContain('/'); // an IANA name like Europe/Berlin
+		expect(get(fmt).zoneName()).toBe('Europe/Berlin');
 	});
 
 	it('accepts a timestamp as well as a Date', async () => {
