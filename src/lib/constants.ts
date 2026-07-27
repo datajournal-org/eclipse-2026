@@ -7,8 +7,12 @@ export const DEG_TO_RAD = Math.PI / 180;
 /** Radians → degrees. */
 export const RAD_TO_DEG = 180 / Math.PI;
 
-/** Normalise an angle in degrees to ±180°. */
-export const norm180 = (deg: number): number => ((deg + 540) % 360) - 180;
+/**
+ * Normalise an angle in degrees to [-180, 180).
+ * The inner `% 360` is what makes this total: JS's `%` keeps the sign of the dividend, so a single
+ * `(deg + 540) % 360` returns out-of-range values for inputs below -540°.
+ */
+export const norm180 = (deg: number): number => (((deg % 360) + 540) % 360) - 180;
 
 /** Astronomical unit, in kilometres. */
 export const AU_KM = 149597870.7;
