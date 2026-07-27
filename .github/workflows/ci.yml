@@ -35,6 +35,8 @@ jobs:
 
          - run: npm ci
 
+         - run: npm run sync
+
          # Browsers are ~400 MB and unchanged between runs; key on the Playwright version so a bump
          # invalidates it. `--with-deps` still runs on a hit, since the system libraries live outside the cache.
          - name: Resolve the Playwright version
