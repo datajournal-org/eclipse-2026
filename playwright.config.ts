@@ -33,9 +33,11 @@ export default defineConfig({
 	// default worker count is fine.
 	fullyParallel: false,
 	workers: process.env.CI ? 2 : undefined,
-	// Generous only where it has to be: on a GPU, B3 reaches `idle` in ~1.5 s, but a CI runner rasterising
-	// the same scene on the CPU takes 20 s+ before a single assertion runs.
-	timeout: process.env.CI ? 150_000 : 60_000,
+	// One number for the whole suite — no per-test overrides, which only ever drifted away from reality.
+	// Locally the slowest test is ~8 s (GPU, warm tile cache), so 30 s is ~4x headroom: enough to ride out
+	// a busy machine, tight enough that a genuine hang is reported in seconds rather than minutes.
+	// CI has no GPU and falls back to SwiftShader, where B3 alone needs 20 s+ to reach `idle`.
+	timeout: process.env.CI ? 150_000 : 30_000,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
 	grepInvert: process.env.PWLIVE ? undefined : /@live/,

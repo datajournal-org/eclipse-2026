@@ -31,7 +31,6 @@ test.describe('live VersaTiles Photon', { tag: '@live' }, () => {
 	});
 
 	test('searchPlaces returns usable hits for a well-known city', async () => {
-		test.setTimeout(30_000);
 		const hits = await searchPlaces('Oviedo', 'de', 6);
 
 		expect(hits.length).toBeGreaterThan(0);
@@ -52,7 +51,6 @@ test.describe('live VersaTiles Photon', { tag: '@live' }, () => {
 	test('reads coordinates in Photon’s [lon, lat] order', async () => {
 		// The highest-risk parsing detail: swapped, every result lands in the wrong hemisphere and the
 		// eclipse verdict is silently wrong. Oviedo is 43.36 N, 5.84 W.
-		test.setTimeout(30_000);
 		const hits = await searchPlaces('Oviedo Asturias', 'de', 6);
 		const near = hits.find((h) => Math.abs(h.lat - 43.36) < 1 && Math.abs(h.lon + 5.84) < 1);
 		expect(near, `no hit near Oviedo in ${JSON.stringify(hits)}`).toBeDefined();
@@ -61,13 +59,11 @@ test.describe('live VersaTiles Photon', { tag: '@live' }, () => {
 	test('still returns a context line built from the place hierarchy', async () => {
 		// `sub` is assembled from city/state/county/country. If those keys vanish the UI still renders,
 		// just with every result stripped of the context that tells two same-named places apart.
-		test.setTimeout(30_000);
 		const hits = await searchPlaces('Berlin', 'de', 6);
 		expect(hits.some((h) => h.sub.length > 0)).toBe(true);
 	});
 
 	test('honours the language parameter without erroring', async () => {
-		test.setTimeout(30_000);
 		for (const locale of ['de', 'en', 'es']) {
 			const hits = await searchPlaces('München', locale, 3);
 			expect(hits.length, locale).toBeGreaterThan(0);
@@ -75,7 +71,6 @@ test.describe('live VersaTiles Photon', { tag: '@live' }, () => {
 	});
 
 	test('reverseGeocode names a known coordinate', async () => {
-		test.setTimeout(30_000);
 		const name = await reverseGeocode(43.3603, -5.8448, 'de');
 		expect(name).not.toBeNull();
 		expect(name!.trim().length).toBeGreaterThan(0);
@@ -83,14 +78,12 @@ test.describe('live VersaTiles Photon', { tag: '@live' }, () => {
 
 	test('reverseGeocode returns null rather than throwing in the middle of the ocean', async () => {
 		// The app treats a failed reverse lookup as cosmetic; it must never reject.
-		test.setTimeout(30_000);
 		await expect(reverseGeocode(0, -30, 'de')).resolves.not.toThrow();
 	});
 
 	test('the stubbed fixtures still match the live response shape', async () => {
 		// Ties the two layers together: whatever the fixtures in fixtures.ts claim, the live service must
 		// still produce features with the same two fields the parser reads.
-		test.setTimeout(30_000);
 		const response = await fetch('https://geocode.versatiles.org/api?q=Oviedo&limit=1&lang=de');
 		expect(response.ok).toBe(true);
 		const data = (await response.json()) as {

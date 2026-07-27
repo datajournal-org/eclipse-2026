@@ -41,7 +41,6 @@ test.describe('changing the location @webgl', () => {
 		locatedPage,
 		stubGeocoder
 	}) => {
-		test.setTimeout(150_000);
 		await locatedPage(OVIEDO);
 		await mapReady(page, 'section.b3');
 		const before = await snapshot(page);
@@ -58,7 +57,6 @@ test.describe('changing the location @webgl', () => {
 	});
 
 	test('leaves nothing showing the previous place', async ({ page, locatedPage, stubGeocoder }) => {
-		test.setTimeout(150_000);
 		await locatedPage(OVIEDO);
 		await mapReady(page, 'section.b3');
 
@@ -78,7 +76,6 @@ test.describe('changing the location @webgl', () => {
 	test('agrees between the verdict and the sky view', async ({ page, locatedPage, stubGeocoder }) => {
 		// The failure mode was two sections contradicting each other on the same screen, which is worse
 		// than either being wrong alone — so assert they match rather than just that each changed.
-		test.setTimeout(150_000);
 		await locatedPage(OVIEDO);
 		await mapReady(page, 'section.b3');
 		await stubGeocoder(PHOTON.bare);
@@ -89,7 +86,6 @@ test.describe('changing the location @webgl', () => {
 	});
 
 	test('drops back to the un-located state when the location is cleared', async ({ page, locatedPage }) => {
-		test.setTimeout(150_000);
 		await locatedPage(OVIEDO);
 		await expect(page.locator('section.b3')).toBeVisible();
 
@@ -107,7 +103,6 @@ test.describe('changing the location @webgl', () => {
 	test('survives changing location twice in a row', async ({ page, locatedPage, stubGeocoder }) => {
 		// Re-keying destroys and rebuilds a WebGL scene each time; doing it twice catches a teardown that
 		// leaves the second scene wedged.
-		test.setTimeout(150_000);
 		await locatedPage(BERLIN);
 		await mapReady(page, 'section.b3');
 
