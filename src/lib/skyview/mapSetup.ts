@@ -15,7 +15,10 @@ const ELEV = 'https://tiles.versatiles.org/tiles/elevation/{z}/{x}/{y}';
 export function buildMapStyle(colorful: (typeof import('@versatiles/style'))['colorful']) {
 	const style = colorful({ baseUrl: 'https://tiles.versatiles.org' });
 	style.layers = style.layers.filter((l) => l.type !== 'symbol'); // labels off
-	style.sources.dem = { type: 'raster-dem', tiles: [ELEV], tileSize: 512, encoding: 'terrarium' };
+	// maxzoom 12 is what the source actually has (see its tiles.json). Without it MapLibre requests z13+
+	// at B3's zoom 16 and every one of those 404s — which also kept the map from ever reaching `idle`.
+	// With it, MapLibre overzooms the z12 tiles instead.
+	style.sources.dem = { type: 'raster-dem', tiles: [ELEV], tileSize: 512, maxzoom: 12, encoding: 'terrarium' };
 
 	const bgPaint = style.layers.find((l) => l.id === 'background')?.paint as
 		{ 'background-color'?: string } | undefined;
