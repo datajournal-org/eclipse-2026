@@ -52,8 +52,8 @@
 	 * desktop overflows a phone, clipped left and right.
 	 */
 	const FRAME_BOUNDS: [[number, number], [number, number]] = [
-		[-73, 22.5],
-		[37, 77.5]
+		[-20, 0],
+		[37, 70]
 	];
 
 	// Coverage rings drawn live around the current shadow. `level` = obscuration threshold (0..1);
@@ -220,7 +220,19 @@
 				// steady ~0.9 of the frame across every breakpoint.
 				const shortest = Math.min(mapContainer.clientWidth, mapContainer.clientHeight);
 				const fit = m.cameraForBounds(FRAME_BOUNDS, { padding: Math.round(shortest * 0.04) });
-				if (fit) m.jumpTo({ center: INITIAL_VIEW.center, zoom: fit.zoom });
+				if (!fit) return;
+				m.jumpTo({ center: INITIAL_VIEW.center, zoom: fit.zoom });
+				// Whatever FRAME_BOUNDS asks for, the WHOLE globe must fit the stage width — tight bounds
+				// zoom in far enough to clip the sphere on a phone, which reads as a broken page rather
+				// than a framing choice. Measure the on-screen diameter the same way the e2e contract does
+				// (project a point 90° east of centre) and clamp: projection scale is linear in 2^zoom, so
+				// one measured correction is exact.
+				const c = m.getCenter();
+				const mid = m.project([c.lng, c.lat]);
+				const edge = m.project([c.lng + 90, c.lat]);
+				const diameter = 2 * Math.hypot(edge.x - mid.x, edge.y - mid.y);
+				const maxDiameter = mapContainer.clientWidth * 0.96;
+				if (diameter > maxDiameter) m.setZoom(m.getZoom() - Math.log2(diameter / maxDiameter));
 			};
 			if (m.isStyleLoaded()) applyFit();
 			else m.once('style.load', applyFit);
