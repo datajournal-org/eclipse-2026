@@ -35,6 +35,7 @@
 	import TimeScrubber from '$lib/components/TimeScrubber.svelte';
 	import { buildTimeGrid } from '$lib/components/timeScrubber';
 	import { loadMaplibre } from '$lib/maplibre';
+	import { CITY_LABEL_GLYPHS, CITY_LABEL_SOURCE, CITY_LABEL_LAYERS } from '$lib/shadow-globe/cityLabels';
 
 	const SATELLITE_TILES = 'https://tiles.versatiles.org/tiles/satellite/{z}/{x}/{y}';
 	// `zoom` here is only what the map is constructed with; the real opening zoom comes from the
@@ -180,6 +181,8 @@
 				attributionControl: { compact: false },
 				style: {
 					version: 8,
+					// Fonts for the city labels — nothing else in this style draws text.
+					glyphs: CITY_LABEL_GLYPHS,
 					sources: {
 						sat: {
 							type: 'raster',
@@ -187,7 +190,10 @@
 							tileSize: 512,
 							maxzoom: 19,
 							attribution: '© <a href="https://versatiles.org/sources/">VersaTiles sources</a>'
-						}
+						},
+						// The vector source behind the city labels (fetched only once a label layer is in zoom
+						// range — see cityLabels.ts).
+						'versatiles-shortbread': CITY_LABEL_SOURCE
 					},
 					// Stated rather than relied upon: globe happens to be MapLibre's default, but the whole
 					// A2 design (shadow layer, iso rings, the fit below) assumes a sphere, and a changed
@@ -272,6 +278,9 @@
 					m.setProjection({ type: 'globe' });
 					m.addLayer(createMoonShadowLayer(shadowState)); // darkening, under the reference lines
 					m.addLayer(createIsoLinesLayer(isoLinesState)); // corridor + iso rings + terminator
+					// City names, above the shadow so they stay readable inside the darkened region. Zoom
+					// gating comes from the layers' minzooms (capitals from 5, towns from 9 — cityLabels.ts).
+					for (const layer of CITY_LABEL_LAYERS) m.addLayer(layer);
 					isoLabels.attach(m, maplibregl.Marker, INITIAL_VIEW.center);
 					m.on('move', () => isoLabels.update(m, currentModel, labelsVisible)); // labels track viewport-down
 					showFrame = (index) => renderFrame(m, index);

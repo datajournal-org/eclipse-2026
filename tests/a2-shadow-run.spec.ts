@@ -141,6 +141,46 @@ test.describe('A2 opening framing', () => {
 		});
 	}
 
+	test.describe('city labels', () => {
+		const LABEL_LAYERS = ['label-place-town', 'label-place-city', 'label-place-statecapital', 'label-place-capital'];
+		const rendered = (page: import('@playwright/test').Page) =>
+			page.evaluate((layers) => {
+				const m = (window as unknown as { __map: MlMap }).__map;
+				return m.queryRenderedFeatures(undefined, { layers }).length;
+			}, LABEL_LAYERS);
+
+		test('stay hidden — and fetch nothing — at the opening framing @webgl', async ({ page }) => {
+			// The zoom gate is the layers' own colorful minzooms (5+). Below them the shortbread source
+			// must not cost a single tile: the globe opens on a continent, not on a city map.
+			const osmRequests: string[] = [];
+			page.on('request', (r) => {
+				if (r.url().includes('/tiles/osm/')) osmRequests.push(r.url());
+			});
+			await page.goto(localeUrl('de', '?debug'));
+			await mapReady(page, A2);
+			expect(await rendered(page)).toBe(0);
+			expect(osmRequests, 'vector tiles fetched before any label could show').toEqual([]);
+		});
+
+		test('appear once the reader zooms into a region @webgl', async ({ page }) => {
+			await page.goto(localeUrl('de', '?debug'));
+			await mapReady(page, A2);
+			await page.evaluate(() => {
+				const m = (window as unknown as { __map: MlMap }).__map;
+				m.jumpTo({ center: [-3.7, 40.4], zoom: 6 }); // Iberia — capitals and cities in range
+			});
+			await expect
+				.poll(() => rendered(page), { timeout: 30_000, message: 'no city label ever rendered' })
+				.toBeGreaterThan(0);
+			// and they are names, not empty anchors
+			const names = await page.evaluate((layers) => {
+				const m = (window as unknown as { __map: MlMap }).__map;
+				return m.queryRenderedFeatures(undefined, { layers }).map((f) => f.properties?.name);
+			}, LABEL_LAYERS);
+			expect(names.some((n) => typeof n === 'string' && n.length > 1)).toBe(true);
+		});
+	});
+
 	test('keeps the framing centred where it was aimed @webgl', async ({ page }) => {
 		// The fit supplies the zoom; the centre is ours. A plain fitBounds would derive the centre in
 		// mercator space and land at 59.7°N, tipping the Atlantic leg of the path off the top.
