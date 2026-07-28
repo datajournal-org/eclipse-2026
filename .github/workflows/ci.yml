@@ -200,11 +200,33 @@ jobs:
                 test -f "build/$f" || { echo "::error::build/$f missing from the archive root"; exit 1; }
               done
 
+         # An explicit file list instead of --exclude='.*': GNU tar's unanchored exclude matches the
+         # leading `.` component of EVERY member under `-C build .`, which once shipped a perfectly
+         # valid, perfectly empty 22-byte archive. `find` names exactly the regular, non-hidden files —
+         # no pattern semantics to differ between tar flavours.
+         - name: Pack the release archive
+           run: |
+              (cd build && find . -type f ! -name '.*' ! -path '*/.*' | LC_ALL=C sort | tar -cf - -T -) | zstd -9 > release.tar.zst
+
+         # Trust nothing that has not been read back: decompress the actual artifact and assert it holds
+         # the site. The empty-archive failure above passed every earlier check because nothing looked at
+         # the tar itself.
+         - name: Verify the release archive
+           run: |
+              listing=$(zstd -dc release.tar.zst | tar -tf -)
+              count=$(echo "$listing" | wc -l)
+              echo "$count entries"
+              for f in ./index.html ./meta.json ./og.jpg; do
+                echo "$listing" | grep -qx "$f" || { echo "::error::$f missing from the archive"; exit 1; }
+              done
+              [ "$count" -gt 20 ] || { echo "::error::archive suspiciously small ($count entries)"; exit 1; }
+              hidden=$(echo "$listing" | grep -E '(^|/)\.[^/]' || true)
+              [ -z "$hidden" ] || { echo "::error::hidden files in the archive:"; echo "$hidden"; exit 1; }
+
          - name: Release
            env:
               GH_TOKEN: ${{ github.token }}
            run: |
-              tar -cf - --exclude='.*' -C build . | zstd -9 > release.tar.zst
               gh release create "release" --title "Release" --latest || true
               gh release upload "release" --clobber release.tar.zst
 
