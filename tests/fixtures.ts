@@ -180,6 +180,15 @@ export async function mapReady(page: Page, selector: string, timeout = process.e
 	await expect(page.locator(`${selector} [data-map-ready="true"]`)).toBeAttached({ timeout });
 }
 
+/**
+ * Switch the page language through the header's disclosure menu (summary opens, then a real link
+ * navigates). Selecting by `hreflang` keeps specs independent of the links' translated labels.
+ */
+export async function switchLanguage(page: Page, lang: string) {
+	await page.locator('header.hdr .langs summary').click();
+	await page.locator(`header.hdr .langs a[hreflang="${lang}"]`).click();
+}
+
 /** The scrubber slider inside a section. */
 export const slider = (page: Page, section: string): Locator => page.locator(`${section} input[type="range"]`);
 

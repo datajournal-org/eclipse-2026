@@ -1,4 +1,4 @@
-import { test, expect, byName, localeUrl, mapReady } from './fixtures';
+import { test, expect, byName, localeUrl, mapReady, switchLanguage } from './fixtures';
 
 // Runs on the mobile project (Pixel 7) — the phone in someone's hand on eclipse day.
 test.describe('mobile layout @mobile', () => {
@@ -26,11 +26,10 @@ test.describe('mobile layout @mobile', () => {
 		expect(wide).toEqual([]);
 	});
 
-	test('keeps the language links reachable', async ({ page }) => {
+	test('keeps the language switcher usable', async ({ page }) => {
 		await page.goto(localeUrl());
-		const en = page.getByRole('link', { name: 'EN', exact: true });
-		await expect(en).toBeVisible();
-		await en.click();
+		await expect(page.locator('header.hdr .langs summary')).toBeVisible();
+		await switchLanguage(page, 'en');
 		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 	});
 

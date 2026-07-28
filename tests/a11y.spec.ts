@@ -39,20 +39,25 @@ test.describe('accessibility', () => {
 		);
 
 		await page.goto(localeUrl());
+		const active = () =>
+			page.evaluate(() => {
+				const el = document.activeElement as HTMLElement | null;
+				if (!el) return 'none';
+				const label = el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '';
+				return `${el.tagName}:${label.slice(0, 16)}`;
+			});
+		// The switcher comes first in the tab order, before the map: one Tab lands on the disclosure…
+		await page.keyboard.press('Tab');
+		expect(await active()).toMatch(/^SUMMARY:Sprache/);
+		// …Enter opens it, and the language links become the next tab stops (links inside a closed
+		// <details> are correctly NOT tabbable, so the menu adds no hidden stops when shut).
+		await page.keyboard.press('Enter');
 		const reached: string[] = [];
-		for (let i = 0; i < 6; i++) {
+		for (let i = 0; i < 3; i++) {
 			await page.keyboard.press('Tab');
-			reached.push(
-				await page.evaluate(() => {
-					const el = document.activeElement as HTMLElement | null;
-					if (!el) return 'none';
-					const label = el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '';
-					return `${el.tagName}:${label.slice(0, 12)}`;
-				})
-			);
+			reached.push(await active());
 		}
-		// the three language links come first, so the switcher is reachable without passing the map
-		expect(reached.filter((r) => r.startsWith('A:')).length, reached.join(' → ')).toBeGreaterThanOrEqual(3);
+		expect(reached.filter((r) => r.startsWith('A:')).length, reached.join(' → ')).toBe(3);
 	});
 
 	test('shows a visible focus indicator', async ({ page }) => {

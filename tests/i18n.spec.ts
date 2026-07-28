@@ -1,4 +1,4 @@
-import { test, expect, byName, localeUrl, BASE, ALL_LANGS } from './fixtures';
+import { test, expect, byName, localeUrl, BASE, ALL_LANGS, switchLanguage } from './fixtures';
 
 // Titles come from the catalogues rather than being repeated here: the copy is expected to change, and a
 // copy edit should not fail a routing test.
@@ -13,22 +13,21 @@ const LANGS = {
 };
 
 test.describe('language switching @i18n', () => {
-	test('offers every language as a link in the header', async ({ page }) => {
-		// Links, not buttons: each language is its own prerendered URL, so switching is navigation.
+	test('offers every language as a link in the header menu', async ({ page }) => {
+		// A disclosure menu now, but each entry is still a real LINK: every language is its own
+		// prerendered URL, so switching is navigation — crawlable, and working before hydration.
 		await page.goto(localeUrl());
 		const group = page.getByRole('group', { name: /Sprache|Language|Idioma/ });
+		await group.locator('summary').click();
 		await expect(group.getByRole('link')).toHaveCount(ALL_LANGS.length);
 		for (const l of ALL_LANGS) {
-			await expect(group.getByRole('link', { name: l.toUpperCase(), exact: true })).toHaveAttribute(
-				'href',
-				`${BASE}/${l}/`
-			);
+			await expect(group.locator(`a[hreflang="${l}"]`)).toHaveAttribute('href', `${BASE}/${l}/`);
 		}
 	});
 
 	test('navigates to the language’s own URL', async ({ page }) => {
 		await page.goto(localeUrl('de'));
-		await page.getByRole('link', { name: 'ES', exact: true }).click();
+		await switchLanguage(page, 'es');
 		await expect(page).toHaveURL(new RegExp(`${BASE}/es/$`));
 		await expect(page.locator('section.a2 h2')).toHaveText(LANGS.es.a2);
 	});
@@ -49,8 +48,9 @@ test.describe('language switching @i18n', () => {
 
 	test('marks the current language for assistive tech', async ({ page }) => {
 		await page.goto(localeUrl('en'));
-		await expect(page.getByRole('link', { name: 'EN', exact: true })).toHaveAttribute('aria-current', 'true');
-		await expect(page.getByRole('link', { name: 'DE', exact: true })).not.toHaveAttribute('aria-current', 'true');
+		await page.locator('header.hdr .langs summary').click();
+		await expect(page.locator('header.hdr .langs a[hreflang="en"]')).toHaveAttribute('aria-current', 'true');
+		await expect(page.locator('header.hdr .langs a[hreflang="de"]')).not.toHaveAttribute('aria-current', 'true');
 	});
 
 	test('updates the document language and the tab title on a switch', async ({ page }) => {
@@ -60,14 +60,14 @@ test.describe('language switching @i18n', () => {
 		await expect(page.locator('html')).toHaveAttribute('lang', 'de');
 		await expect(page).toHaveTitle(LANGS.de.title);
 
-		await page.getByRole('link', { name: 'ES', exact: true }).click();
+		await switchLanguage(page, 'es');
 		await expect(page.locator('html')).toHaveAttribute('lang', 'es');
 		await expect(page).toHaveTitle(LANGS.es.title);
 	});
 
 	test('remembers the choice for the next visit to the root', async ({ page }) => {
 		await page.goto(localeUrl('de'));
-		await page.getByRole('link', { name: 'EN', exact: true }).click();
+		await switchLanguage(page, 'en');
 		await expect(page).toHaveURL(new RegExp(`${BASE}/en/$`));
 		expect(await page.evaluate(() => localStorage.getItem('locale'))).toBe('en');
 	});
@@ -81,7 +81,7 @@ test.describe('language switching @i18n', () => {
 			.isVisible()
 			.catch(() => {});
 		await expect(page.locator('section.b1')).toBeVisible();
-		await page.getByRole('link', { name: 'EN', exact: true }).click();
+		await switchLanguage(page, 'en');
 		await expect(page.locator('section.b1 h2')).toHaveText('Total solar eclipse');
 	});
 

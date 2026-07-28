@@ -1,4 +1,4 @@
-import { test, expect, localeUrl, ALL_LANGS } from './fixtures';
+import { test, expect, localeUrl, ALL_LANGS, switchLanguage } from './fixtures';
 import { REPO_URL, translationFileUrl } from '../src/lib/config';
 
 const LABELS = {
@@ -34,7 +34,7 @@ test.describe('colophon footer', () => {
 		// The href is derived from the locale store, not baked at prerender: switching language in the
 		// header is a client-side navigation, and a stale link would send a Spanish reader to German copy.
 		await page.goto(localeUrl('de'));
-		await page.getByRole('link', { name: 'ES', exact: true }).click(); // the switcher shows codes, not names
+		await switchLanguage(page, 'es');
 		await expect(page.getByRole('link', { name: LABELS.es.translation })).toHaveAttribute(
 			'href',
 			translationFileUrl('es')
