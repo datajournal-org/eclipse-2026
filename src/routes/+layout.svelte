@@ -83,6 +83,15 @@
 </script>
 
 <svelte:head>
+	<!-- The satellite/vector tiles dominate real load time, and their DNS+TLS handshake would otherwise
+	     start only after MapLibre has loaded and asked for the first tile. Warming the connection during
+	     HTML parse buys 1-3 round trips on every first visit. `crossorigin`, because MapLibre fetches
+	     tiles in CORS mode — a non-CORS preconnect would warm a connection the tiles cannot reuse.
+	     The geocoder gets only a DNS prefetch: it is not used until the location dialog opens, and an
+	     idle preconnected socket would be closed again long before that. -->
+	<link rel="preconnect" href="https://tiles.versatiles.org" crossorigin="anonymous" />
+	<link rel="dns-prefetch" href="https://geocode.versatiles.org" />
+
 	<title>{$t('app.page_title')}</title>
 	<meta name="description" content={$t('app.page_description')} />
 	<link rel="canonical" href={canonical} />
