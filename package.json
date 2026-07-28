@@ -29,7 +29,8 @@
 		"test:report": "playwright show-report",
 		"upgrade": "ncu -u --target minor && npm install",
 		"upgrade:check": "ncu",
-		"precompute": "svelte-kit sync && tsx scripts/build-corridor.ts && tsx scripts/build-sky.ts"
+		"precompute": "svelte-kit sync && tsx scripts/build-corridor.ts && tsx scripts/build-sky.ts",
+		"og:image": "tsx scripts/build-og-image.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

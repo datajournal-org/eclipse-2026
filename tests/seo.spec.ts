@@ -131,11 +131,36 @@ test.describe('prerendered SEO metadata', () => {
 		}
 	});
 
-	test('keeps twitter:card at summary until a social image exists', async ({ request }) => {
-		// summary_large_image with no valid og:image renders worse than no card at all.
-		const html = await fetchHtml(request, '/en/');
-		expect(attr(html, /name="twitter:card" content="([^"]*)"/g)[0]).toBe('summary');
-		expect(html).not.toContain('property="og:image"');
+	test('declares the large social card, with an absolute image URL and dimensions', async ({ request }) => {
+		// summary_large_image is only safe now that a real 1200×630 og.jpg ships (npm run og:image).
+		for (const path of PAGES) {
+			const html = await fetchHtml(request, path);
+			expect(attr(html, /name="twitter:card" content="([^"]*)"/g)[0], path).toBe('summary_large_image');
+			expect(attr(html, /property="og:image" content="([^"]*)"/g)[0], path).toBe(`${ORIGIN}${BASE}/og.jpg`);
+			expect(attr(html, /property="og:image:width" content="([^"]*)"/g)[0], path).toBe('1200');
+			expect(attr(html, /property="og:image:height" content="([^"]*)"/g)[0], path).toBe('630');
+			expect(attr(html, /property="og:image:alt" content="([^"]*)"/g)[0], path).toMatch(/\S/);
+		}
+	});
+
+	test('serves the social image at the advertised size', async ({ page, request }) => {
+		// The meta tags promise 1200×630; a stale or missing static/og.jpg would break every share
+		// preview while all other tests stay green. Decode the actual bytes and measure.
+		const res = await request.get(`${BASE}/og.jpg`);
+		expect(res.status()).toBe(200);
+		expect(res.headers()['content-type']).toContain('image/jpeg');
+		await page.goto(`${BASE}/en/`);
+		const size = await page.evaluate(
+			(src) =>
+				new Promise<{ w: number; h: number }>((resolve, reject) => {
+					const img = new Image();
+					img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+					img.onerror = reject;
+					img.src = src;
+				}),
+			`${BASE}/og.jpg`
+		);
+		expect(size).toEqual({ w: 1200, h: 630 });
 	});
 
 	test('links between languages in the canonical form', async ({ request }) => {

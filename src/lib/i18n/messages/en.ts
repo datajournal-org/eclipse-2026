@@ -8,7 +8,7 @@ const messages: Messages = {
 		page_title: "Solar eclipse 12 August 2026 — what you'll see from here",
 		page_description:
 			'How much gets covered where you are, when the maximum falls, and whether you have a clear view west. The first total eclipse over Europe since 1999.',
-		og_image_alt: 'The eclipsed Sun with its corona visible'
+		og_image_alt: 'Earth from space: the eclipse shadow sweeping the Atlantic between Iceland and Spain'
 	},
 	nav: { about: 'About', language: 'Language' },
 	countdown: {

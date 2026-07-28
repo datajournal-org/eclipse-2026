@@ -105,9 +105,14 @@
 	{/each}
 	<link rel="alternate" hreflang="x-default" href={`${SITE_URL}${base}/`} />
 
-	<!-- twitter:card stays `summary` until a 1200×630 og:image exists; `summary_large_image` without a
-	     valid image renders worse than no card at all. -->
-	<meta name="twitter:card" content="summary" />
+	<!-- The 1200×630 card image: the A2 shadow globe at greatest eclipse, generated from the real scene
+	     by `npm run og:image` (scripts/build-og-image.ts) and committed to static/. Locale-neutral, so
+	     every language shares one asset; absolute URL, because crawlers ignore relative ones. -->
+	<meta property="og:image" content={`${SITE_URL}${base}/og.jpg`} />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
+	<meta property="og:image:alt" content={$t('app.og_image_alt')} />
+	<meta name="twitter:card" content="summary_large_image" />
 </svelte:head>
 
 <div class="app">

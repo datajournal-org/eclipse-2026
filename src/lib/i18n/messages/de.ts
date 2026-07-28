@@ -7,7 +7,8 @@ const messages = {
 		page_title: 'Sonnenfinsternis 12. August 2026 — was du von hier siehst',
 		page_description:
 			'Wie viel wird an deinem Ort bedeckt, wann ist das Maximum, und hast du freie Sicht nach Westen? Die erste totale Finsternis über Europa seit 1999.',
-		og_image_alt: 'Die verfinsterte Sonne mit sichtbarer Korona'
+		og_image_alt:
+			'Die Erdkugel aus dem All: der Schatten der Sonnenfinsternis zieht zwischen Island und Spanien über den Atlantik'
 	},
 	nav: { about: 'Über', language: 'Sprache' },
 	countdown: {

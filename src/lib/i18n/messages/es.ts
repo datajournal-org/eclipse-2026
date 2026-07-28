@@ -8,7 +8,7 @@ const messages: Messages = {
 		page_title: 'Eclipse solar 12 de agosto de 2026 — qué verás desde aquí',
 		page_description:
 			'Cuánto se cubre en tu ubicación, cuándo es el máximo y si tienes vista libre al oeste. El primer eclipse total sobre Europa desde 1999.',
-		og_image_alt: 'El Sol eclipsado con su corona visible'
+		og_image_alt: 'La Tierra desde el espacio: la sombra del eclipse cruza el Atlántico entre Islandia y España'
 	},
 	nav: { about: 'Acerca de', language: 'Idioma' },
 	countdown: {
