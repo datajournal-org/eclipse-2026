@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { userLocation, type Place } from '$lib/stores/location';
+	import { localEclipse } from '$lib/stores/localEclipse';
+	import { eclipseVisible } from '$lib/eclipse';
 	import { t } from '$lib/i18n';
 	import Countdown from '$lib/components/Countdown.svelte';
 	import ShadowRun from '$lib/components/ShadowRun.svelte';
@@ -31,15 +33,22 @@
 			<button onclick={() => (pickerOpen = true)}>{$t('b.change')}</button>
 		</div>
 		<Verdict />
-		<!-- SkyView builds its map, timeline and camera framing once, from the location it sees at mount —
+		<!-- B3 only where there is something in the sky to show: at a location the eclipse misses, or where
+		     the Sun is down at maximum, the verdict above already says "not visible from here" — a sky view
+		     of an untouched (or set) Sun under that headline would only contradict it. Same predicate as the
+		     verdict's, so the two cannot disagree.
+
+		     SkyView builds its map, timeline and camera framing once, from the location it sees at mount —
 		     and `{#if $userLocation}` stays truthy when the location merely CHANGES, so Svelte would keep
 		     the old instance and B3 would go on showing the previous place's sky under the new place's
 		     heading. Keying on the coordinates forces a rebuild. It costs ~1.5 s of scene setup, which is
 		     the right trade for a rare, deliberate interaction; keying on the object identity instead
 		     would also rebuild when the same place is re-selected. -->
-		{#key `${$userLocation.lat},${$userLocation.lon}`}
-			<SkyView />
-		{/key}
+		{#if eclipseVisible($localEclipse)}
+			{#key `${$userLocation.lat},${$userLocation.lon}`}
+				<SkyView />
+			{/key}
+		{/if}
 
 		<SectionDivider label={$t('b.prep')} />
 		<Checklist />

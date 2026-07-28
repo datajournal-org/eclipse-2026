@@ -93,6 +93,11 @@ A MapLibre 3D scene combining a **stylised OSM vector ground** (`@versatiles/sty
 slider = pure UI, shares the astronomy engine. Details on the Sun below.
 _(Satellite tiles remain reserved for the A2 globe.)_
 
+Rendered **only where the eclipse can actually be watched** (`eclipseVisible` in `lib/eclipse.ts`:
+non-null local circumstances, Sun up at maximum, ≥ 1 % covered) — the same predicate behind B1's
+"not visible from here" headline, so the two never disagree. Where it is false the page shows the
+verdict (with its next-eclipse redirect) and no sky view.
+
 ### 5. Checklist (B6)
 
 **Non-interactive** — a plain text list. `.ics` calendar export client-side.

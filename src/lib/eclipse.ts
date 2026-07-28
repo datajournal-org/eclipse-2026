@@ -168,6 +168,20 @@ export function localCircumstances(lat: number, lon: number, elevation = 0): Loc
 }
 
 /**
+ * Whether the 2026 eclipse can actually be WATCHED from a place: it reaches it (non-null local
+ * circumstances), the Sun is up at maximum, and at least a rounded 1 % of the disc is covered. This is
+ * the app's one definition of "visible from here" — the B1 verdict card's headline and the page's
+ * decision to show or drop the B3 sky view both read it, so they cannot disagree.
+ *
+ * The Sun-up test is the peak's altitude, same as the verdict copy ("at maximum the Sun is below the
+ * horizon"): a place like Rome, where a deep partial phase runs into sunset but the maximum itself falls
+ * after it, counts as not visible.
+ */
+export function eclipseVisible(lc: LocalCircumstances | null): boolean {
+	return !!lc?.peak && lc.peak.alt > 0 && Math.round(lc.obscuration * 100) > 0;
+}
+
+/**
  * The next solar eclipse visible from this location at or after eclipse day — which for anywhere on the
  * 2026 path is the 2026 event itself, and elsewhere is a later one. Read `peak.time` for the date; it is
  * the only function here that may return an eclipse other than 2026, and callers must say which they mean.

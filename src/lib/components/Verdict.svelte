@@ -4,14 +4,15 @@
 	import { t, fmt } from '$lib/i18n';
 	import { localEclipse } from '$lib/stores/localEclipse';
 	import { userLocation } from '$lib/stores/location';
-	import { nextEclipseHere } from '$lib/eclipse';
+	import { eclipseVisible, nextEclipseHere } from '$lib/eclipse';
 
 	const lc = $derived($localEclipse);
 	const peak = $derived(lc?.peak ?? null);
 	const kind = $derived(String(lc?.kind ?? ''));
 	const pct = $derived(lc ? Math.round(lc.obscuration * 100) : 0);
 	const peakAlt = $derived(peak?.alt ?? -99);
-	const visible = $derived(!!lc && !!peak && peakAlt > 0 && pct > 0);
+	// The shared predicate (eclipse.ts): the same answer decides whether the page shows B3 at all.
+	const visible = $derived(eclipseVisible(lc));
 	const isTotal = $derived(kind === 'total' && visible);
 
 	// Two different reasons the card can say "not visible from here", and they need different answers:

@@ -6,6 +6,7 @@ import {
 	greatestEclipse,
 	sunMoonHorizon,
 	localCircumstances,
+	eclipseVisible,
 	nextEclipseHere,
 	sunset
 } from './eclipse';
@@ -320,6 +321,40 @@ describe('localCircumstances', () => {
 		for (const site of REFERENCE) expect(localCircumstances(site.lat, site.lon), site.name).not.toBeNull();
 		expect(localCircumstances(40.7128, -74.006), 'New York').not.toBeNull(); // 9 %, the shallow edge
 		expect(localCircumstances(55.7558, 37.6173), 'Moscow').not.toBeNull(); // maximum below the horizon
+	});
+});
+
+describe('eclipseVisible', () => {
+	// The shared "can this actually be watched from here" predicate: the B1 verdict headline and the
+	// page's decision to render the B3 sky view both hang on it.
+	it('is true everywhere on the reference table', () => {
+		for (const site of REFERENCE)
+			expect(eclipseVisible(localCircumstances(site.lat, site.lon)), site.name).toBe(true);
+	});
+
+	it('is true at the shallow edge, where only a sliver is covered', () => {
+		// New York: 9 % obscured, Sun 62° up — exactly the case B3's high-Sun framing exists for.
+		expect(eclipseVisible(localCircumstances(40.7128, -74.006))).toBe(true);
+	});
+
+	it('is false where the maximum falls below the horizon', () => {
+		// Moscow: the eclipse reaches it (localCircumstances is non-null), but the Sun has set by maximum.
+		const moscow = localCircumstances(55.7558, 37.6173);
+		expect(moscow).not.toBeNull();
+		expect(eclipseVisible(moscow)).toBe(false);
+	});
+
+	it('is false where the eclipse grazes at under half a percent', () => {
+		// Chicago: the penumbra technically brushes it, but the rounded coverage is 0 % — nothing to see.
+		const chicago = localCircumstances(41.8781, -87.6298);
+		expect(chicago).not.toBeNull();
+		expect(Math.round(chicago!.obscuration * 100)).toBe(0);
+		expect(eclipseVisible(chicago)).toBe(false);
+	});
+
+	it('is false where the eclipse never arrives', () => {
+		expect(eclipseVisible(localCircumstances(-33.8688, 151.2093))).toBe(false); // Sydney
+		expect(eclipseVisible(null)).toBe(false);
 	});
 });
 

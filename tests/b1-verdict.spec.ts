@@ -57,6 +57,15 @@ test.describe('B1 verdict card', () => {
 		await expect(card.locator('.note')).toContainText('unter dem Horizont');
 		await expect(card.locator('.obsc')).toHaveCount(0);
 		await expect(card.locator('.next')).toHaveCount(0);
+		// ...and no sky view either: a 3D scene of an untouched Sun would contradict the headline.
+		await expect(page.locator('section.b3')).toHaveCount(0);
+	});
+
+	test('shows the sky view wherever it declares the eclipse visible', async ({ page, locatedPage }) => {
+		// The other half of the shared predicate: visible verdict ⇒ B3 present (its map loads lazily; the
+		// section itself must be there at once).
+		await locatedPage(byName('Oviedo'));
+		await expect(page.locator('section.b3')).toBeAttached();
 	});
 
 	test.describe('a location this eclipse misses', () => {
@@ -75,6 +84,8 @@ test.describe('B1 verdict card', () => {
 				await expect(card.locator('.obsc')).toHaveCount(0);
 				// and nothing anywhere claims a coverage figure or a contact time
 				await expect(page.locator('section.b6')).toHaveCount(0);
+				// nor is there a sky view of an eclipse that never arrives
+				await expect(page.locator('section.b3')).toHaveCount(0);
 			});
 		}
 
