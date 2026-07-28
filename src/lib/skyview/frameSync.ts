@@ -12,12 +12,15 @@ import type { PlacedObject } from '$lib/skyview/skyObjects';
 type Mlgl = { MercatorCoordinate: typeof import('maplibre-gl').MercatorCoordinate };
 
 const SUN_DIST = 30000; // metres: far out in the sky (parallax negligible; the Sun reads at infinity)
-// Point-sprite sizes in CSS pixels, mapped from an object's magnitudes of headroom over the visibility
-// threshold. Venus at full totality reaches ~6 magnitudes and so draws at the cap; a star scraping the
-// threshold draws as the smallest dot that still antialiases cleanly.
+// Point-sprite sizes in CSS pixels, mapped from the SQUARE ROOT of an object's magnitudes of headroom
+// over the visibility threshold — the same Stevens-law compression as the opacity ramp (see
+// RAMP_EXPONENT in skyObjects.ts), so the faint majority of the sky reads as stars rather than
+// sub-pixel specks. The scale is chosen so the compression pivots at the top: Venus's ~6.9 magnitudes
+// at full totality still land exactly on the cap, while a star half a magnitude over the threshold
+// grows from 2.0 to 3.5 px.
 const MIN_STAR_PX = 1.4,
 	MAX_STAR_PX = 9,
-	STAR_PX_PER_MAG = 1.25;
+	STAR_PX_PER_ROOT_MAG = 2.9;
 const EYE = 1.7; // eye height (m) used to place the Sun disc above the ground
 
 // Update the Sun billboard state from the current geometry: the Moon-disc offset/size (in Sun-radius units)
@@ -90,7 +93,7 @@ export function placeSkyObjects(
 		// object that is dim because the sky has not darkened yet, or because it sits low in the haze,
 		// must be small as well as faint. Sizing off the catalogue instead made a fading Venus keep its
 		// full width and merely turn transparent, which reads as a ghost rather than a star.
-		state.sizes[i] = Math.min(MAX_STAR_PX, MIN_STAR_PX + STAR_PX_PER_MAG * headroom);
+		state.sizes[i] = Math.min(MAX_STAR_PX, MIN_STAR_PX + STAR_PX_PER_ROOT_MAG * Math.sqrt(headroom));
 		state.alphas[i] = brightness;
 	}
 	state.count = n;

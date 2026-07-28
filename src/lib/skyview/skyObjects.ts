@@ -108,6 +108,22 @@ const limitingMag = (darkness: number) => -5 + 7.5 * darkness;
 const FADE_MAGS = 3;
 
 /**
+ * Display compression for the headroom → opacity ramp (and, mirrored in `frameSync.placeSkyObjects`,
+ * the headroom → size ramp).
+ *
+ * Headroom is log-flux (magnitudes), which is already the perceptually uniform scale — but mapping it
+ * LINEARLY to opacity still buried the sky: at totality most catalogue stars sit within a magnitude of
+ * the limit, and a 2 px dot at 0.17 alpha over the still-luminous twilight veil simply does not read.
+ * Meanwhile everything at mag 0 and brighter saturated, so the scene was "three planets, no stars" —
+ * more lopsided than the real experience, where Venus dominates but a dozen stars are findable.
+ *
+ * A square root (Stevens' power law for point sources has an exponent well below 1) lifts the faint end
+ * without moving the top: at half a magnitude of headroom the opacity more than doubles (0.17 → 0.41),
+ * while anything that already reached 1.0 stays exactly there.
+ */
+const RAMP_EXPONENT = 0.5;
+
+/**
  * Every catalogue object this observer can actually see right now: above the horizon, and bright
  * enough for how dark the sky currently is. Named for what it returns — `frameSync.placeSkyObjects`
  * is the separate step that turns these into GPU buffers.
@@ -146,8 +162,10 @@ export function visibleSkyObjects(
 		if (headroom <= 0) continue;
 
 		// Opacity ramps over FADE_MAGS magnitudes of headroom rather than snapping at the threshold, so
-		// an object enters as a faint speck and firms up as totality deepens.
-		placed.push({ object, alt, az, headroom, brightness: Math.min(1, headroom / FADE_MAGS) });
+		// an object enters as a faint speck and firms up as totality deepens — compressed (RAMP_EXPONENT)
+		// so the faint majority of the sky is actually seen, not technically present.
+		const brightness = Math.min(1, Math.pow(headroom / FADE_MAGS, RAMP_EXPONENT));
+		placed.push({ object, alt, az, headroom, brightness });
 	}
 	return placed.filter((p) => p.brightness > 0.02);
 }

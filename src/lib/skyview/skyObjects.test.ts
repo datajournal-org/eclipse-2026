@@ -131,9 +131,23 @@ describe('visibleSkyObjects', () => {
 		const ramp = [0.96, 0.97, 0.98, 0.99, 1].map((o) => venusAt(o)?.brightness ?? 0);
 		for (let i = 1; i < ramp.length; i++) expect(ramp[i], `at step ${i}`).toBeGreaterThanOrEqual(ramp[i - 1]);
 		expect(ramp[0]).toBeGreaterThan(0); // present on entry...
-		expect(ramp[0]).toBeLessThan(0.35); // ...but faint
+		expect(ramp[0]).toBeLessThan(0.65); // ...but visibly dimmer than at totality (compressed ramp)
 		expect(ramp[1]).toBeGreaterThan(ramp[0]); // genuinely ramping, not flat
 		expect(ramp[ramp.length - 1]).toBe(1); // saturating only at the end
+	});
+
+	it('compresses the ramp so near-threshold objects are seen, not merely present', () => {
+		// The linear ramp buried the sky: at totality most catalogue stars clear the limit by well under a
+		// magnitude, and headroom/3 opacity left them at ~0.2 over a still-luminous twilight veil — the
+		// scene read as "three planets, no stars". The square root lifts exactly that faint majority while
+		// leaving anything saturated where it was.
+		const seen = visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, 1, 10.4);
+		const faint = seen.filter((p) => p.headroom > 0.05 && p.headroom < 2.5);
+		expect(faint.length).toBeGreaterThan(3); // the case exists — most of the sky is near the limit
+		for (const p of faint) {
+			expect(p.brightness, p.object.name).toBeCloseTo(Math.sqrt(p.headroom / 3), 6);
+			expect(p.brightness, p.object.name).toBeGreaterThan(p.headroom / 3); // above the old linear ramp
+		}
 	});
 
 	it('keeps growing after the opacity has saturated', () => {
