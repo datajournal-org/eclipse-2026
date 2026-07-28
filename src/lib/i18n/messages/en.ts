@@ -30,7 +30,9 @@ const messages: Messages = {
 		loading: 'Loading globe …',
 		load_error: 'Could not load the globe. Please reload the page.',
 		toggle_overlay: 'Toggle lines & corridor',
-		two_fingers: 'Use two fingers to move the map'
+		two_fingers: 'Use two fingers to move the map',
+		zoom_ctrl: 'Use Ctrl + scroll to zoom the map',
+		zoom_cmd: 'Use ⌘ + scroll to zoom the map'
 	},
 	a3: {
 		title: 'What does it look like?',

@@ -30,7 +30,9 @@ const messages: Messages = {
 		loading: 'Globe wordt geladen …',
 		load_error: 'De globe kon niet worden geladen. Herlaad de pagina.',
 		toggle_overlay: 'Lijnen & corridor aan/uit',
-		two_fingers: 'Beweeg de kaart met twee vingers'
+		two_fingers: 'Beweeg de kaart met twee vingers',
+		zoom_ctrl: 'Zoom met Ctrl + scrollen',
+		zoom_cmd: 'Zoom met ⌘ + scrollen'
 	},
 	a3: {
 		title: 'Hoe ziet dat eruit?',

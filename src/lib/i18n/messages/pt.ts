@@ -29,7 +29,9 @@ const messages: Messages = {
 		loading: 'A carregar o globo …',
 		load_error: 'Não foi possível carregar o globo. Recarrega a página.',
 		toggle_overlay: 'Mostrar/ocultar linhas e corredor',
-		two_fingers: 'Usa dois dedos para mover o mapa'
+		two_fingers: 'Usa dois dedos para mover o mapa',
+		zoom_ctrl: 'Usa Ctrl + roda para fazer zoom',
+		zoom_cmd: 'Usa ⌘ + roda para fazer zoom'
 	},
 	a3: {
 		title: 'Como é que isso se vê?',

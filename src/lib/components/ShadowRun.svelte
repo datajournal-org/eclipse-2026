@@ -175,19 +175,24 @@
 			if (!maplibregl || disposed) return;
 
 			corridorBand = fillStripPrimitive(corridorEdges.north, corridorEdges.south, brand.accent.rgb, 0.1);
-			// Touch ergonomics. `coarse`: one finger belongs to the PAGE (scrolling past a tall globe must
-			// not rotate it by accident) — two fingers move the globe, announced by MapLibre's built-in
-			// overlay in the page's language. Nothing is disabled: the globe stays fully usable, the
-			// gesture just becomes deliberate. `phone`: fullscreen is dropped where it adds nothing — a
-			// phone screen IS the full screen, and the browser chrome stays anyway.
-			const coarse = window.matchMedia('(pointer: coarse)').matches;
-			const phone = coarse && window.matchMedia('(max-width: 700px)').matches;
+			// Cooperative gestures, on EVERY pointer: casual input belongs to the PAGE (scrolling past a
+			// tall globe must neither rotate it by touch nor trap the wheel), deliberate input moves the
+			// globe — two fingers on touch, Ctrl/⌘ + wheel on desktop — announced by MapLibre's built-in
+			// overlay in the page's language. Nothing is disabled, and fullscreen (where the reader has
+			// explicitly asked for the globe) turns the gestures direct again, courtesy of MapLibre.
+			// `phone`: fullscreen is dropped where it adds nothing — a phone screen IS the full screen.
+			const phone =
+				window.matchMedia('(pointer: coarse)').matches && window.matchMedia('(max-width: 700px)').matches;
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				...INITIAL_VIEW,
-				scrollZoom: true, // wheel zoom (over the map it takes the scroll; use fullscreen for full control)
-				cooperativeGestures: coarse,
-				locale: { 'CooperativeGesturesHandler.MobileHelpText': get(t)('a2.two_fingers') },
+				scrollZoom: true, // Ctrl/⌘ + wheel under cooperativeGestures; direct again in fullscreen
+				cooperativeGestures: true,
+				locale: {
+					'CooperativeGesturesHandler.MobileHelpText': get(t)('a2.two_fingers'),
+					'CooperativeGesturesHandler.WindowsHelpText': get(t)('a2.zoom_ctrl'),
+					'CooperativeGesturesHandler.MacHelpText': get(t)('a2.zoom_cmd')
+				},
 				attributionControl: { compact: false },
 				style: {
 					version: 8,
