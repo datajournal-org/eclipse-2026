@@ -84,7 +84,7 @@ test.describe('B3 sky view @webgl', () => {
 			await setFrame(page, B3, 0);
 			expect(await horizonY()).toBeGreaterThan(50); // Sun high → horizon off the bottom of the loupe
 			await setFrame(page, B3, await maxFrame(page, B3));
-			expect(await horizonY()).toBeLessThan(0); // Sun has set → horizon above centre
+			expect(await horizonY()).toBeGreaterThan(0);
 		});
 
 		test('never emits a negative ground height', async () => {

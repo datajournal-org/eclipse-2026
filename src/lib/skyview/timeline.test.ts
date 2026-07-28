@@ -4,14 +4,14 @@ import { localCircumstances } from '$lib/eclipse';
 import { eclipseGeometry } from './eclipseGeometry';
 import { byName } from '$lib/testing/reference';
 
-const PAD_MS = 30 * 60 * 1000;
+const PAD_MS = 10 * 60 * 1000;
 const lcOf = (name: string) => {
 	const site = byName(name);
 	return { site, lc: localCircumstances(site.lat, site.lon)! };
 };
 
 describe('buildTimeline', () => {
-	it('spans first-to-last contact plus 30 min of padding each side', () => {
+	it('spans first-to-last contact plus 10 min of padding each side', () => {
 		const { site, lc } = lcOf('Berlin');
 		const { times, N } = buildTimeline(site.lat, site.lon, lc);
 		expect(times[0]).toBe(lc.partialBegin!.time.getTime() - PAD_MS);
@@ -78,8 +78,8 @@ describe('buildTimeline', () => {
 		// The un-located / no-eclipse case must still give the slider something to render.
 		const { times, N, startFrame } = buildTimeline(0, 0, null);
 		expect(times).toHaveLength(241);
-		expect(new Date(times[0]).toISOString()).toBe('2026-08-12T16:00:00.000Z');
-		expect(new Date(times[N]).toISOString()).toBe('2026-08-12T19:30:00.000Z');
+		expect(new Date(times[0]).toISOString()).toBe('2026-08-12T16:20:00.000Z');
+		expect(new Date(times[N]).toISOString()).toBe('2026-08-12T19:10:00.000Z');
 		expect(startFrame).toBeGreaterThan(0);
 		expect(startFrame).toBeLessThan(N);
 	});

@@ -1,12 +1,12 @@
 // The B3 time slider's window and its opening frame. The window is the local eclipse (first→last contact)
-// padded by 30 min each side; the opening frame is greatest eclipse, except where the eclipse is very deep
+// padded by 10 min each side; the opening frame is greatest eclipse, except where the eclipse is very deep
 // (>90%) — there the peak is near-black, so we open at the moment coverage first reaches 90% on the way in.
 import { ECLIPSE_DATE } from '$lib/config';
 import { eclipseGeometry } from '$lib/skyview/eclipseGeometry';
 
 type LocalCircumstances = ReturnType<typeof import('$lib/eclipse').localCircumstances>;
 
-const PAD = 30 * 60 * 1000; // 30 min of padding on each side, so the slider shows the run-up and wind-down
+const PAD = 10 * 60 * 1000; // 10 min of padding on each side, so the slider shows the run-up and wind-down
 const START_OBSC = 0.9; // deep eclipses open here (on the way in) rather than at the near-black peak
 
 export function buildTimeline(
