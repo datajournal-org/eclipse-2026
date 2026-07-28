@@ -41,8 +41,10 @@
 		<h2>{visible ? (isTotal ? $t('b1.total') : $t('b1.partial')) : $t('b1.not_visible')}</h2>
 		{#if $userLocation}
 			<div class="place">
-				<span class="pname">📍 {placeLabel($userLocation)}</span>
-				{#if onchange}<button class="change" onclick={onchange}>{$t('b.change')}</button>{/if}
+				<span class="pname"
+					>📍 {placeLabel($userLocation)}
+					{#if onchange}<button class="change" onclick={onchange}>{$t('b.change')}</button>{/if}</span
+				>
 			</div>
 		{/if}
 	</div>
