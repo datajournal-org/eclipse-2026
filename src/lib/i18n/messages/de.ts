@@ -89,6 +89,8 @@ const messages = {
 		phase_end: 'Ende',
 		sunset: 'Sonnenuntergang',
 		// Compass points for the horizon ruler and the azimuth chip (cardinal initials are locale-specific)
+		// Planet labels in the sky view, faded in with their planet's visibility
+		planets: { venus: 'Venus', mercury: 'Merkur', jupiter: 'Jupiter' },
 		compass: { n: 'N', ne: 'NO', e: 'O', se: 'SO', s: 'S', sw: 'SW', w: 'W', nw: 'NW' }
 	},
 	b6: {

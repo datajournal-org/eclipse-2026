@@ -10,7 +10,7 @@
 // Drawn OVER the twilight veil (layer order in mapSetup.ts) and with the depth test off, like every
 // other piece of sky furniture: it is reference chrome, and a hill hiding "W" would defeat its purpose.
 import type { CustomLayerInterface, CustomRenderMethodInput, Map as MlMap } from 'maplibre-gl';
-import { SKY_OFFSET_MERC, cameraMercator } from './sunLayer';
+import { SKY_OFFSET_MERC, cameraMercator, projectDir } from './sunLayer';
 import { dirFromAzAlt } from './frameSync';
 import { CARDINAL_KEYS, LABEL_ALT, compassTicks } from './compass';
 
@@ -94,23 +94,11 @@ export function createCompassLayer(state: CompassState, color: [number, number, 
 			const cam = cameraMercator(map);
 			const k = SKY_OFFSET_MERC;
 
-			// Project the eight label points to CSS pixels for the DOM overlay — the same maths the Sun
-			// locator uses (sunLayer.ts). Behind-the-camera (w <= 0) becomes null; the component decides
-			// on-screen visibility.
+			// Project the eight label points to CSS pixels for the DOM overlay — shared maths in
+			// sunLayer.projectDir; null (behind the camera) is passed through for the component to hide.
 			const M = options.defaultProjectionData.mainMatrix;
-			const el = map.getCanvas();
 			labelDirs.forEach((dir, i) => {
-				const x = cam[0] + dir[0] * k,
-					y = cam[1] + dir[1] * k,
-					z = cam[2] + dir[2] * k;
-				const cw = M[3] * x + M[7] * y + M[11] * z + M[15];
-				if (cw <= 0) {
-					state.labels[i] = null;
-					return;
-				}
-				const ndcX = (M[0] * x + M[4] * y + M[8] * z + M[12]) / cw;
-				const ndcY = (M[1] * x + M[5] * y + M[9] * z + M[13]) / cw;
-				state.labels[i] = [(ndcX * 0.5 + 0.5) * el.clientWidth, (0.5 - ndcY * 0.5) * el.clientHeight];
+				state.labels[i] = projectDir(map, M, dir);
 			});
 
 			gl.useProgram(prog);

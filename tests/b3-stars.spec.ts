@@ -127,6 +127,62 @@ test.describe('B3 stars and planets @webgl', () => {
 		expect(bright, 'the star layer put nothing bright in the sky').toBeGreaterThan(2);
 	});
 
+	test('labels the planets in the page language, fading with their visibility', async ({ page }) => {
+		// The three labelled planets (PlanetLabels.svelte) all stand above Oviedo's horizon at totality:
+		// Mercury and Jupiter low in the west-northwest inside the default framing, Venus higher up. On
+		// the German page the words themselves prove localization — 'Merkur' exists in no other supported
+		// language.
+		await open(page, OVIEDO);
+		const max = await maxFrame(page, B3);
+		const label = (key: string) => page.locator(`${B3} [data-planet="${key}"]`);
+
+		// At first contact the sky is daylight-bright: no planet is drawn, so no planet is named.
+		await setFrame(page, B3, 0);
+		for (const key of ['venus', 'mercury', 'jupiter']) {
+			await expect(label(key), `${key} at first contact`).toHaveClass(/hidden/);
+		}
+
+		// Find the darkest frame the same way the star tests do — totality is ~10 of ~780 frames.
+		let best = { frame: -1, n: 0 };
+		for (let f = Math.round(max * 0.45); f <= Math.round(max * 0.55); f += 2) {
+			await setFrame(page, B3, f);
+			const n = (await sky(page)).count;
+			if (n > best.n) best = { frame: f, n };
+		}
+		await setFrame(page, B3, best.frame);
+
+		// Mercury (3.6° up, inside the default framing) is the planet the shot actually shows — named,
+		// localized ('Merkur' exists in no other supported language), at full strength at totality.
+		// Label placement runs on the next rendered frame after the scrub, hence the poll.
+		await expect.poll(async () => label('mercury').getAttribute('class')).not.toMatch(/hidden/);
+		await expect(label('mercury')).toHaveText('Merkur');
+		// Labels top out at half opacity by design (PlanetLabels.MAX_OPACITY): annotation, not object.
+		const opacity = await label('mercury').evaluate((el) => Number((el as HTMLElement).style.opacity));
+		expect(opacity, 'Mercury is at full visibility at totality').toBeGreaterThan(0.45);
+		expect(opacity, 'labels stay half-translucent even at totality').toBeLessThanOrEqual(0.5);
+
+		// Jupiter sits 4° from Mercury in azimuth, also inside the default framing.
+		await expect(label('jupiter')).not.toHaveClass(/hidden/);
+		await expect(label('jupiter')).toHaveText('Jupiter');
+
+		// Venus (27° up) sits ABOVE the default framing's top edge here, so only its text is pinned —
+		// whether it is on screen belongs to the camera framing, not to this feature.
+		await expect(label('venus')).toHaveText('Venus');
+
+		// The fade: walking back out of totality, Mercury's label must pass through intermediate opacity —
+		// it fades with the planet (PlacedObject.brightness) rather than snapping on. The run-up from 95 %
+		// to full obscuration takes minutes, so several 10 s frames sit inside the ramp.
+		let sawIntermediate = false;
+		for (let f = best.frame - 1; f > best.frame - 40; f--) {
+			await setFrame(page, B3, f);
+			const cls = (await label('mercury').getAttribute('class')) ?? '';
+			if (/hidden/.test(cls)) break;
+			const a = await label('mercury').evaluate((el) => Number((el as HTMLElement).style.opacity));
+			if (a > 0.02 && a < 0.45) sawIntermediate = true;
+		}
+		expect(sawIntermediate, 'the label snapped on instead of fading in').toBe(true);
+	});
+
 	test('takes them away again as the Moon moves off', async ({ page }) => {
 		await open(page, OVIEDO);
 		const max = await maxFrame(page, B3);

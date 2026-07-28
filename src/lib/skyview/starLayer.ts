@@ -13,7 +13,19 @@
 // (u_cam + u_dist * direction), so the whole sky rides with the camera and shows zero parallax — see
 // sunLayer.ts, which does the same for the Sun disc.
 import type { CustomLayerInterface, CustomRenderMethodInput, Map as MlMap } from 'maplibre-gl';
-import { SKY_OFFSET_MERC, cameraMercator } from './sunLayer';
+import { SKY_OFFSET_MERC, cameraMercator, projectDir } from './sunLayer';
+
+/** A planet the sky view labels: its current direction, its fade, and where it landed on screen. */
+export type PlanetLabel = {
+	/** i18n key suffix ('venus', 'mercury', 'mars') — resolved to a name by PlanetLabels.svelte. */
+	key: string;
+	/** Unit direction (Mercator axes), refreshed per scrub frame by SkyView.update(). */
+	dir: [number, number, number];
+	/** The planet's own visibility (PlacedObject.brightness) — the label fades with its planet. */
+	alpha: number;
+	/** CSS-pixel position, written by the layer each rendered frame; null while behind the camera. */
+	screen: [number, number] | null;
+};
 
 export type StarState = {
 	/** Unit direction per object (Mercator axes: +x east, +y south, +z up), 3 floats each. */
@@ -26,6 +38,8 @@ export type StarState = {
 	/** Bumped whenever the arrays change, so the buffers re-upload only when they have to. */
 	version: number;
 	ready: boolean;
+	/** The labelled planets among the placed objects — see PlanetLabel. */
+	labels: PlanetLabel[];
 };
 
 export const emptyStarState = (): StarState => ({
@@ -34,7 +48,8 @@ export const emptyStarState = (): StarState => ({
 	alphas: new Float32Array(0),
 	count: 0,
 	version: 0,
-	ready: false
+	ready: false,
+	labels: []
 });
 
 const VERTEX = `
@@ -110,6 +125,11 @@ export function createStarLayer(state: StarState, color: [number, number, number
 		},
 
 		render(gl, options: CustomRenderMethodInput) {
+			// The planet labels ride this layer's render pass (their dots are drawn here): project each
+			// labelled direction to CSS pixels for the DOM overlay, every frame the camera can move.
+			for (const label of state.labels) {
+				label.screen = projectDir(map, options.defaultProjectionData.mainMatrix, label.dir);
+			}
 			if (!state.ready || state.count === 0) return;
 
 			gl.useProgram(prog);

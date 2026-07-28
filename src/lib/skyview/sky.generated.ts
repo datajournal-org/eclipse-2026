@@ -10,6 +10,10 @@
 // in the SOURCE catalogue (starCatalog.ts, dev-only); tests that need to know which row is which match
 // rows back to it by coordinates, and identify planets by their ephemeris positions (or, coarsely, by
 // magnitude: the faintest planet here is 1.29, and only Venus passes -4).
+//
+// PLANET_INDEX is the one deliberate exception: the sky-view planet LABELS need to know which anonymous
+// rows are which planet, and five indices are the cheapest identity that can carry that (~60 bytes,
+// against the ~2 KB of names this file used to ship). Everything else stays anonymous.
 
 export type SkyObject = {
 	/** Apparent visual magnitude — for planets, at mid-eclipse. */
@@ -312,3 +316,12 @@ export const SKY_OBJECTS: readonly SkyObject[] = [
 	{ mag: 3.5, ra: 6.847021, dec: -32.5357 },
 	{ mag: 3.5, ra: 7.361722, dec: 21.93347 }
 ];
+
+/** Indices into SKY_OBJECTS of the naked-eye planets — see the header note. */
+export const PLANET_INDEX = {
+	venus: 0,
+	jupiter: 1,
+	mercury: 3,
+	mars: 24,
+	saturn: 13
+} as const;

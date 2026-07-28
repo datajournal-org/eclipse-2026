@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as Astronomy from 'astronomy-engine';
 import { gmstDeg, horizonFor, skyDarkness, visibleSkyObjects } from './skyObjects';
-import { SKY_OBJECTS } from './sky.generated';
+import { SKY_OBJECTS, PLANET_INDEX } from './sky.generated';
 import { BRIGHT_STARS } from './starCatalog';
 import { byName } from '$lib/testing/reference';
 import { TIMELINE_START, TIMELINE_END } from '$lib/config';
@@ -222,6 +222,29 @@ describe('the catalogue', () => {
 		expect(at('Vega').dec).toBeCloseTo(38.784, 2); // +38° 47'
 		expect(at('Betelgeuse').ra).toBeCloseTo(5.919, 2);
 		expect(at('Sirius').mag).toBeLessThan(-1.4); // the brightest star in the sky
+	});
+
+	it('keys each planet by index onto the row the ephemeris demands', () => {
+		// PLANET_INDEX is the sky data's single surviving identity (the planet labels hang off it). An
+		// index pointing at the wrong anonymous row would label a star as Venus — nothing else would
+		// notice, so every entry is checked against astronomy-engine's position for that body.
+		const GEOCENTRE = new Astronomy.Observer(0, 0, 0);
+		const MID = new Date((TIMELINE_START.getTime() + TIMELINE_END.getTime()) / 2);
+		const bodies = {
+			venus: Astronomy.Body.Venus,
+			jupiter: Astronomy.Body.Jupiter,
+			mercury: Astronomy.Body.Mercury,
+			saturn: Astronomy.Body.Saturn,
+			mars: Astronomy.Body.Mars
+		} as const;
+		for (const [key, body] of Object.entries(bodies)) {
+			const eq = Astronomy.Equator(body, MID, GEOCENTRE, true, true);
+			const row = SKY_OBJECTS[PLANET_INDEX[key as keyof typeof PLANET_INDEX]];
+			expect(row, key).toBeDefined();
+			expect(Math.abs(row.ra - eq.ra), key).toBeLessThan(5e-4);
+			expect(Math.abs(row.dec - eq.dec), key).toBeLessThan(5e-3);
+		}
+		expect(SKY_OBJECTS[PLANET_INDEX.venus].mag).toBeLessThan(-4);
 	});
 
 	it('carries the planets, precessed and merged into one list', () => {

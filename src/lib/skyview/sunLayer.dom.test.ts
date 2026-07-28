@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { CustomRenderMethodInput, Map as MlMap } from 'maplibre-gl';
-import { createSunLayer, type SunState } from './sunLayer';
+import { createSunLayer, projectDir, type SunState } from './sunLayer';
 import { createFakeGl, createFakeMap, fakeRenderInput, type FakeGl, type FakeMap } from '$lib/testing/fakes';
 
 const YELLOW: [number, number, number] = [1, 0.93, 0.72];
@@ -46,6 +46,25 @@ const add = (sun: SunState) => {
 beforeEach(() => {
 	gl = createFakeGl();
 	map = createFakeMap();
+});
+
+describe('projectDir', () => {
+	// The shared projection behind the Sun locator, the compass labels and the planet labels. Fake
+	// camera at (0.5, 0.4, 0), identity matrix: a zenith direction lands the point at (0.5, 0.4, 0.001)
+	// → NDC (0.5, 0.4) → CSS (600, 180) on the fake's 800×600 canvas.
+	const IDENTITY = new Float64Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+
+	it('projects a camera-anchored direction to CSS pixels', () => {
+		const m = createFakeMap();
+		expect(projectDir(m as never, IDENTITY, [0, 0, 1])).toEqual([600, 180]);
+	});
+
+	it('returns null behind the camera, where a screen point would lie', () => {
+		const m = createFakeMap();
+		const behind = Float64Array.from(IDENTITY);
+		behind[15] = -1; // w flips negative
+		expect(projectDir(m as never, behind, [0, 0, 1])).toBeNull();
+	});
 });
 
 describe('layer contract', () => {

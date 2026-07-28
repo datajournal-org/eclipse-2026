@@ -18,6 +18,30 @@ import type { CustomLayerInterface, CustomRenderMethodInput, Map as MlMap } from
 export const SKY_OFFSET_MERC = 0.001;
 
 /**
+ * Project a camera-anchored sky direction to CSS pixels — the shared maths behind the Sun locator, the
+ * compass labels and the planet labels: place the point at camera + dir x offset, run it through the
+ * frame's projection matrix, and return null when it is behind the camera (w <= 0), where a screen
+ * position would point at nothing.
+ */
+export function projectDir(
+	m: MlMap,
+	matrix: ArrayLike<number>,
+	dir: readonly [number, number, number]
+): [number, number] | null {
+	const cam = cameraMercator(m);
+	const x = cam[0] + dir[0] * SKY_OFFSET_MERC;
+	const y = cam[1] + dir[1] * SKY_OFFSET_MERC;
+	const z = cam[2] + dir[2] * SKY_OFFSET_MERC;
+	const M = matrix;
+	const cw = M[3] * x + M[7] * y + M[11] * z + M[15];
+	if (cw <= 0) return null;
+	const ndcX = (M[0] * x + M[4] * y + M[8] * z + M[12]) / cw;
+	const ndcY = (M[1] * x + M[5] * y + M[9] * z + M[13]) / cw;
+	const el = m.getCanvas();
+	return [(ndcX * 0.5 + 0.5) * el.clientWidth, (0.5 - ndcY * 0.5) * el.clientHeight];
+}
+
+/**
  * The camera position in custom-layer (Mercator) space, fresh for this frame.
  *
  * MapLibre v6 has no public accessor for it (`getFreeCameraOptions` did not survive the v6 split), but

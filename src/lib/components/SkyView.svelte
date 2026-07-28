@@ -18,7 +18,9 @@
 	import TimeScrubber from '$lib/components/TimeScrubber.svelte';
 	import { buildMapStyle, addSceneLayers, sunArcEnvelope } from '$lib/skyview/mapSetup';
 	import { createCameraController } from '$lib/skyview/cameraController';
-	import { placeSun, placeSkyObjects, syncMapLighting } from '$lib/skyview/frameSync';
+	import { placeSun, placeSkyObjects, syncMapLighting, dirFromAzAlt } from '$lib/skyview/frameSync';
+	import { SKY_OBJECTS, PLANET_INDEX } from '$lib/skyview/sky.generated';
+	import PlanetLabels from '$lib/components/PlanetLabels.svelte';
 	import { emptyStarState } from '$lib/skyview/starLayer';
 	import { emptyVeilState } from '$lib/skyview/veilLayer';
 	import { emptyCompassState } from '$lib/skyview/compassLayer';
@@ -51,6 +53,11 @@
 	let loupeGround = $state<string>('#15110d'); // ground silhouette below the loupe horizon
 	let loupe = $state<{ place: (screen: [number, number] | null) => void }>();
 	let compassLabels = $state<{ place: (screens: ([number, number] | null)[]) => void }>();
+	let planetLabels = $state<{
+		place: (items: { key: string; screen: [number, number] | null; alpha: number }[]) => void;
+	}>();
+	/** The planets the sky view labels by name — identified through PLANET_INDEX (sky.generated.ts). */
+	const LABELLED_PLANETS = ['venus', 'mercury', 'jupiter'] as const;
 	let setFrame: (i: number) => void = () => {};
 
 	let clockCh = $state('0'); // widest clock string in this window, so the chips beside it never shift
@@ -205,6 +212,19 @@
 						// the stars are drawn OVER the veil layer now, so they keep their own contrast.
 						const sky = visibleSkyObjects(LAT, LON, date, geo.obsc, s.alt);
 						placeSkyObjects(stars, sky);
+						// The labelled planets among the placed objects, found by object IDENTITY against their
+						// PLANET_INDEX rows — the sky data is anonymous, and this is the one identity it keeps.
+						// A planet that is below the horizon or too washed out simply is not in `sky`, so its
+						// label carries alpha 0 and fades away with it.
+						stars.labels = LABELLED_PLANETS.map((key) => {
+							const placed = sky.find((p) => p.object === SKY_OBJECTS[PLANET_INDEX[key]]);
+							return {
+								key,
+								dir: placed ? dirFromAzAlt(placed.az, placed.alt) : ([0, 0, 1] as [number, number, number]),
+								alpha: placed?.brightness ?? 0,
+								screen: null
+							};
+						});
 						if (debug)
 							Object.assign(window, {
 								__b3stars: sky.length,
@@ -273,6 +293,20 @@
 								p && p[0] >= -MARGIN && p[0] <= w + MARGIN && p[1] >= -MARGIN && p[1] <= h + MARGIN ? p : null
 							)
 						);
+						planetLabels?.place(
+							stars.labels.map((l) => ({
+								key: l.key,
+								alpha: l.alpha,
+								screen:
+									l.screen &&
+									l.screen[0] >= -MARGIN &&
+									l.screen[0] <= w + MARGIN &&
+									l.screen[1] >= -MARGIN &&
+									l.screen[1] <= h + MARGIN
+										? l.screen
+										: null
+							}))
+						);
 					});
 
 					// NOTE: no re-framing on 'idle' — the camera is set once here and never moves on its own
@@ -316,6 +350,9 @@
 
 			<!-- Compass-point labels over the horizon ruler (compassLayer.ts projects, this places) -->
 			<CompassLabels bind:this={compassLabels} />
+
+			<!-- Planet names, faded with their planets' visibility (starLayer.ts projects, this places) -->
+			<PlanetLabels bind:this={planetLabels} />
 
 			<!-- A) loupe inset + B) Sun locator square & tangent leaders; bound so the render loop can drive it -->
 			<SkyLoupe
