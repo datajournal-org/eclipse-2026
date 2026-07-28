@@ -354,38 +354,15 @@ describe('zoom', () => {
 });
 
 describe('controls', () => {
-	it('adds a zoom group and a reset button to the top right', () => {
+	it('adds only the reset control — zooming is gesture-only', () => {
+		// The dolly keeps three direct inputs (wheel, pinch, double-click); +/- buttons were the least
+		// discoverable of the four and cost the most chrome. Reset stays: it is the only way BACK.
 		const { m, controller } = makeRig();
 		controller.addControls();
-		expect(m.callsTo('addControl')).toHaveLength(2);
-		for (const call of m.callsTo('addControl')) expect(call.args[1]).toBe('top-right');
-	});
-
-	it('labels the zoom buttons for screen readers', () => {
-		const { m, controller } = makeRig();
-		controller.addControls();
-		const zoomGroup = (m.controls[0].control as { onAdd: () => HTMLElement }).onAdd();
-		const buttons = [...zoomGroup.querySelectorAll('button')];
-		expect(buttons).toHaveLength(2);
-		expect(buttons[0].getAttribute('aria-label')).toBe('b3.zoom_in');
-		expect(buttons[1].getAttribute('aria-label')).toBe('b3.zoom_out');
-		expect(buttons[0].className).toContain('maplibregl-ctrl-zoom-in');
-	});
-
-	it('dollies from the zoom buttons', () => {
-		const { m, controller, raf } = makeRig();
-		controller.applyFraming();
-		controller.addControls();
-		const zoomGroup = (m.controls[0].control as { onAdd: () => HTMLElement }).onAdd();
-		const distance = () => {
-			const { from } = lastPose(m)!;
-			return Math.hypot((from.lng - OVIEDO.lon) * Math.cos((OVIEDO.lat * Math.PI) / 180), from.lat - OVIEDO.lat);
-		};
-		const before = distance();
-
-		zoomGroup.querySelector<HTMLButtonElement>('.maplibregl-ctrl-zoom-in')!.click();
-		raf.flush(40);
-		expect(distance()).toBeLessThan(before);
+		expect(m.callsTo('addControl')).toHaveLength(1);
+		expect(m.callsTo('addControl')[0].args[1]).toBe('top-right');
+		const group = (m.controls[0].control as { onAdd: () => HTMLElement }).onAdd();
+		expect(group.querySelector('.maplibregl-ctrl-zoom-in')).toBeNull();
 	});
 
 	it('restores the initial pose from the reset button', () => {
@@ -401,7 +378,7 @@ describe('controls', () => {
 		expect(lastPose(m)!.from.lng).not.toBeCloseTo(initial.from.lng, 6);
 
 		controller.addControls();
-		const resetGroup = (m.controls[1].control as { onAdd: () => HTMLElement }).onAdd();
+		const resetGroup = (m.controls[0].control as { onAdd: () => HTMLElement }).onAdd();
 		resetGroup.querySelector('button')!.click();
 
 		const reset = lastPose(m)!;
@@ -413,7 +390,7 @@ describe('controls', () => {
 	it('labels the reset button', () => {
 		const { m, controller } = makeRig();
 		controller.addControls();
-		const resetGroup = (m.controls[1].control as { onAdd: () => HTMLElement }).onAdd();
+		const resetGroup = (m.controls[0].control as { onAdd: () => HTMLElement }).onAdd();
 		expect(resetGroup.querySelector('button')!.getAttribute('aria-label')).toBe('b3.recenter');
 	});
 });

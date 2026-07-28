@@ -81,8 +81,6 @@ const messages: Messages = {
 		coverage: 'Cobertura',
 		loading: 'A carregar o terreno …',
 		recenter: 'Repor a vista',
-		zoom_in: 'Ampliar',
-		zoom_out: 'Reduzir',
 		phase_start: 'Início',
 		phase_max: 'Máximo',
 		phase_end: 'Fim',

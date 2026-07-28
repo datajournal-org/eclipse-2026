@@ -83,8 +83,6 @@ const messages: Messages = {
 		coverage: 'Coverage',
 		loading: 'Loading terrain …',
 		recenter: 'Reset view',
-		zoom_in: 'Zoom in',
-		zoom_out: 'Zoom out',
 		phase_start: 'Start',
 		phase_max: 'Maximum',
 		phase_end: 'End',

@@ -183,31 +183,9 @@ export function createCameraController(opts: {
 	canvas.addEventListener('touchend', onTouchEnd);
 	canvas.addEventListener('touchcancel', onTouchEnd);
 
-	// zoom +/- control — same look as the A2 globe's NavigationControl (MapLibre's own zoom-in/out classes
-	// → same icons, styled by map.css), but driving the dolly (camDist), not the map zoom.
-	const zoomControl: IControl = {
-		onAdd() {
-			const c = document.createElement('div');
-			c.className = 'maplibregl-ctrl maplibregl-ctrl-group';
-			const mkBtn = (cls: string, title: string, factor: number) => {
-				const b = document.createElement('button');
-				b.type = 'button';
-				b.className = cls;
-				b.title = title;
-				b.setAttribute('aria-label', title);
-				const icon = document.createElement('span');
-				icon.className = 'maplibregl-ctrl-icon';
-				icon.setAttribute('aria-hidden', 'true');
-				b.appendChild(icon);
-				b.onclick = () => zoomBy(factor);
-				return b;
-			};
-			c.appendChild(mkBtn('maplibregl-ctrl-zoom-in', label('b3.zoom_in'), ZOOM_STEP));
-			c.appendChild(mkBtn('maplibregl-ctrl-zoom-out', label('b3.zoom_out'), 1 / ZOOM_STEP));
-			return c;
-		},
-		onRemove() {}
-	};
+	// No +/- buttons: the dolly has three direct inputs already (wheel, pinch, double-click), and the
+	// buttons were the least discoverable of the four while costing the most chrome. The reset button
+	// stays — it is the only way BACK once a gesture has gone somewhere unwanted.
 
 	// reset button — back to the Sun-facing framing (orbit 0)
 	const resetControl: IControl = {
@@ -234,7 +212,6 @@ export function createCameraController(opts: {
 	return {
 		applyFraming,
 		addControls() {
-			m.addControl(zoomControl, 'top-right');
 			m.addControl(resetControl, 'top-right');
 		},
 		detach() {

@@ -69,22 +69,17 @@ test.describe('B3 camera @webgl', () => {
 		expect(cursor).toBe('grab');
 	});
 
-	test('offers zoom and recentre controls', async () => {
-		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-in`)).toBeVisible();
-		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-out`)).toBeVisible();
-		const buttons = page.locator(`${B3} .maplibregl-ctrl button`);
-		expect(await buttons.count()).toBeGreaterThanOrEqual(3); // zoom in, zoom out, recentre
-	});
-
-	test('labels the camera controls', async () => {
-		// Translated at runtime, so assert that each carries a non-empty label rather than pinning copy.
-		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-in`)).toHaveAttribute('aria-label', /\S/);
-		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-out`)).toHaveAttribute('aria-label', /\S/);
+	test('offers only the recentre control — zooming is gesture-only', async () => {
+		// Wheel, pinch and double-click drive the dolly; the +/- buttons are deliberately gone.
+		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-in`)).toHaveCount(0);
+		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-out`)).toHaveCount(0);
 		const recentre = page.locator(`${B3} .maplibregl-ctrl-group`).last().locator('button').last();
+		await expect(recentre).toBeVisible();
+		// Translated at runtime, so assert a non-empty label rather than pinning copy.
 		await expect(recentre).toHaveAttribute('aria-label', /\S/);
 	});
 
-	test('dollies the scene from the zoom buttons without parallaxing the Sun', async () => {
+	test('dollies the scene by wheel without parallaxing the Sun', async () => {
 		// Zoom is a dolly: the camera moves hundreds of metres, the near terrain grows, and the Sun must
 		// NOT move — the sky is camera-anchored (sunLayer.ts), so it behaves as if at infinity. The old
 		// observer-anchored placement put it 30 km out, and this very dolly swung it visibly against the
@@ -94,8 +89,9 @@ test.describe('B3 camera @webgl', () => {
 		const scene = () => page.locator(`${B3} .stage-canvas canvas`).screenshot();
 		const sceneBefore = await scene();
 
-		await page.locator(`${B3} .maplibregl-ctrl-zoom-out`).click();
-		await page.locator(`${B3} .maplibregl-ctrl-zoom-out`).click();
+		const { x, y } = await stageCentre(page);
+		await page.mouse.move(x, y);
+		await page.mouse.wheel(0, 600); // scroll down → dolly out
 		await page.waitForTimeout(900);
 
 		expect((await scene()).equals(sceneBefore), 'the dolly moved nothing at all').toBe(false);
@@ -164,8 +160,9 @@ test.describe('B3 camera @webgl', () => {
 				.slice(0, 2)
 				.map(Number);
 		const [x0, y0] = await posOf();
-		await page.locator(`${B3} .maplibregl-ctrl-zoom-out`).click();
-		await page.locator(`${B3} .maplibregl-ctrl-zoom-out`).click();
+		const { x, y } = await stageCentre(page);
+		await page.mouse.move(x, y);
+		await page.mouse.wheel(0, 600); // dolly out by wheel — the buttons are gone
 		await page.waitForTimeout(900);
 		const [x1, y1] = await posOf();
 		expect(Math.hypot(x1 - x0, y1 - y0)).toBeLessThan(2);

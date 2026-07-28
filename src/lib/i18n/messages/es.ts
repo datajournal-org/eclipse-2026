@@ -83,8 +83,6 @@ const messages: Messages = {
 		coverage: 'Cobertura',
 		loading: 'Cargando relieve …',
 		recenter: 'Restablecer vista',
-		zoom_in: 'Acercar',
-		zoom_out: 'Alejar',
 		phase_start: 'Inicio',
 		phase_max: 'Máximo',
 		phase_end: 'Fin',

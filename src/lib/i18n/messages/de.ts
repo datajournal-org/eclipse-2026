@@ -82,8 +82,6 @@ const messages = {
 		coverage: 'Bedeckung',
 		loading: 'Gelände wird geladen …',
 		recenter: 'Ansicht zurücksetzen',
-		zoom_in: 'Vergrößern',
-		zoom_out: 'Verkleinern',
 		phase_start: 'Beginn',
 		phase_max: 'Maximum',
 		phase_end: 'Ende',

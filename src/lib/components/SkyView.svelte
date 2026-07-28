@@ -173,7 +173,8 @@
 					// the scene — the Sun billboard ignores terrain occlusion for the same reason.
 					new maplibregl.Marker({ element: pin, opacityWhenCovered: '1' }).setLngLat([LON, LAT]).addTo(m);
 
-					// Zoom (+/-) and reset controls — same look as the A2 globe.
+					// Reset control — back to the Sun-facing framing. (Zooming is gesture-only: wheel,
+					// pinch, double-click.)
 					cam.addControls();
 
 					function update() {

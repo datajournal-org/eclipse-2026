@@ -82,8 +82,6 @@ const messages: Messages = {
 		coverage: 'Bedekking',
 		loading: 'Terrein wordt geladen …',
 		recenter: 'Weergave herstellen',
-		zoom_in: 'Inzoomen',
-		zoom_out: 'Uitzoomen',
 		phase_start: 'Begin',
 		phase_max: 'Maximum',
 		phase_end: 'Einde',
