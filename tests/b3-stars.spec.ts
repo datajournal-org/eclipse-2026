@@ -5,10 +5,11 @@ const B3 = 'section.b3';
 const OVIEDO = byName('Oviedo'); // total — the sky really does go dark here
 const BERLIN = byName('Berlin'); // 85 % partial — it does not
 
+type PlacedDebug = { mag: number };
 const sky = (page: import('@playwright/test').Page) =>
 	page.evaluate(() => {
-		const w = window as unknown as { __b3stars?: number; __b3skyNames?: string[] };
-		return { count: w.__b3stars ?? 0, names: w.__b3skyNames ?? [] };
+		const w = window as unknown as { __b3stars?: number; __b3sky?: { mag: number }[] };
+		return { count: w.__b3stars ?? 0, objects: (w.__b3sky ?? []) as PlacedDebug[] };
 	});
 
 const open = async (page: import('@playwright/test').Page, site: { lat: number; lon: number }) => {
@@ -62,8 +63,8 @@ test.describe('B3 stars and planets @webgl', () => {
 		const max = await maxFrame(page, B3);
 		for (let f = 0; f <= max; f += 3) {
 			await setFrame(page, B3, f);
-			const { count, names } = await sky(page);
-			expect(count, `frame ${f} of ${max} showed ${names.join(', ')}`).toBe(0);
+			const { count, objects } = await sky(page);
+			expect(count, `frame ${f} of ${max} showed mags ${objects.map((o) => o.mag).join(', ')}`).toBe(0);
 		}
 	});
 
@@ -77,7 +78,7 @@ test.describe('B3 stars and planets @webgl', () => {
 		// Totality at Oviedo lasts about 100 s inside a two-hour window, so at 30 s per frame it occupies
 		// roughly THREE of the 240 slider positions. A coarse sweep steps clean over it — which is exactly
 		// how an earlier version of this test passed while proving nothing.
-		let peak = { count: 0, names: [] as string[], frame: -1 };
+		let peak = { count: 0, objects: [] as PlacedDebug[], frame: -1 };
 		for (let f = Math.round(max * 0.45); f <= Math.round(max * 0.55); f++) {
 			await setFrame(page, B3, f);
 			const seen = await sky(page);
@@ -86,11 +87,12 @@ test.describe('B3 stars and planets @webgl', () => {
 
 		expect(peak.count, 'nothing appeared anywhere near maximum').toBeGreaterThan(8);
 		// Venus is the object every eclipse guide tells you to look for: magnitude -4.4, 46° from the Sun.
-		expect(peak.names).toContain('Venus');
-		// ...and it must not be alone — the bright stars come out too.
-		expect(
-			peak.names.filter((n) => !['Venus', 'Jupiter', 'Mercury', 'Mars', 'Saturn'].includes(n)).length
-		).toBeGreaterThan(3);
+		// The debug hook carries magnitudes only (SKY_OBJECTS has neither names nor kinds) — and only
+		// Venus is brighter than -4.
+		expect(peak.objects.some((o) => o.mag < -4)).toBe(true);
+		// ...and it must not be alone — the stars come out too. Anything fainter than Mars (+1.29, the
+		// faintest planet in this sky) is necessarily a star.
+		expect(peak.objects.filter((o) => o.mag > 1.3).length).toBeGreaterThan(3);
 	});
 
 	test('actually puts them on the screen, not just in the buffers', async ({ page }) => {

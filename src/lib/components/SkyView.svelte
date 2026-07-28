@@ -192,8 +192,9 @@
 						if (debug)
 							Object.assign(window, {
 								__b3stars: sky.length,
-								__b3skyNames: sky.map((p) => p.object.name),
-								__b3sky: sky.map((p) => ({ name: p.object.name, alt: p.alt, az: p.az, b: p.brightness })),
+								// Magnitudes, not names or kinds — SKY_OBJECTS carries neither (see sky.generated.ts).
+								// Specs identify Venus as "brighter than mag -4" and stars as "fainter than Mars, +1.29".
+								__b3sky: sky.map((p) => ({ mag: p.object.mag, alt: p.alt, az: p.az, b: p.brightness })),
 								__b3starState: stars,
 								__b3veil: veil
 							});

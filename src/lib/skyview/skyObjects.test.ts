@@ -35,22 +35,26 @@ describe('horizonFor', () => {
 			checked++;
 			// 0.01° = 36 arcsec. The residual is how the two apply refraction, not the rotation, and at
 			// B3's ~0.1°/px it is a seventh of a pixel — far below anything that can be drawn.
-			expect(Math.abs(mine.alt - theirs.altitude), `${object.name} altitude`).toBeLessThan(0.01);
+			// SKY_OBJECTS is nameless, so failures are labelled by magnitude and position instead.
+			const label = `mag ${object.mag} @ ra ${object.ra.toFixed(3)}h`;
+			expect(Math.abs(mine.alt - theirs.altitude), `${label} altitude`).toBeLessThan(0.01);
 			// Azimuth is meaningless at the zenith, and wraps at 360. Weigh the difference by cos(alt):
 			// azimuth DEGREES shrink toward the zenith (a high star sweeps many of them across few pixels),
 			// so the screen-space error is the cross-track angle, not the raw azimuth delta.
 			if (Math.abs(mine.alt) < 89.5) {
 				const delta = Math.abs(((mine.az - theirs.azimuth + 540) % 360) - 180);
 				const crossTrack = delta * Math.cos((mine.alt * Math.PI) / 180);
-				expect(crossTrack, `${object.name} azimuth (${mine.az} vs ${theirs.azimuth})`).toBeLessThan(0.01);
+				expect(crossTrack, `${label} azimuth (${mine.az} vs ${theirs.azimuth})`).toBeLessThan(0.01);
 			}
 		}
 		expect(checked, 'no object was above the horizon — the comparison proved nothing').toBeGreaterThan(20);
 	});
 
 	it('tracks the sky turning over the eclipse window', () => {
-		// Earth turns 15°/h, so an object's hour angle must advance with it rather than sit still.
-		const vega = SKY_OBJECTS.find((o) => o.name === 'Vega')!;
+		// Earth turns 15°/h, so an object's hour angle must advance with it rather than sit still. Any
+		// fixed equatorial point shows it; Vega's J2000 position (from the still-named source catalogue)
+		// keeps the test readable.
+		const vega = BRIGHT_STARS.find((s) => s.name === 'Vega')!;
 		const start = horizonFor(vega.ra, vega.dec, OVIEDO.lat, OVIEDO.lon, MAX);
 		const later = horizonFor(vega.ra, vega.dec, OVIEDO.lat, OVIEDO.lon, new Date(MAX.getTime() + 3600_000));
 		expect(Math.abs(later.az - start.az)).toBeGreaterThan(1);
@@ -104,7 +108,9 @@ describe('visibleSkyObjects', () => {
 	it('shows Venus first at Oviedo during totality', () => {
 		const seen = visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, 1, 10.4);
 		expect(seen.length).toBeGreaterThan(3);
-		const venus = seen.find((p) => p.object.name === 'Venus');
+		// Anonymous data: Venus is identified as the object brighter than mag -4 — nothing else is
+		// within two magnitudes of it (Sirius, the brightest star, is -1.44).
+		const venus = seen.find((p) => p.object.mag < -4);
 		expect(venus, 'Venus is the one object everyone is told to look for').toBeDefined();
 		expect(venus!.alt).toBeGreaterThan(20);
 		expect(venus!.brightness).toBeCloseTo(1, 1);
@@ -126,7 +132,7 @@ describe('visibleSkyObjects', () => {
 	});
 
 	const venusAt = (obsc: number) =>
-		visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, obsc, 10.4).find((p) => p.object.name === 'Venus');
+		visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, obsc, 10.4).find((p) => p.object.mag < -4); // Venus
 
 	it('fades everything in and out rather than switching it on', () => {
 		// What a reader sees scrubbing into totality: the same object getting brighter, not appearing at
@@ -148,8 +154,8 @@ describe('visibleSkyObjects', () => {
 		const faint = seen.filter((p) => p.headroom > 0.05 && p.headroom < 2.5);
 		expect(faint.length).toBeGreaterThan(3); // the case exists — most of the sky is near the limit
 		for (const p of faint) {
-			expect(p.brightness, p.object.name).toBeCloseTo(Math.sqrt(p.headroom / 3), 6);
-			expect(p.brightness, p.object.name).toBeGreaterThan(p.headroom / 3); // above the old linear ramp
+			expect(p.brightness, `mag ${p.object.mag}`).toBeCloseTo(Math.sqrt(p.headroom / 3), 6);
+			expect(p.brightness, `mag ${p.object.mag}`).toBeGreaterThan(p.headroom / 3); // above the old linear ramp
 		}
 	});
 
@@ -165,7 +171,7 @@ describe('visibleSkyObjects', () => {
 
 	it('gives a brighter object more headroom than a fainter one in the same sky', () => {
 		const seen = visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, 1, 10.4);
-		const venus = seen.find((p) => p.object.name === 'Venus')!;
+		const venus = seen.find((p) => p.object.mag < -4)!; // Venus
 		const faintest = seen.reduce((a, b) => (a.object.mag > b.object.mag ? a : b));
 		expect(venus.headroom).toBeGreaterThan(faintest.headroom);
 		expect(faintest.headroom).toBeGreaterThan(0);
@@ -180,7 +186,7 @@ describe('visibleSkyObjects', () => {
 		for (const p of low) {
 			// Headroom below what an unextinguished object of this magnitude would have had.
 			const unextinguished = seen.find((q) => q.alt > 20 && Math.abs(q.object.mag - p.object.mag) < 0.6);
-			if (unextinguished) expect(p.headroom, p.object.name).toBeLessThan(unextinguished.headroom);
+			if (unextinguished) expect(p.headroom, `mag ${p.object.mag}`).toBeLessThan(unextinguished.headroom);
 		}
 	});
 });
@@ -219,12 +225,17 @@ describe('the catalogue', () => {
 	});
 
 	it('carries the planets, precessed and merged into one list', () => {
-		const planets = SKY_OBJECTS.filter((o) => o.kind === 'planet').map((o) => o.name);
-		expect(planets).toEqual(expect.arrayContaining(['Venus', 'Jupiter', 'Mercury', 'Mars', 'Saturn']));
-		expect(SKY_OBJECTS.filter((o) => o.kind === 'star')).toHaveLength(285);
+		// The rows are fully anonymous — no name, no kind — so the planets are recognisable only by what
+		// makes them planets: 285 catalogue stars plus five extra rows, topped by objects brighter than
+		// any star. Venus (mag < -4) is unmistakable; Venus and Jupiter both outshine Sirius (-1.44).
+		expect(SKY_OBJECTS).toHaveLength(285 + 5);
+		expect(SKY_OBJECTS.filter((o) => o.mag < -4)).toHaveLength(1);
+		expect(SKY_OBJECTS.filter((o) => o.mag < -1.5)).toHaveLength(2);
 		// Precession since J2000 is ~0.35°, so of-date coordinates must differ from the catalogue's.
-		const sirius = SKY_OBJECTS.find((o) => o.name === 'Sirius')!;
-		expect(Math.abs(sirius.ra - BRIGHT_STARS.find((s) => s.name === 'Sirius')!.ra)).toBeGreaterThan(0.005);
+		// Sirius is the one row at exactly its catalogue magnitude of -1.44.
+		const sirius = SKY_OBJECTS.filter((o) => o.mag === -1.44);
+		expect(sirius).toHaveLength(1);
+		expect(Math.abs(sirius[0].ra - BRIGHT_STARS.find((s) => s.name === 'Sirius')!.ra)).toBeGreaterThan(0.005);
 	});
 });
 
@@ -241,11 +252,13 @@ describe('sky.generated.ts', () => {
 		for (const star of BRIGHT_STARS) {
 			Astronomy.DefineStar(Astronomy.Body.Star1, star.ra, star.dec, 1000);
 			const eq = Astronomy.Equator(Astronomy.Body.Star1, MID, GEOCENTRE, true, true);
-			const stored = SKY_OBJECTS.find((o) => o.name === star.name && o.kind === 'star');
-			expect(stored, `${star.name} missing from the generated file`).toBeDefined();
-			expect(stored!.ra, star.name).toBeCloseTo(eq.ra, 5);
-			expect(stored!.dec, star.name).toBeCloseTo(eq.dec, 4);
-			expect(stored!.mag, star.name).toBe(star.mag);
+			// The generated rows are nameless, so match each catalogue star back by where the build math
+			// says it must sit, plus its magnitude — the mag disambiguates true co-located pairs like
+			// Castor and Castor B, which share coordinates but not brightness.
+			const matches = SKY_OBJECTS.filter(
+				(o) => o.mag === star.mag && Math.abs(o.ra - eq.ra) < 5e-4 && Math.abs(o.dec - eq.dec) < 5e-3
+			);
+			expect(matches, `${star.name} missing from the generated file (or matched twice)`).toHaveLength(1);
 		}
 
 		for (const body of [
@@ -256,10 +269,9 @@ describe('sky.generated.ts', () => {
 			Astronomy.Body.Saturn
 		]) {
 			const eq = Astronomy.Equator(body, MID, GEOCENTRE, true, true);
-			const stored = SKY_OBJECTS.find((o) => o.name === String(body))!;
-			expect(stored, `${body} missing`).toBeDefined();
-			expect(stored.ra, String(body)).toBeCloseTo(eq.ra, 5);
-			expect(stored.dec, String(body)).toBeCloseTo(eq.dec, 4);
+			// Nameless rows: the planet is the one row at the position the ephemeris says it must occupy.
+			const matches = SKY_OBJECTS.filter((o) => Math.abs(o.ra - eq.ra) < 5e-4 && Math.abs(o.dec - eq.dec) < 5e-3);
+			expect(matches, `${body} missing from the generated file (or matched twice)`).toHaveLength(1);
 		}
 	});
 
@@ -272,8 +284,13 @@ describe('sky.generated.ts', () => {
 		// the whole window, so the stored position is never more than half that wrong: under a pixel at
 		// B3's ~0.1°/px.
 		const GEOCENTRE = new Astronomy.Observer(0, 0, 0);
+		const MID = new Date((TIMELINE_START.getTime() + TIMELINE_END.getTime()) / 2);
 		for (const name of ['Venus', 'Mercury', 'Mars', 'Jupiter', 'Saturn']) {
-			const stored = SKY_OBJECTS.find((o) => o.name === name)!;
+			// Recover each planet's row by its mid-window position (the staleness test above proves the
+			// mapping is one-to-one).
+			const mid = Astronomy.Equator(name as Astronomy.Body, MID, GEOCENTRE, true, true);
+			const stored = SKY_OBJECTS.find((o) => Math.abs(o.ra - mid.ra) < 5e-4 && Math.abs(o.dec - mid.dec) < 5e-3)!;
+			expect(stored, name).toBeDefined();
 			const worst = Math.max(
 				...[TIMELINE_START, TIMELINE_END].map((edge) => {
 					const at = Astronomy.Equator(name as Astronomy.Body, edge, GEOCENTRE, true, true);
