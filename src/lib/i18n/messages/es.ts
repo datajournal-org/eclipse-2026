@@ -110,7 +110,7 @@ const messages: Messages = {
 		b1_note: 'Ocultación, tiempos de contacto y veredicto de seguridad ocular para tu ubicación — próximamente.'
 	},
 	donate: {
-		text: 'Esta aplicación me ha costado mucho tiempo y trabajo. Pero te la regalo a ti y a tus amigos, y no añadiré molestos banners de publicidad. Si quieres apoyar mi trabajo, déjame una pequeña propina.',
+		text: 'En esta aplicación hay muchas tardes de trabajo. Aun así, te la regalo a ti y a tus amigos – sin publicidad y sin seguimiento. Si te gusta, me alegrará una pequeña propina.',
 		button: 'Dejar una propina'
 	},
 	footer: {

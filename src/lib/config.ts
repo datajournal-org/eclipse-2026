@@ -19,8 +19,8 @@ export const SITE_URL: string = import.meta.env?.VITE_SITE_URL ?? 'https://dataj
 export const REPO_URL = 'https://github.com/datajournal-org/eclipse-2026';
 
 /**
- * The tip jar (Stripe payment link) behind the donate box at the end of the page.
- * NOTE: currently a Stripe TEST-mode link (`test_` prefix) — swap in the live link before launch.
+ * The tip jar (Stripe LIVE payment link) behind the donate box at the end of the page.
+ * Mirrored in tests/donate.spec.ts, which pins the exact URL the page ships.
  */
 export const DONATE_URL = 'https://donate.stripe.com/00w6oJ3EMfca6J35Jb1ck00';
 

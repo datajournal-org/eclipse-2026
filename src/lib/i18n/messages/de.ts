@@ -109,7 +109,7 @@ const messages = {
 		b1_note: 'Bedeckungsgrad, Kontaktzeiten und Augenschutz-Verdikt für deinen Ort — folgt.'
 	},
 	donate: {
-		text: 'Diese App hat mich viel Zeit und Arbeit gekostet. Aber ich schenke sie dir und deinen Freunden und werde keine nervigen Werbebanner einfügen. Wenn du meine Arbeit unterstützen möchtest, hinterlasse mir bitte ein kleines Trinkgeld.',
+		text: 'In dieser App stecken viele Abende Arbeit. Trotzdem schenke ich sie dir und deinen Freunden – ohne Werbung und ohne Tracking. Wenn sie dir gefällt, freue ich mich über ein kleines Trinkgeld.',
 		button: 'Trinkgeld hinterlassen'
 	},
 	footer: {

@@ -3,7 +3,7 @@ import { test, expect, byName, localeUrl } from './fixtures';
 // The tip jar at the end of the content. The one hard contract: the Stripe link must open in a new tab
 // (a payment page replacing the app would throw away the reader's chosen location context) and must be
 // exactly the configured payment URL.
-const STRIPE = 'https://donate.stripe.com/test_00w6oJ3EMfca6J35Jb1ck00';
+const STRIPE = 'https://donate.stripe.com/00w6oJ3EMfca6J35Jb1ck00';
 
 test.describe('donate box', () => {
 	test('links to the Stripe payment page in a new tab', async ({ page, locatedPage }) => {
