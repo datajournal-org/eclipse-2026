@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { renderCorridorModule, round5 } from './corridorModule';
 import { computeCorridor } from './corridorCompute';
 
@@ -30,7 +31,11 @@ describe('renderCorridorModule', () => {
 
 	it('marks the file as generated and says how to rebuild it', () => {
 		expect(source.startsWith('// AUTO-GENERATED')).toBe(true);
-		expect(source).toContain('npm run corridor');
+		// The named command must be one that actually exists: this header used to say `npm run corridor`,
+		// a script that was never in package.json, and this very test pinned the broken instruction.
+		expect(source).toContain('npm run precompute');
+		const scripts = JSON.parse(readFileSync('package.json', 'utf8')).scripts as Record<string, string>;
+		expect(Object.keys(scripts)).toContain('precompute');
 	});
 
 	it('imports and applies the shared type', () => {

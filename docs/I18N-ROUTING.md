@@ -40,8 +40,10 @@ Still outstanding, and not blocking the routing work:
   horizon-event-first framing because it is what distinguishes the page from a generic astronomy table in
   a search result. Unit tests hold the 60/155-character caps that search results and preview cards
   truncate at.
-- **A 1200×630 social image.** Until it exists, `twitter:card` stays `summary` and no `og:image` is emitted;
-  a `summary_large_image` card with no valid image renders worse than no card at all.
+- **A 1200×630 social image** (`static/og.jpg`): the A2 shadow globe at greatest eclipse, generated from
+  the real scene by `npm run og:image` and committed. It is emitted as an absolute `og:image` with
+  dimensions and a localized `og:image:alt`, and carries `twitter:card` as `summary_large_image`; an e2e
+  test decodes the served bytes and asserts the advertised 1200×630.
 
 ---
 
@@ -289,8 +291,8 @@ Things the plan did not anticipate, all found by building it:
 - ~~Copy.~~ Written (personalisation hook, see §1). The English strings carry the most weight: they are
   what the root serves, what `x-default` gives readers whose language we lack, and what every shared root
   link previews as.
-- **The 1200×630 social image**, and with it `og:image`, `og:image:alt` and `twitter:card`'s upgrade to
-  `summary_large_image`.
+- ~~The 1200×630 social image~~, and with it `og:image`, `og:image:alt` and `twitter:card`'s upgrade to
+  `summary_large_image` — shipped (see §above; regenerate with `npm run og:image`).
 - **A base-path trap to watch for.** `paths.base` means a root-absolute asset URL resolves against the
   origin root and 404s. `SkyLoupe` shipped exactly that (`href="/corona_512.webp"`); the fix is `asset()`
   from `$app/paths`. Two things now catch it: the console-error assertion in `shell.spec.ts`, and a

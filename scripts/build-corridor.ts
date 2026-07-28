@@ -1,5 +1,5 @@
 // Precompute the totality corridor once and write it to corridor.generated.ts (imported at runtime).
-// Run with:  npm run corridor   (also runs automatically before `npm run build`).
+// Run via `npm run precompute` (also runs automatically before `npm run build` and `npm run check`).
 // The rendering lives in corridorModule.ts so it can be unit-tested without touching the filesystem.
 import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
