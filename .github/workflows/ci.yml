@@ -158,8 +158,68 @@ jobs:
               path: playwright-report/
               retention-days: 7
 
+   # The PRIMARY deployment: datajournal.org serves each project from the .tar.zst asset of its latest
+   # GitHub release (the server never builds or checks out project repos). Every green main push
+   # re-publishes the asset and pings the server's webhook to pick it up. The contract — exactly one
+   # .tar.zst on the latest release, index.html/meta.json/preview at the archive root, no hidden files,
+   # paths under ~96 chars — is pinned by tests/publish.spec.ts on every run, not just here.
+   release:
+      name: Release to datajournal.org
+      needs: [checks, e2e]
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      runs-on: ubuntu-latest
+      timeout-minutes: 15
+      permissions:
+         contents: write # gh release create/upload; nothing else in this job writes anywhere
+
+      steps:
+         - name: Check out the repository
+           uses: actions/checkout@v7
+
+         - name: Set up Node.js
+           uses: actions/setup-node@v7
+           with:
+              node-version: ${{ env.NODE_VERSION }}
+              cache: npm
+
+         - name: Install dependencies
+           run: npm ci
+
+         # No VITE_SITE_URL override: the default IS https://datajournal.org, so canonical, hreflang and
+         # og:url point at the copy this job publishes. (The Pages job below overrides it for its mirror.)
+         - name: Build the site for datajournal.org
+           run: npm run build
+
+         # The tar parser on the server reads the classic ustar name field only — longer paths truncate
+         # silently and 404. Guarded here as well as in the spec, so a failure names the file.
+         - name: Guard the archive constraints
+           run: |
+              long=$(find build -type f | sed 's|^build/||' | awk 'length($0) > 95')
+              if [ -n "$long" ]; then echo "::error::paths exceed the ustar limit:"; echo "$long"; exit 1; fi
+              for f in index.html meta.json og.jpg; do
+                test -f "build/$f" || { echo "::error::build/$f missing from the archive root"; exit 1; }
+              done
+
+         - name: Release
+           env:
+              GH_TOKEN: ${{ github.token }}
+           run: |
+              tar -cf - --exclude='.*' -C build . | zstd -9 > release.tar.zst
+              gh release create "release" --title "Release" --latest || true
+              gh release upload "release" --clobber release.tar.zst
+
+         - name: Deploy
+           env:
+              WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+           run: |
+              if [ -z "$WEBHOOK_URL" ]; then
+                echo "::warning::WEBHOOK_URL secret not set — release uploaded, but the server was not pinged (it will pick it up on its next restart)."
+                exit 0
+              fi
+              curl -fsS "${WEBHOOK_URL}/update_pages"
+
    build:
-      name: Build the static site
+      name: Build the static site (GitHub Pages mirror)
       needs: [checks, e2e]
       if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       runs-on: ubuntu-latest
@@ -178,8 +238,9 @@ jobs:
          - name: Install dependencies
            run: npm ci
 
-         # Every canonical, hreflang and og:url is absolute, so the build has to know where it will live.
-         # Without this the deployed pages would tell crawlers the real copy is on another host entirely.
+         # The MIRROR: canonical, hreflang and og:url are absolute, so this copy has to advertise its
+         # own host — without the override it would tell crawlers the real copy is the primary
+         # (datajournal.org), which is true but makes the mirror useless as a standalone fallback.
          # `paths.base` is '/eclipse-2026' and must match the repository name for a project Pages site.
          - name: Prerender the site with absolute URLs
            run: npm run build

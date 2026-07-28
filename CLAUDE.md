@@ -1,7 +1,8 @@
 # Eclipse 2026
 
-Static SvelteKit app (adapter-static, prerendered) for the 2026-08-12 total solar eclipse, deployed as
-static files to bunny.net at `https://datajournal.org/eclipse-2026/`; CI also publishes a copy to GitHub
+Static SvelteKit app (adapter-static, prerendered) for the 2026-08-12 total solar eclipse, published at
+`https://datajournal.org/eclipse-2026/` as a `.tar.zst` release asset that the datajournal.org server
+serves directly (see `tests/publish.spec.ts` for the contract); CI also publishes a copy to GitHub
 Pages. All personalisation — chosen location, maps, countdown — runs client-side, and the chosen location
 is persisted to `localStorage` only, never to the URL.
 

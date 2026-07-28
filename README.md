@@ -37,10 +37,6 @@ npm run preview        # serve the build locally
 eclipse-day star/planet catalogue. The social image is also a committed artifact — regenerate it
 with `npm run og:image` (needs a completed build) whenever the A2 globe's design changes.
 
-The primary deployment is the `build/` directory uploaded as static files to bunny.net
-(datajournal.org). CI (`.github/workflows/ci.yml`) additionally publishes a copy of every green
-`main` build to GitHub Pages.
-
 ## Update
 
 ```sh
