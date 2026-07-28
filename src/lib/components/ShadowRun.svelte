@@ -327,7 +327,6 @@
 <section class="block a2 wide">
 	<div class="block-head">
 		<h2>{$t('a2.title')}</h2>
-		<span class="eyebrow">12.08.2026</span>
 	</div>
 	<p class="sub">{$t('a2.subtitle')}</p>
 
@@ -343,6 +342,9 @@
 
 		<div class="timebar">
 			<div class="readout tnum">
+				<!-- The date lives HERE, with the clock it belongs to, not as a dangling header eyebrow:
+				     the slider readout is the one place a reader connects a time to. -->
+				<span class="date">{$fmt.date(timelineStart, { dateStyle: 'medium' })}</span>
 				<span class="clock"
 					><span style:--clock-ch={clockCh} class="clock-time">{clock}</span>
 					<small>{$fmt.zone(timelineStart)}</small></span
