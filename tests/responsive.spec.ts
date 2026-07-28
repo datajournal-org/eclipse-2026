@@ -76,7 +76,10 @@ test.describe('mobile layout @mobile', () => {
 		await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 	});
 
-	test('opens the location dialog as a usable sheet', async ({ page, stubGeocoder }) => {
+	test('opens the location dialog as a fullscreen modal', async ({ page, stubGeocoder }) => {
+		// A 92dvh bottom sheet used to hang below the viewport on real phones (toolbars, keyboard) with
+		// the confirm button unreachable and nothing to scroll. Fullscreen removes the failure mode:
+		// every control is inside the viewport by construction.
 		await stubGeocoder();
 		await page.goto(localeUrl());
 		await page.getByRole('button', { name: /Standort wählen/ }).click();
@@ -85,11 +88,23 @@ test.describe('mobile layout @mobile', () => {
 		await expect(sheet).toBeVisible();
 		const box = (await sheet.boundingBox())!;
 		const viewport = page.viewportSize()!;
-		expect(box.width).toBeLessThanOrEqual(viewport.width);
-		expect(box.x).toBeGreaterThanOrEqual(0);
-		// the search field and the confirm button both have to be within reach
+		if (viewport.width <= 560) {
+			// the phone breakpoint: fullscreen, edge to edge
+			expect(box.width).toBe(viewport.width);
+			expect(Math.round(box.height)).toBe(viewport.height);
+			expect(box.x).toBe(0);
+			expect(box.y).toBe(0);
+		} else {
+			// this @mobile spec also runs on desktop-sized webkit, where the dialog stays a centred card
+			expect(box.width).toBeLessThanOrEqual(viewport.width);
+			expect(box.x).toBeGreaterThanOrEqual(0);
+		}
+		// the search field and, crucially, the confirm button sit fully inside the viewport
 		await expect(page.getByRole('searchbox', { name: 'Stadt oder Adresse suchen' })).toBeVisible();
-		await expect(page.getByRole('button', { name: /Diesen Ort verwenden/ })).toBeVisible();
+		const confirm = page.getByRole('button', { name: /Diesen Ort verwenden/ });
+		await expect(confirm).toBeVisible();
+		const cb = (await confirm.boundingBox())!;
+		expect(cb.y + cb.height).toBeLessThanOrEqual(viewport.height);
 	});
 
 	test('gives the map stages a usable height', async ({ page, locatedPage }) => {

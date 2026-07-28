@@ -531,10 +531,13 @@
 		}
 	}
 
-	/* mobile → bottom sheet */
+	/* mobile → fullscreen modal. This was a 92dvh bottom sheet, which real phones defeated: browser
+	   toolbars and the on-screen keyboard shifted the sheet until the confirm button hung below the
+	   viewport, with nothing to scroll. Covering the whole viewport removes the failure mode — every
+	   control is inside by construction, and the flexing stage absorbs all height changes. */
 	@media (max-width: 560px) {
 		.picker-dlg[open] {
-			place-items: end stretch;
+			place-items: stretch;
 
 			.sheet {
 				animation: sheetUp 0.24s ease-out;
@@ -542,9 +545,13 @@
 		}
 		.sheet {
 			width: 100%;
-			height: 92dvh;
-			border-radius: 18px 18px 0 0;
-			border-bottom: 0;
+			height: 100dvh;
+			border-radius: 0;
+			border: 0;
+		}
+		.foot {
+			/* viewport-fit=cover pulls content under the iOS home indicator — keep the button above it */
+			padding-bottom: max(14px, env(safe-area-inset-bottom));
 		}
 		@keyframes sheetUp {
 			from {
