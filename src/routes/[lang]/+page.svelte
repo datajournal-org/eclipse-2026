@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { userLocation, placeLabel } from '$lib/stores/location';
+	import { userLocation } from '$lib/stores/location';
 	import { localEclipse } from '$lib/stores/localEclipse';
 	import { eclipseVisible } from '$lib/eclipse';
 	import { t } from '$lib/i18n';
@@ -7,7 +7,6 @@
 	import ShadowRun from '$lib/components/ShadowRun.svelte';
 	import LocationCall from '$lib/components/LocationCall.svelte';
 	import LocationDialog from '$lib/components/LocationDialog.svelte';
-	import TimeZoneNote from '$lib/components/TimeZoneNote.svelte';
 	import SectionDivider from '$lib/components/SectionDivider.svelte';
 	import Verdict from '$lib/components/Verdict.svelte';
 	import SkyView from '$lib/components/SkyView.svelte';
@@ -23,16 +22,12 @@
 	<!-- A — always visible (event overview) -->
 	<Countdown />
 	<ShadowRun />
-	<TimeZoneNote />
 
 	{#if $userLocation}
-		<!-- B — the personal briefing, opened by a clear section break -->
+		<!-- B — the personal briefing, opened by a clear section break. The chosen place lives in the
+		     verdict's own header now (segment grammar: header meta, not a floating row of its own). -->
 		<SectionDivider label={$t('b.your_sky')} />
-		<div class="place block">
-			<div class="pname">📍 {placeLabel($userLocation)}</div>
-			<button onclick={() => (pickerOpen = true)}>{$t('b.change')}</button>
-		</div>
-		<Verdict />
+		<Verdict onchange={() => (pickerOpen = true)} />
 		<!-- B3 only where there is something in the sky to show: at a location the eclipse misses, or where
 		     the Sun is down at maximum, the verdict above already says "not visible from here" — a sky view
 		     of an untouched (or set) Sun under that headline would only contradict it. Same predicate as the
@@ -62,18 +57,3 @@
 <LocationDialog bind:open={pickerOpen} />
 <SafetyFooter />
 <SiteFooter />
-
-<style>
-	.place {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-
-		.pname {
-			font-size: 1.15rem;
-			font-weight: 700;
-			margin-top: 2px;
-		}
-	}
-</style>

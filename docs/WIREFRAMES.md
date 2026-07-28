@@ -134,3 +134,25 @@ eye safety.
 **State B (built):** Header → A1 countdown → A2 shadow run → TimeZoneNote → divider → 📍 location →
 B1 verdict → B3 3D horizon → divider → B6 checklist. As planned, the A blocks stay and only the A4
 location call is replaced — B is appended below it.
+
+## Segment grammar
+
+Every section on the page is at most four slots, in this order (shared classes in `base.css`):
+
+1. **Header** — `.block-head`: one `h2`, optionally one right-aligned meta (`.eyebrow` date on A2, the
+   `.place` name + change button on B1). Nothing else at heading weight.
+2. **Intro** — `.sub`: optional, **one line**, muted. If it needs a second sentence, the graphic is not
+   carrying its weight — fix the graphic, not the text.
+3. **Content** — the stage / list / graphic. All controls (time sliders, readouts, buttons) live inside
+   this slot, styled as part of the content.
+4. **Footer** — `.seg-foot`: optional, one caption line for context that must not interrupt reading
+   (e.g. A2's time-zone note).
+
+Nothing floats between sections — the page is sections and `SectionDivider`s only, enforced by
+`tests/segments.spec.ts`. Card borders are reserved for **actions** (the location CTA, the donate box);
+content sections separate by whitespace alone.
+
+**Sanctioned exceptions:** the countdown is the page's hero and carries no header — a "Countdown"
+heading over giant digits would be noise. The donate card is likewise headerless: it is a personal note,
+not a titled section. Both are named in `tests/segments.spec.ts`; a new headerless section fails there
+until it is sanctioned here.

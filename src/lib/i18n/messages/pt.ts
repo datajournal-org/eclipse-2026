@@ -22,8 +22,7 @@ const messages: Messages = {
 	},
 	a2: {
 		title: 'A corrida da sombra',
-		subtitle:
-			'A sombra da Lua percorre a Terra — a zona de totalidade como faixa, a sombra atual em direto a partir da linha do tempo.',
+		subtitle: 'A sombra da Lua percorre a Terra.',
 		current_shadow: 'Sombra atual',
 		path: 'Trajeto',
 		core: 'Umbra',
@@ -74,7 +73,7 @@ const messages: Messages = {
 	},
 	b3: {
 		title: 'A tua vista para o Sol',
-		subtitle: 'O teu local e o percurso do Sol — arrasta para olhares em volta e garante vista desimpedida.',
+		subtitle: 'O Sol sobre o teu local — arrasta para olhar em volta.',
 		altitude: 'Altura',
 		azimuth: 'Azimute',
 		coverage: 'Cobertura',

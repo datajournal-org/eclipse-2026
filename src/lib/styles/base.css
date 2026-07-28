@@ -97,7 +97,15 @@ button {
 }
 
 /* Flat content section — no card chrome. Inline padding keeps text off the edge;
-   vertical rhythm comes from the .content gap. */
+   vertical rhythm comes from the .content gap.
+
+   SEGMENT GRAMMAR (docs/WIREFRAMES.md § Segment grammar): every section is at most four slots —
+     1. header   `.block-head` — one h2, optionally one `.eyebrow`/`.place` meta on the right;
+     2. intro    `.sub`        — optional, ONE line, muted;
+     3. content  the stage/list/graphic, with its controls (sliders, readouts) inside it;
+     4. footer   `.seg-foot`   — optional, one caption line (provenance/context).
+   Nothing floats between sections; card borders are reserved for actions (CTA, donate).
+   Sanctioned exception: the countdown is the page's hero and carries no header. */
 .block {
 	padding-inline: var(--edge);
 
@@ -140,6 +148,13 @@ button {
 	color: var(--muted);
 	font-size: 0.9rem;
 	margin: 2px 0 12px;
+}
+
+/* Segment footer (slot 4): one caption line under a section's content. */
+.seg-foot {
+	margin-top: 10px;
+	font-size: var(--text-caption);
+	color: var(--muted);
 }
 
 /* Muted caption / annotation text; add margins at the use site if needed. */

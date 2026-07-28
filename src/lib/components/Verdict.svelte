@@ -3,8 +3,12 @@
 <script lang="ts">
 	import { t, fmt } from '$lib/i18n';
 	import { localEclipse } from '$lib/stores/localEclipse';
-	import { userLocation } from '$lib/stores/location';
+	import { userLocation, placeLabel } from '$lib/stores/location';
 	import { eclipseVisible, nextEclipseHere } from '$lib/eclipse';
+
+	// The verdict header carries the place it is about (and the way to change it) — segment grammar's
+	// header-meta slot, like A2's date eyebrow, instead of a floating row above the section.
+	let { onchange }: { onchange?: () => void } = $props();
 
 	const lc = $derived($localEclipse);
 	const peak = $derived(lc?.peak ?? null);
@@ -35,6 +39,12 @@
 <section class="block b1" class:total={isTotal}>
 	<div class="block-head">
 		<h2>{visible ? (isTotal ? $t('b1.total') : $t('b1.partial')) : $t('b1.not_visible')}</h2>
+		{#if $userLocation}
+			<div class="place">
+				<span class="pname">📍 {placeLabel($userLocation)}</span>
+				{#if onchange}<button class="change" onclick={onchange}>{$t('b.change')}</button>{/if}
+			</div>
+		{/if}
 	</div>
 
 	{#if lc && peak && visible}
@@ -65,6 +75,29 @@
 </section>
 
 <style>
+	.place {
+		display: flex;
+		align-items: baseline;
+		gap: 10px;
+		white-space: nowrap;
+
+		.pname {
+			font-size: 0.9rem;
+			font-weight: 600;
+			color: var(--muted);
+		}
+		.change {
+			font: inherit;
+			font-size: 0.82rem;
+			padding: 0;
+			border: 0;
+			background: none;
+			color: var(--accent);
+			cursor: pointer;
+			text-decoration: underline;
+			text-underline-offset: 2px;
+		}
+	}
 	.obsc {
 		font-size: clamp(1.6rem, 7vw, 2.2rem);
 		line-height: 1.1;

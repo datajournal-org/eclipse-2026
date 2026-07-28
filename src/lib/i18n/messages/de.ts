@@ -23,8 +23,7 @@ const messages = {
 	},
 	a2: {
 		title: 'Schattenlauf',
-		subtitle:
-			'Der Mondschatten zieht über die Erde — Totalitätszone als Band, aktueller Schatten live aus der Zeitleiste.',
+		subtitle: 'Der Mondschatten zieht über die Erde.',
 		current_shadow: 'Aktueller Schatten',
 		path: 'Pfad',
 		core: 'Kernschatten',
@@ -75,7 +74,7 @@ const messages = {
 	},
 	b3: {
 		title: 'Deine Sicht zur Sonne',
-		subtitle: 'Dein Standort und die Bahn der Sonne — zieh zum Umschauen, achte auf freie Sicht.',
+		subtitle: 'Die Sonne über deinem Ort — zieh zum Umschauen.',
 		altitude: 'Höhe',
 		azimuth: 'Azimut',
 		coverage: 'Bedeckung',

@@ -23,8 +23,7 @@ const messages: Messages = {
 	},
 	a2: {
 		title: 'Schaduwloop',
-		subtitle:
-			'De maanschaduw trekt over de aarde — de totaliteitszone als band, de actuele schaduw live vanuit de tijdlijn.',
+		subtitle: 'De maanschaduw trekt over de aarde.',
 		current_shadow: 'Actuele schaduw',
 		path: 'Pad',
 		core: 'Kernschaduw',
@@ -75,7 +74,7 @@ const messages: Messages = {
 	},
 	b3: {
 		title: 'Jouw zicht op de zon',
-		subtitle: 'Jouw locatie en de baan van de zon — sleep om rond te kijken, en let op vrij zicht.',
+		subtitle: 'De zon boven jouw plek — sleep om rond te kijken.',
 		altitude: 'Hoogte',
 		azimuth: 'Azimut',
 		coverage: 'Bedekking',

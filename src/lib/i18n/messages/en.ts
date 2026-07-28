@@ -23,8 +23,7 @@ const messages: Messages = {
 	},
 	a2: {
 		title: 'Shadow run',
-		subtitle:
-			"The Moon's shadow sweeps across Earth — the totality corridor as a band, the current shadow is live from the timeline.",
+		subtitle: 'The Moon’s shadow sweeps across the Earth.',
 		current_shadow: 'Current shadow',
 		path: 'Path',
 		core: 'Umbra',
@@ -76,7 +75,7 @@ const messages: Messages = {
 	},
 	b3: {
 		title: 'Your view of the Sun',
-		subtitle: 'Your location and the Sun’s path — drag to look around, mind a clear view.',
+		subtitle: 'The Sun over your place — drag to look around.',
 		altitude: 'Altitude',
 		azimuth: 'Azimuth',
 		coverage: 'Coverage',

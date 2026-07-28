@@ -33,6 +33,7 @@
 	import { OverlayToggleControl } from '$lib/shadow-globe/overlayToggleControl';
 	import { IsoLabels } from '$lib/shadow-globe/isoLabels';
 	import TimeScrubber from '$lib/components/TimeScrubber.svelte';
+	import TimeZoneNote from '$lib/components/TimeZoneNote.svelte';
 	import { buildTimeGrid } from '$lib/components/timeScrubber';
 	import { loadMaplibre } from '$lib/maplibre';
 	import { CITY_LABEL_GLYPHS, CITY_LABEL_SOURCE, CITY_LABEL_LAYERS } from '$lib/shadow-globe/cityLabels';
@@ -361,6 +362,10 @@
 			/>
 		</div>
 	</div>
+
+	<!-- Segment footer: the zone every clock on the page uses — anchored to the first time UI instead of
+	     floating between sections. -->
+	<div class="seg-foot"><TimeZoneNote /></div>
 </section>
 
 <style>

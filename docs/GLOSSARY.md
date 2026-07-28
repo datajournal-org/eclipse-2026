@@ -44,6 +44,7 @@ precisely in discussion. Terms use the exact names found in the code where one e
 ## Rendering & UI (mostly B3 SkyView)
 
 - **Stage** — the shared full-bleed media frame (`.stage` / `.stage-canvas`) that hosts a map/globe.
+- **Segment grammar** — the four-slot section structure (header `.block-head`, intro `.sub`, content, footer `.seg-foot`); see WIREFRAMES.md, enforced by `tests/segments.spec.ts`.
 - **Marker** — the user's location dot (`.user-pin`, dark-red dot + white ring); the A2 globe adds a `.is-pulsing` ring.
 - **Dusk veil** — a DOM overlay (`.b3-dusk`, `DUSK_HEX`) inside the map canvas that dims the whole B3 scene as the eclipse deepens.
 - **Scrubber / time slider** — the range input under B3 that scans time across the eclipse window.

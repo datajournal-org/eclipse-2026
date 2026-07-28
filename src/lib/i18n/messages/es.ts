@@ -23,8 +23,7 @@ const messages: Messages = {
 	},
 	a2: {
 		title: 'Recorrido de la sombra',
-		subtitle:
-			'La sombra de la Luna recorre la Tierra — la franja de totalidad como banda, la sombra actual es en vivo desde la línea de tiempo.',
+		subtitle: 'La sombra de la Luna recorre la Tierra.',
 		current_shadow: 'Sombra actual',
 		path: 'Trayectoria',
 		core: 'Umbra',
@@ -76,7 +75,7 @@ const messages: Messages = {
 	},
 	b3: {
 		title: 'Tu vista del Sol',
-		subtitle: 'Tu ubicación y la trayectoria del Sol — arrastra para mirar alrededor, procura vista despejada.',
+		subtitle: 'El Sol sobre tu lugar — arrastra para mirar alrededor.',
 		altitude: 'Altura',
 		azimuth: 'Acimut',
 		coverage: 'Cobertura',

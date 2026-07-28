@@ -22,8 +22,7 @@ const messages: Messages = {
 	},
 	a2: {
 		title: 'La course de l’ombre',
-		subtitle:
-			'L’ombre de la Lune parcourt la Terre — la zone de totalité en bande, l’ombre actuelle en direct depuis la frise du temps.',
+		subtitle: 'L’ombre de la Lune parcourt la Terre.',
 		current_shadow: 'Ombre actuelle',
 		path: 'Trajectoire',
 		core: 'Ombre centrale',
@@ -75,7 +74,7 @@ const messages: Messages = {
 	},
 	b3: {
 		title: 'Ta vue vers le Soleil',
-		subtitle: 'Ton lieu et la course du Soleil — fais glisser pour regarder autour, vérifie que la vue est dégagée.',
+		subtitle: 'Le Soleil au-dessus de chez toi — fais glisser pour regarder autour.',
 		altitude: 'Hauteur',
 		azimuth: 'Azimut',
 		coverage: 'Couverture',

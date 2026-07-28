@@ -38,7 +38,6 @@
 		align-items: baseline;
 		justify-content: center;
 		gap: 6px;
-		padding-inline: var(--edge);
 		color: var(--muted);
 		font-size: 0.82rem;
 		text-align: center;
