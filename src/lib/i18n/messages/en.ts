@@ -29,7 +29,8 @@ const messages: Messages = {
 		core: 'Umbra',
 		loading: 'Loading globe …',
 		load_error: 'Could not load the globe. Please reload the page.',
-		toggle_overlay: 'Toggle lines & corridor'
+		toggle_overlay: 'Toggle lines & corridor',
+		two_fingers: 'Use two fingers to move the map'
 	},
 	a3: {
 		title: 'What does it look like?',

@@ -175,10 +175,19 @@
 			if (!maplibregl || disposed) return;
 
 			corridorBand = fillStripPrimitive(corridorEdges.north, corridorEdges.south, brand.accent.rgb, 0.1);
+			// Touch ergonomics. `coarse`: one finger belongs to the PAGE (scrolling past a tall globe must
+			// not rotate it by accident) — two fingers move the globe, announced by MapLibre's built-in
+			// overlay in the page's language. Nothing is disabled: the globe stays fully usable, the
+			// gesture just becomes deliberate. `phone`: fullscreen is dropped where it adds nothing — a
+			// phone screen IS the full screen, and the browser chrome stays anyway.
+			const coarse = window.matchMedia('(pointer: coarse)').matches;
+			const phone = coarse && window.matchMedia('(max-width: 700px)').matches;
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				...INITIAL_VIEW,
 				scrollZoom: true, // wheel zoom (over the map it takes the scroll; use fullscreen for full control)
+				cooperativeGestures: coarse,
+				locale: { 'CooperativeGesturesHandler.MobileHelpText': get(t)('a2.two_fingers') },
 				attributionControl: { compact: false },
 				style: {
 					version: 8,
@@ -251,7 +260,7 @@
 			// for a visual side effect. `idle` fires once the style, sources and first frame are all done.
 			m.once('idle', () => mapContainer.setAttribute('data-map-ready', 'true'));
 			m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-			m.addControl(new maplibregl.FullscreenControl({ container: stage }), 'top-right');
+			if (!phone) m.addControl(new maplibregl.FullscreenControl({ container: stage }), 'top-right');
 
 			// Toggle the whole reference overlay (corridor + rings + terminator + labels) on/off.
 			let overlayVisible = true;

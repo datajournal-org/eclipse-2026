@@ -29,7 +29,8 @@ const messages: Messages = {
 		core: 'Kernschaduw',
 		loading: 'Globe wordt geladen …',
 		load_error: 'De globe kon niet worden geladen. Herlaad de pagina.',
-		toggle_overlay: 'Lijnen & corridor aan/uit'
+		toggle_overlay: 'Lijnen & corridor aan/uit',
+		two_fingers: 'Beweeg de kaart met twee vingers'
 	},
 	a3: {
 		title: 'Hoe ziet dat eruit?',

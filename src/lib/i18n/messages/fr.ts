@@ -28,7 +28,8 @@ const messages: Messages = {
 		core: 'Ombre centrale',
 		loading: 'Chargement du globe …',
 		load_error: 'Impossible de charger le globe. Recharge la page.',
-		toggle_overlay: 'Afficher/masquer lignes et corridor'
+		toggle_overlay: 'Afficher/masquer lignes et corridor',
+		two_fingers: 'Déplace la carte avec deux doigts'
 	},
 	a3: {
 		title: 'À quoi ça ressemble ?',
