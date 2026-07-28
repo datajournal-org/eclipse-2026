@@ -77,9 +77,9 @@
 <style>
 	.place {
 		display: flex;
+		flex-wrap: wrap; /* a long place name wraps; the change link stays attached to its end */
 		align-items: baseline;
-		gap: 10px;
-		white-space: nowrap;
+		gap: 4px 10px;
 
 		.pname {
 			font-size: 0.9rem;

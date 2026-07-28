@@ -8,6 +8,11 @@ html,
 body {
 	margin: 0;
 	min-height: 100%;
+	/* Glue the page to the viewport horizontally: interactions on canvases and sliders must not be able
+	   to rubber-band or nudge the page sideways (visible as a slight wobble on touch devices). `clip`
+	   rather than `hidden`, so no scroll container is created. */
+	overflow-x: clip;
+	overscroll-behavior-x: none;
 	background: radial-gradient(1200px 620px at 50% -8%, var(--glow) 0%, transparent 60%), var(--bg);
 	background-attachment: fixed;
 	color: var(--text);
@@ -111,6 +116,7 @@ button {
 
 	> .block-head {
 		display: flex;
+		flex-wrap: wrap; /* a long title + header meta (B1's place) stack on a phone instead of colliding */
 		align-items: baseline;
 		justify-content: space-between;
 		gap: var(--space-2xs);

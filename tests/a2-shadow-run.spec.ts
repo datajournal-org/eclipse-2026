@@ -141,6 +141,20 @@ test.describe('A2 opening framing', () => {
 		});
 	}
 
+	test('keeps one-finger interaction and fullscreen on desktop pointers @webgl', async ({ page }) => {
+		// Cooperative gestures are a touch ergonomic (see responsive.spec) — a mouse cannot scroll-grab
+		// the globe by accident, so the desktop keeps direct dragging and the fullscreen control.
+		await page.goto(localeUrl('de', '?debug'));
+		await mapReady(page, A2);
+		const coop = await page.evaluate(() =>
+			(
+				window as unknown as { __map: { cooperativeGestures: { isEnabled: () => boolean } } }
+			).__map.cooperativeGestures.isEnabled()
+		);
+		expect(coop).toBe(false);
+		await expect(page.locator(`${A2} .maplibregl-ctrl-fullscreen`)).toBeVisible();
+	});
+
 	test.describe('city labels', () => {
 		const LABEL_LAYERS = ['label-place-town', 'label-place-city', 'label-place-statecapital', 'label-place-capital'];
 		const rendered = (page: import('@playwright/test').Page) =>

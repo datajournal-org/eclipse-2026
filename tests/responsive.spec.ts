@@ -4,6 +4,9 @@ import { test, expect, byName, localeUrl, mapReady, switchLanguage } from './fix
 test.describe('mobile layout @mobile', () => {
 	test('never scrolls horizontally', async ({ page, locatedPage }) => {
 		await locatedPage(byName('Oviedo'));
+		// ...and the page is GLUED to the viewport: horizontal overflow is clipped without creating a
+		// scroll container, so canvas/slider gestures cannot nudge the page sideways.
+		expect(await page.evaluate(() => getComputedStyle(document.documentElement).overflowX)).toBe('clip');
 		await page.waitForTimeout(1000);
 		const overflow = await page.evaluate(() => ({
 			doc: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -24,6 +27,32 @@ test.describe('mobile layout @mobile', () => {
 				.map((el) => `${el.tagName}.${el.className}`);
 		});
 		expect(wide).toEqual([]);
+	});
+
+	test('moves the globe with two fingers only, so one finger scrolls the page @webgl', async ({ page }) => {
+		// The accidental-rotation trap: a reader scrolling past the tall globe used to grab and spin it.
+		// Cooperative gestures make the interaction deliberate WITHOUT disabling anything — and the
+		// built-in overlay must speak the page's language, or the instruction is chrome noise.
+		// Pointer-dependent: @mobile specs also run on desktop chromium, where a fine pointer rightly
+		// gets direct dragging — only the touch device makes this assertion meaningful.
+		test.skip(test.info().project.name !== 'mobile', 'coarse-pointer behaviour — mobile project only');
+		await page.goto(localeUrl('de', '?debug'));
+		await mapReady(page, 'section.a2');
+		const coop = await page.evaluate(() =>
+			(
+				window as unknown as { __map: { cooperativeGestures: { isEnabled: () => boolean } } }
+			).__map.cooperativeGestures.isEnabled()
+		);
+		expect(coop).toBe(true);
+		await expect(page.locator('section.a2 .maplibregl-cooperative-gesture-screen')).toContainText('zwei Fingern');
+	});
+
+	test('offers no fullscreen control on a phone @webgl', async ({ page }) => {
+		// A phone screen already is the full screen — the browser chrome stays either way.
+		test.skip(test.info().project.name !== 'mobile', 'coarse-pointer behaviour — mobile project only');
+		await page.goto(localeUrl('de', '?debug'));
+		await mapReady(page, 'section.a2');
+		await expect(page.locator('section.a2 .maplibregl-ctrl-fullscreen')).toHaveCount(0);
 	});
 
 	test('keeps the language switcher usable', async ({ page }) => {
