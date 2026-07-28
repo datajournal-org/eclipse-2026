@@ -8,7 +8,7 @@
 		"dev:https": "DEV_HTTPS=1 vite dev",
 		"cert": "./scripts/dev-cert.sh",
 		"prebuild": "npm run precompute",
-		"build": "vite build",
+		"build": "vite build && tsx scripts/inject-maplibre-preload.ts",
 		"preview": "vite preview",
 		"sync": "svelte-kit sync",
 		"precheck": "npm run precompute",
