@@ -99,10 +99,13 @@ export function skyDarkness(obscuration: number, sunAltDeg: number): number {
 
 /**
  * Limiting magnitude for a given sky darkness. Even at maximum totality the sky is roughly deep twilight,
- * not night: observers report second- and third-magnitude stars, not the sixth-magnitude ones a dark site
- * gives. 2.5 is therefore both the catalogue's limit and the deepest this ever reaches.
+ * not night: eclipse observing guides (Espenak) put the naked-eye limit at about +3.5 — second- and
+ * third-magnitude stars, not the sixth-magnitude ones a dark site gives. 3.5 is therefore both the
+ * catalogue's limit and the deepest this ever reaches, and the fade below keeps the last magnitude of
+ * that range appropriately faint. A high Sun holds the sky brighter: Reykjavík's 25° totality only
+ * reaches a limit of ~1.9, so its sky stays sparser than Oviedo's — which is physical, not a bug.
  */
-const limitingMag = (darkness: number) => -5 + 7.5 * darkness;
+const limitingMag = (darkness: number) => -5 + 8.5 * darkness;
 
 /** Magnitudes of headroom over which an object ramps from just-visible to fully drawn. */
 const FADE_MAGS = 3;

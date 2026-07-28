@@ -36,10 +36,13 @@ describe('horizonFor', () => {
 			// 0.01° = 36 arcsec. The residual is how the two apply refraction, not the rotation, and at
 			// B3's ~0.1°/px it is a seventh of a pixel — far below anything that can be drawn.
 			expect(Math.abs(mine.alt - theirs.altitude), `${object.name} altitude`).toBeLessThan(0.01);
-			// Azimuth is meaningless at the zenith, and wraps at 360.
+			// Azimuth is meaningless at the zenith, and wraps at 360. Weigh the difference by cos(alt):
+			// azimuth DEGREES shrink toward the zenith (a high star sweeps many of them across few pixels),
+			// so the screen-space error is the cross-track angle, not the raw azimuth delta.
 			if (Math.abs(mine.alt) < 89.5) {
 				const delta = Math.abs(((mine.az - theirs.azimuth + 540) % 360) - 180);
-				expect(delta, `${object.name} azimuth (${mine.az} vs ${theirs.azimuth})`).toBeLessThan(0.01);
+				const crossTrack = delta * Math.cos((mine.alt * Math.PI) / 180);
+				expect(crossTrack, `${object.name} azimuth (${mine.az} vs ${theirs.azimuth})`).toBeLessThan(0.01);
 			}
 		}
 		expect(checked, 'no object was above the horizon — the comparison proved nothing').toBeGreaterThan(20);
@@ -183,15 +186,25 @@ describe('visibleSkyObjects', () => {
 });
 
 describe('the catalogue', () => {
-	it('holds the 93 stars of magnitude 2.5 or brighter', () => {
-		expect(BRIGHT_STARS).toHaveLength(93);
+	it('holds the 285 stars of magnitude 3.5 or brighter', () => {
+		// 3.5 is the totality naked-eye limit the display model uses (limitingMag) — catalogue and
+		// renderer must agree, or the last magnitude of sky would be silently absent.
+		expect(BRIGHT_STARS).toHaveLength(285);
 		for (const s of BRIGHT_STARS) {
-			expect(s.mag, s.name).toBeLessThanOrEqual(2.5);
+			expect(s.mag, s.name).toBeLessThanOrEqual(3.5);
 			expect(s.ra, s.name).toBeGreaterThanOrEqual(0);
 			expect(s.ra, s.name).toBeLessThan(24);
 			expect(Math.abs(s.dec), s.name).toBeLessThanOrEqual(90);
 		}
-		expect(new Set(BRIGHT_STARS.map((s) => s.name)).size).toBe(93);
+		expect(new Set(BRIGHT_STARS.map((s) => s.name)).size).toBe(285);
+	});
+
+	it('keeps the classic bright list intact ahead of the faint extension', () => {
+		// The first 93 entries are the old mag ≤ 2.5 catalogue, byte-for-byte: the extension to 3.5 was
+		// append-only, so every previously pinned position still holds.
+		expect(BRIGHT_STARS[92].name).toBe('Markab');
+		expect(BRIGHT_STARS.slice(0, 93).every((s) => s.mag <= 2.5)).toBe(true);
+		expect(BRIGHT_STARS.slice(93).every((s) => s.mag > 2.5)).toBe(true);
 	});
 
 	it('pins a few positions against independently known values', () => {
@@ -208,7 +221,7 @@ describe('the catalogue', () => {
 	it('carries the planets, precessed and merged into one list', () => {
 		const planets = SKY_OBJECTS.filter((o) => o.kind === 'planet').map((o) => o.name);
 		expect(planets).toEqual(expect.arrayContaining(['Venus', 'Jupiter', 'Mercury', 'Mars', 'Saturn']));
-		expect(SKY_OBJECTS.filter((o) => o.kind === 'star')).toHaveLength(93);
+		expect(SKY_OBJECTS.filter((o) => o.kind === 'star')).toHaveLength(285);
 		// Precession since J2000 is ~0.35°, so of-date coordinates must differ from the catalogue's.
 		const sirius = SKY_OBJECTS.find((o) => o.name === 'Sirius')!;
 		expect(Math.abs(sirius.ra - BRIGHT_STARS.find((s) => s.name === 'Sirius')!.ra)).toBeGreaterThan(0.005);
