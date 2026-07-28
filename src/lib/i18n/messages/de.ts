@@ -1,4 +1,4 @@
-// German — the reference locale. Its shape defines the `Messages` type that en.ts and es.ts must match,
+// German — the reference locale. Its shape defines the `Messages` type every other catalogue must match,
 // so a missing or misspelled key in any locale is a compile error.
 const messages = {
 	app: {

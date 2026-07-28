@@ -8,18 +8,39 @@ import fr from './messages/fr';
 import nl from './messages/nl';
 import pt from './messages/pt';
 
-export const LOCALES = ['de', 'en', 'es', 'fr', 'nl', 'pt'] as const;
-export type Locale = (typeof LOCALES)[number];
-
-const DICTS: Record<Locale, Messages> = { de, en, es, fr, nl, pt };
-export const LOCALE_NAMES: Record<Locale, string> = {
-	de: 'Deutsch',
-	en: 'English',
-	es: 'Español',
-	fr: 'Français',
-	nl: 'Nederlands',
-	pt: 'Português'
+type LocaleSpec = {
+	dict: Messages;
+	/** The language's own name for itself — what its link in the header and on the root page says. */
+	name: string;
+	/** Open Graph territory code (og:locale wants full codes, not the bare tags used in the URLs). */
+	og: string;
 };
+
+/**
+ * THE language registry — one entry per supported language, everything else (LOCALES, names, OG codes,
+ * the translator's dictionaries) is derived from it. Adding a language means: one entry here, its
+ * message file, the inline-dispatch copy in app.html (physically cannot import this module; a test keeps
+ * it in step), and the deliberately independent expectation pins in the test suite.
+ *
+ * Entry order is display order: the header switcher and the root page render languages as listed here.
+ */
+const REGISTRY = {
+	de: { dict: de, name: 'Deutsch', og: 'de_DE' },
+	en: { dict: en, name: 'English', og: 'en_GB' },
+	es: { dict: es, name: 'Español', og: 'es_ES' },
+	fr: { dict: fr, name: 'Français', og: 'fr_FR' },
+	nl: { dict: nl, name: 'Nederlands', og: 'nl_NL' },
+	pt: { dict: pt, name: 'Português', og: 'pt_PT' }
+} satisfies Record<string, LocaleSpec>;
+
+export type Locale = keyof typeof REGISTRY;
+export const LOCALES = Object.keys(REGISTRY) as readonly Locale[];
+
+const derive = <V>(pick: (spec: LocaleSpec) => V): Record<Locale, V> =>
+	Object.fromEntries(LOCALES.map((l) => [l, pick(REGISTRY[l])])) as Record<Locale, V>;
+
+const DICTS: Record<Locale, Messages> = derive((spec) => spec.dict);
+export const LOCALE_NAMES: Record<Locale, string> = derive((spec) => spec.name);
 
 /**
  * The language the bare root (`/eclipse-2026/`) serves, and the fallback for any reader whose language
@@ -28,14 +49,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
 export const DEFAULT_LOCALE: Locale = 'en';
 
 /** Open Graph wants full territory codes, not the bare language tags used in the URLs. */
-export const OG_LOCALE: Record<Locale, string> = {
-	de: 'de_DE',
-	en: 'en_GB',
-	es: 'es_ES',
-	fr: 'fr_FR',
-	nl: 'nl_NL',
-	pt: 'pt_PT'
-};
+export const OG_LOCALE: Record<Locale, string> = derive((spec) => spec.og);
 
 export function isLocale(x: string | null | undefined): x is Locale {
 	return !!x && (LOCALES as readonly string[]).includes(x);
