@@ -154,5 +154,7 @@ content sections separate by whitespace alone.
 
 **Sanctioned exceptions:** the countdown is the page's hero and carries no header — a "Countdown"
 heading over giant digits would be noise. The donate card is likewise headerless: it is a personal note,
-not a titled section. Both are named in `tests/segments.spec.ts`; a new headerless section fails there
-until it is sanctioned here.
+not a titled section. And the verdict's eye-safety line keeps its left accent bar — the one piece of
+advice on this page that protects eyesight is allowed to interrupt the calm. All three are named in
+`tests/segments.spec.ts`; a new headerless section or a new border fails there until it is sanctioned
+here.

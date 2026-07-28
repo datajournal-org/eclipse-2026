@@ -69,22 +69,51 @@ test.describe('segment grammar', () => {
 		for (const s of foots) expect(s.count, s.id).toBeLessThanOrEqual(1);
 	});
 
-	test('card borders belong to actions only', async ({ page }) => {
+	test('borders belong to actions — plus the named safety accent', async ({ page }) => {
 		// Fewer boxes is the single biggest visual calm-down: content sections separate by whitespace,
 		// and a bordered surface signals "you can act here" (the donate box; the CTA in the unlocated
-		// state). A border creeping onto a content section reads as clutter long before anyone names it.
+		// state). Every border on a section surface or a prose element must appear in the allowlist
+		// below — a border creeping onto a content section reads as clutter long before anyone names it.
+		// Interactive controls (buttons, inputs, the map chrome) are out of scope: their borders are
+		// affordances, not box chrome.
 		const bordered = await page.evaluate(() =>
-			[...document.querySelectorAll('main.content > section')]
-				.filter((s) => {
-					const direct = [s, ...s.querySelectorAll(':scope > div')];
-					return direct.some((el) => {
+			[...document.querySelectorAll('main.content > section')].flatMap((s) => {
+				const surfaces = [s, ...s.querySelectorAll(':scope > div'), ...s.querySelectorAll('p')];
+				return surfaces
+					.filter((el) => {
 						const cs = getComputedStyle(el);
-						return cs.borderTopWidth !== '0px' && cs.borderTopStyle !== 'none';
+						return (
+							(cs.borderTopWidth !== '0px' && cs.borderTopStyle !== 'none') ||
+							(cs.borderLeftWidth !== '0px' && cs.borderLeftStyle !== 'none')
+						);
+					})
+					.map((el) => {
+						// identity from meaningful classes only — Svelte's scoped hashes are noise here
+						const names = (e: Element) => [...e.classList].filter((c) => !c.startsWith('svelte-')).join('.');
+						return `${names(s)} ${el.tagName}.${names(el)}`;
 					});
-				})
-				.map((s) => [...s.classList].join('.'))
+			})
 		);
-		expect(bordered).toEqual(['block.donate']);
+		const allowed = [
+			// the donate card: a bordered surface because it is an action
+			/^block\.donate DIV\.card$/,
+			// the eye-safety line in the verdict: a left accent bar, sanctioned emphasis — this page's one
+			// piece of advice that protects eyesight is allowed to interrupt the calm (WIREFRAMES.md)
+			/^block\.b1(\.total)? P\.safety$/
+		];
+		for (const b of bordered) {
+			expect(
+				allowed.some((a) => a.test(b)),
+				`unsanctioned border: ${b}`
+			).toBe(true);
+		}
+		// ...and the sanctioned ones actually exist — an allowlist entry nothing matches is a stale rule
+		for (const a of allowed) {
+			expect(
+				bordered.some((b) => a.test(b)),
+				`${a} matched nothing`
+			).toBe(true);
+		}
 	});
 
 	test('holds in the unlocated state too', async ({ page, stubGeocoder }) => {
