@@ -114,7 +114,7 @@ const messages: Messages = {
 		b1_note: 'Obscuration, contact times and eye-safety verdict for your location — coming soon.'
 	},
 	donate: {
-		text: 'Many evenings of work went into this app. Still, it is my gift to you and your friends – no ads, no tracking. If you like it, please leave a small tip.',
+		text: 'It took many evenings to develop this app. Nevertheless, it is my gift to you and your friends: there are no ads or tracking. If you like it, please consider leaving a small tip.',
 		button: 'Leave a tip'
 	},
 	footer: {
