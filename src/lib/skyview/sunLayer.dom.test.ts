@@ -5,14 +5,24 @@ import { createFakeGl, createFakeMap, fakeRenderInput, type FakeGl, type FakeMap
 
 const YELLOW: [number, number, number] = [1, 0.93, 0.72];
 
+// Pointed straight up from the fake camera at (0.5, 0.4, 0): with SKY_OFFSET_MERC = 0.001 the disc's
+// world centre lands on (0.5, 0.4, 0.001), which the identity matrix maps to NDC (0.5, 0.4).
 const visibleSun = (): SunState => ({
-	center: [0.5, 0.4, 0.001, 1],
+	dir: [0, 0, 1],
 	moon: [0.2, -0.1],
 	moonR: 1.03,
 	angRad: 0.00459,
 	visible: true,
 	screen: null
 });
+
+/** Where the camera-anchored disc must sit: fake camera + dir x offset. */
+const expectedCentre = (sun: SunState) => [
+	0.5 + sun.dir[0] * 0.001,
+	0.4 + sun.dir[1] * 0.001,
+	0 + sun.dir[2] * 0.001,
+	1
+];
 
 /** An identity-ish projection matrix, column-major, so the screen projection has real numbers to chew on. */
 const identityInput = (): CustomRenderMethodInput =>
@@ -112,7 +122,7 @@ describe('render', () => {
 		layer.render(gl, identityInput());
 
 		const writes = gl.uniformWrites();
-		expect(writes.find((w) => w.uniform === 'u_center')!.value[0]).toEqual(sun.center);
+		expect(writes.find((w) => w.uniform === 'u_center')!.value[0]).toEqual(expectedCentre(sun));
 		expect(writes.find((w) => w.uniform === 'u_moon')!.value).toEqual([sun.moon[0], sun.moon[1]]);
 		expect(writes.find((w) => w.uniform === 'u_moonR')!.value).toEqual([sun.moonR]);
 		expect(writes.find((w) => w.uniform === 'u_sun')!.value).toEqual([...YELLOW]);

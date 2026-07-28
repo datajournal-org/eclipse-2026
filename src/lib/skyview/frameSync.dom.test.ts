@@ -4,12 +4,12 @@ import { placeSun, syncMapLighting } from './frameSync';
 import { eclipseGeometry } from './eclipseGeometry';
 import { localCircumstances, sunset } from '$lib/eclipse';
 import { byName } from '$lib/testing/reference';
-import { createFakeMap, fakeMaplibregl } from '$lib/testing/fakes';
+import { createFakeMap } from '$lib/testing/fakes';
 import type { SunState } from './sunLayer';
 import { DEG_TO_RAD } from '$lib/constants';
 
 const emptySun = (): SunState => ({
-	center: [0, 0, 0, 1],
+	dir: [0, 0, 1],
 	angRad: 0,
 	moon: [0, 0],
 	moonR: 1,
@@ -20,17 +20,18 @@ const emptySun = (): SunState => ({
 const OVIEDO = byName('Oviedo');
 const peakOf = (site: { lat: number; lon: number }) => localCircumstances(site.lat, site.lon)!.peak!.time;
 
-const place = (site: { lat: number; lon: number }, when: Date, terrainElevation: number | null = 0) => {
+// placeSun is pure now — the camera anchoring that used to need a map happens in the layer per frame.
+const place = (site: { lat: number; lon: number }, when: Date) => {
 	const sun = emptySun();
-	const m = createFakeMap({ terrainElevation });
-	placeSun(sun, eclipseGeometry(site.lat, site.lon, when), {
-		maplibregl: fakeMaplibregl,
-		m: m as unknown as MlMap,
-		lat: site.lat,
-		lon: site.lon
-	});
-	return { sun, m };
+	placeSun(sun, eclipseGeometry(site.lat, site.lon, when));
+	return { sun };
 };
+
+/** Azimuth/altitude read back from a stored direction (Mercator axes: +x east, +y south, +z up). */
+const azAltOf = (dir: [number, number, number]) => ({
+	az: ((Math.atan2(dir[0], -dir[1]) / DEG_TO_RAD) % 360) + (Math.atan2(dir[0], -dir[1]) < 0 ? 360 : 0),
+	alt: Math.asin(dir[2]) / DEG_TO_RAD
+});
 
 describe('placeSun', () => {
 	it('expresses the Moon offset in Sun-radius units', () => {
@@ -57,40 +58,24 @@ describe('placeSun', () => {
 		expect(sun.angRad).toBeCloseTo(0.00459, 4); // ~0.26° in radians
 	});
 
-	it('places the Sun as a finite Mercator position', () => {
-		const { sun } = place(OVIEDO, peakOf(OVIEDO));
-		expect(sun.center).toHaveLength(4);
-		expect(sun.center.every(Number.isFinite)).toBe(true);
-		expect(sun.center[3]).toBe(1);
-		// x is a normalised Mercator coordinate, so it stays inside the unit square near Spain
-		expect(sun.center[0]).toBeGreaterThan(0);
-		expect(sun.center[0]).toBeLessThan(1);
+	it('stores a unit direction that reads back as the Sun azimuth and altitude', () => {
+		// The direction IS the placement now — the layer anchors it to the camera every frame, which is
+		// what makes the Sun parallax-free (previously a full dolly swung it ~1.8° against the horizon).
+		const when = peakOf(OVIEDO);
+		const geo = eclipseGeometry(OVIEDO.lat, OVIEDO.lon, when);
+		const { sun } = place(OVIEDO, when);
+		expect(Math.hypot(...sun.dir)).toBeCloseTo(1, 12);
+		const { az, alt } = azAltOf(sun.dir);
+		expect(az).toBeCloseTo(geo.sun.az, 9);
+		expect(alt).toBeCloseTo(geo.sun.alt, 9);
 	});
 
 	it('tracks the setting Sun westward and downward', () => {
 		const peak = peakOf(OVIEDO);
-		const early = place(OVIEDO, new Date(peak.getTime() - 30 * 60_000)).sun;
-		const late = place(OVIEDO, new Date(peak.getTime() + 30 * 60_000)).sun;
-		expect(late.center[0]).toBeLessThan(early.center[0]); // Mercator x decreases going west
-		expect(late.center[2]).toBeLessThan(early.center[2]); // and the altitude term drops
-	});
-
-	it('reads the ground elevation at the observer', () => {
-		const { m } = place(OVIEDO, peakOf(OVIEDO));
-		expect(m.callsTo('queryTerrainElevation')).toHaveLength(1);
-		expect(m.callsTo('queryTerrainElevation')[0].args[0]).toEqual([OVIEDO.lon, OVIEDO.lat]);
-	});
-
-	it('treats missing terrain as sea level rather than NaN', () => {
-		// queryTerrainElevation returns null before the DEM tile has loaded — a very common first frame.
-		const { sun } = place(OVIEDO, peakOf(OVIEDO), null);
-		expect(sun.center.every(Number.isFinite)).toBe(true);
-	});
-
-	it('lifts the Sun with the terrain', () => {
-		const low = place(OVIEDO, peakOf(OVIEDO), 0).sun;
-		const high = place(OVIEDO, peakOf(OVIEDO), 2000).sun;
-		expect(high.center[2]).toBeGreaterThan(low.center[2]);
+		const early = azAltOf(place(OVIEDO, new Date(peak.getTime() - 30 * 60_000)).sun.dir);
+		const late = azAltOf(place(OVIEDO, new Date(peak.getTime() + 30 * 60_000)).sun.dir);
+		expect(late.az).toBeGreaterThan(early.az); // toward 270° and beyond — west
+		expect(late.alt).toBeLessThan(early.alt); // and sinking
 	});
 
 	it('keeps the Sun visible until the whole disc has set', () => {
@@ -130,12 +115,7 @@ describe('placeSun', () => {
 		// The custom layer holds a reference to this object and reads it every frame.
 		const sun = emptySun();
 		const before = sun;
-		placeSun(sun, eclipseGeometry(OVIEDO.lat, OVIEDO.lon, peakOf(OVIEDO)), {
-			maplibregl: fakeMaplibregl,
-			m: createFakeMap() as unknown as MlMap,
-			lat: OVIEDO.lat,
-			lon: OVIEDO.lon
-		});
+		placeSun(sun, eclipseGeometry(OVIEDO.lat, OVIEDO.lon, peakOf(OVIEDO)));
 		expect(sun).toBe(before);
 		expect(sun.angRad).toBeGreaterThan(0);
 	});

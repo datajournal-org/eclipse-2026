@@ -91,7 +91,7 @@
 			const veil = emptyVeilState();
 
 			const sun: SunState = {
-				center: [0, 0, 0, 1],
+				dir: [0, 0, 1],
 				moon: [0, 0],
 				moonR: 1,
 				angRad: 0,
@@ -174,7 +174,7 @@
 						const date = new Date(times[frameIndex]);
 						const geo = eclipseGeometry(LAT, LON, date);
 						const s = geo.sun;
-						placeSun(sun, geo, { maplibregl, m, lat: LAT, lon: LON });
+						placeSun(sun, geo);
 
 						// keep the map in sync with the simulated Sun: brightness/colour from the obscuration (same
 						// numbers that drive the Sun billboard), light + hillshade from its (az, alt).
@@ -188,7 +188,7 @@
 						// list comes back empty until the eclipse is essentially total. No veil compensation —
 						// the stars are drawn OVER the veil layer now, so they keep their own contrast.
 						const sky = visibleSkyObjects(LAT, LON, date, geo.obsc, s.alt);
-						placeSkyObjects(stars, sky, { maplibregl, m, lat: LAT, lon: LON });
+						placeSkyObjects(stars, sky);
 						if (debug)
 							Object.assign(window, {
 								__b3stars: sky.length,

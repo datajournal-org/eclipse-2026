@@ -166,7 +166,14 @@ export const fakeRenderInput = {
  * A MapLibre `Map` double. Records every call; `terrainElevation` and the canvas are configurable
  * because the camera and Sun placement read them.
  */
-export function createFakeMap(opts: { terrainElevation?: number | null; width?: number; height?: number } = {}) {
+export function createFakeMap(
+	opts: {
+		terrainElevation?: number | null;
+		width?: number;
+		height?: number;
+		cameraPosition?: [number, number, number];
+	} = {}
+) {
 	const calls: Recorded[] = [];
 	const listeners = new Map<string, Set<EventListener>>();
 	const canvas = {
@@ -204,6 +211,12 @@ export function createFakeMap(opts: { terrainElevation?: number | null; width?: 
 	const map = {
 		calls,
 		canvas,
+		// The slice of MapLibre's internal transform the sky layers read (see cameraMercator in
+		// sunLayer.ts). worldSize/pixelsPerMeter of 1 make the internal space coincide with Mercator
+		// space, so a test states the camera position directly in the units the layers work in.
+		_camera: {
+			transform: { cameraPosition: opts.cameraPosition ?? [0.5, 0.4, 0], worldSize: 1, pixelsPerMeter: 1 }
+		},
 		controls: [] as { control: unknown; position?: string }[],
 		layers: [] as unknown[],
 		sources: new Map<string, unknown>(),

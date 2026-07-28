@@ -125,8 +125,10 @@ Two guarantees. "Realistic" = geometrically correctly placed, at its true angula
 **1. Correct place in the sky.**
 `astronomy-engine` → exact (azimuth, altitude). The Sun is placed as an object in the same 3D
 world, not as an overlay: a **`CustomLayerInterface` WebGL layer** that reuses MapLibre's
-projection matrix. Position = observer + direction vector (az, alt) at a large distance, so it
-reads as being at infinity.
+projection matrix. Position = **camera** + direction vector (az, alt) × fixed offset, re-anchored
+every rendered frame — so the sky shows zero parallax under any camera move, which is what "at
+infinity" actually means. (It was originally anchored to the _observer_ 30 km out, which the
+camera's own dolly — hundreds of metres — visibly parallaxed against the horizon.)
 
 **2. Correct camera (third-person orbit).**
 MapLibre (v6 today, v5 when this was written) **has no `FreeCameraOptions`**, so the camera is built with

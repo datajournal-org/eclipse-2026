@@ -1,11 +1,43 @@
 // An "eclipsed Sun" billboard for the B3 sky view (SkyView.svelte): the Sun's disc with the Moon crescent
-// cut out, drawn at its real angular size at a clip-space centre set each frame from the Sun's az/alt. It
-// is drawn on top (depth test off) — terrain occlusion is intentionally ignored, since we don't know the
-// observer's height. A WebGL layer in MapLibre's 3D custom-layer slot.
+// cut out, drawn at its real angular size along the Sun's current (az, alt) direction. The centre is
+// re-anchored to the CAMERA every rendered frame (camera position + direction x offset), so the disc
+// shows zero parallax however the camera dollies or orbits — the defining property of something at
+// infinity; the offset's magnitude is arbitrary. It is drawn on top (depth test off) — terrain occlusion
+// is intentionally ignored, since we don't know the observer's height. A WebGL layer in MapLibre's 3D
+// custom-layer slot.
 import type { CustomLayerInterface, CustomRenderMethodInput, Map as MlMap } from 'maplibre-gl';
 
+/**
+ * How far from the camera the sky is placed, in Mercator units (the custom-layer world space, which is
+ * conformal in 3D — identical x/y/z spans are identical real lengths — so a plain scalar offset keeps
+ * the direction exact). NOT a physical distance: camera anchoring makes the parallax exactly zero
+ * regardless, so the magnitude only has to sit comfortably inside the depth range — 0.001 of the world
+ * is ~30 km of real distance at mid-latitudes; the shaders' far-plane clamp handles the rest. Shared
+ * with starLayer.ts.
+ */
+export const SKY_OFFSET_MERC = 0.001;
+
+/**
+ * The camera position in custom-layer (Mercator) space, fresh for this frame.
+ *
+ * MapLibre v6 has no public accessor for it (`getFreeCameraOptions` did not survive the v6 split), but
+ * the transform's `cameraPosition` is typed on `_camera.transform`, so a future rename breaks the build
+ * rather than the sky. It lives in the transform's INTERNAL space — x/y in world pixels, z in metres —
+ * while a custom layer's `mainMatrix` expects 0..1 Mercator with conformal z: it bakes in exactly
+ * `scale(EXTENT, EXTENT, worldSize / pixelsPerMeter)`, which the divisions below invert.
+ */
+export const cameraMercator = (m: MlMap): [number, number, number] => {
+	const t = (
+		m as unknown as {
+			_camera: { transform: { cameraPosition: ArrayLike<number>; worldSize: number; pixelsPerMeter: number } };
+		}
+	)._camera.transform;
+	const [x, y, z] = t.cameraPosition as unknown as [number, number, number];
+	return [x / t.worldSize, y / t.worldSize, (z * t.pixelsPerMeter) / t.worldSize];
+};
+
 export type SunState = {
-	center: [number, number, number, number]; // clip-space centre (mercator x, y, z, w)
+	dir: [number, number, number]; // unit direction to the Sun (Mercator axes: +x east, +y south, +z up)
 	moon: [number, number]; // Moon-centre offset from the Sun, in Sun-radius units (+x east, +y up)
 	moonR: number; // Moon angular radius / Sun angular radius
 	angRad: number; // the Sun's angular radius (rad) → billboard drawn at its real angular size
@@ -75,10 +107,16 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 		render(gl, options: CustomRenderMethodInput) {
 			if (!sun.visible) return;
 
+			// Anchor the disc to the camera: its world position is wherever the camera is right now, plus
+			// the Sun direction scaled to a fixed offset. The camera pose is fresh every frame, so orbiting
+			// and dollying move the Sun exactly with the sky rather than parallaxing it against the terrain.
+			const cam = cameraMercator(map);
+			const k = SKY_OFFSET_MERC;
+			const c = [cam[0] + sun.dir[0] * k, cam[1] + sun.dir[1] * k, cam[2] + sun.dir[2] * k, 1];
+
 			// project the Sun centre to CSS pixels so the DOM overlay (locator ring + loupe leader line) can
 			// point at the tiny real Sun. mainMatrix is column-major; we only need clip x/y/w.
 			const M = options.defaultProjectionData.mainMatrix;
-			const c = sun.center;
 			const cw = M[3] * c[0] + M[7] * c[1] + M[11] * c[2] + M[15] * c[3];
 			if (cw > 0) {
 				const ndcX = (M[0] * c[0] + M[4] * c[1] + M[8] * c[2] + M[12] * c[3]) / cw;
@@ -94,7 +132,7 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 			gl.enableVertexAttribArray(aCorner);
 			gl.vertexAttribPointer(aCorner, 2, gl.FLOAT, false, 0, 0);
 			gl.uniformMatrix4fv(u.u_matrix, false, options.defaultProjectionData.mainMatrix);
-			gl.uniform4fv(u.u_center, sun.center);
+			gl.uniform4fv(u.u_center, c);
 			// real angular size: map the Sun's angular radius through the vertical FOV to a clip-space (NDC)
 			// half-extent. uy is the vertical half-size; ux keeps the disc circular in pixels despite aspect.
 			const fovV = (map.getVerticalFieldOfView() * Math.PI) / 180;

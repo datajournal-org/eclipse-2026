@@ -83,7 +83,7 @@ describe('buildMapStyle', () => {
 
 describe('addSceneLayers', () => {
 	let m: FakeMap;
-	const sun: SunState = { center: [0, 0, 0, 1], moon: [0, 0], moonR: 1, angRad: 0.0046, visible: true, screen: null };
+	const sun: SunState = { dir: [0, 0, 1], moon: [0, 0], moonR: 1, angRad: 0.0046, visible: true, screen: null };
 
 	beforeEach(() => {
 		m = createFakeMap();

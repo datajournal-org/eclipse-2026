@@ -84,26 +84,46 @@ test.describe('B3 camera @webgl', () => {
 		await expect(recentre).toHaveAttribute('aria-label', /\S/);
 	});
 
-	test('dollies the camera from the zoom buttons', async () => {
-		// Zoom is a dolly: the camera moves toward the marker, so the projected Sun shifts even though
-		// the sky and the Sun's angular size do not scale.
+	test('dollies the scene from the zoom buttons without parallaxing the Sun', async () => {
+		// Zoom is a dolly: the camera moves hundreds of metres, the near terrain grows, and the Sun must
+		// NOT move — the sky is camera-anchored (sunLayer.ts), so it behaves as if at infinity. The old
+		// observer-anchored placement put it 30 km out, and this very dolly swung it visibly against the
+		// horizon.
 		const before = await locatorState(page);
-		await page.locator(`${B3} .maplibregl-ctrl-zoom-in`).click();
-		await page.waitForTimeout(700);
+		expect(before.visible).toBe(true);
+		const scene = () => page.locator(`${B3} .stage-canvas canvas`).screenshot();
+		const sceneBefore = await scene();
+
+		await page.locator(`${B3} .maplibregl-ctrl-zoom-out`).click();
+		await page.locator(`${B3} .maplibregl-ctrl-zoom-out`).click();
+		await page.waitForTimeout(900);
+
+		expect((await scene()).equals(sceneBefore), 'the dolly moved nothing at all').toBe(false);
 		const after = await locatorState(page);
-		expect(after.transform).not.toBe(before.transform);
+		expect(after.visible).toBe(true);
+		// The locator is re-glued to the projected Sun every rendered frame; parse its translate() and
+		// allow sub-pixel re-rounding.
+		const px = (t: string) =>
+			t
+				.match(/-?[\d.]+/g)!
+				.slice(0, 2)
+				.map(Number);
+		const [x0, y0] = px(before.transform);
+		const [x1, y1] = px(after.transform);
+		expect(Math.hypot(x1 - x0, y1 - y0)).toBeLessThan(2);
 	});
 
 	test('zooms on the wheel without scrolling the page', async () => {
 		// The wheel is captured by the dolly (as on the A2 globe), so the page must stay put.
 		const { x, y } = await stageCentre(page);
 		const scrollBefore = await page.evaluate(() => window.scrollY);
-		const before = await locatorState(page);
+		const scene = () => page.locator(`${B3} .stage-canvas canvas`).screenshot();
+		const sceneBefore = await scene();
 		await page.mouse.move(x, y);
 		await page.mouse.wheel(0, -300);
 		await page.waitForTimeout(600);
 		expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
-		expect((await locatorState(page)).transform).not.toBe(before.transform);
+		expect((await scene()).equals(sceneBefore), 'the wheel dollied nothing').toBe(false);
 	});
 
 	test('restores the framing from the recentre button', async () => {

@@ -8,11 +8,16 @@
 // Like the Sun, they are drawn with the depth test off. Terrain occlusion is deliberately not modelled
 // anywhere in this scene (the observer's height is unknown), and a star clipped by a hill it should have
 // cleared would be a worse error than one showing through.
-import type { CustomLayerInterface, CustomRenderMethodInput } from 'maplibre-gl';
+//
+// Each star is stored as a unit DIRECTION and anchored to the camera in the vertex shader
+// (u_cam + u_dist * direction), so the whole sky rides with the camera and shows zero parallax — see
+// sunLayer.ts, which does the same for the Sun disc.
+import type { CustomLayerInterface, CustomRenderMethodInput, Map as MlMap } from 'maplibre-gl';
+import { SKY_OFFSET_MERC, cameraMercator } from './sunLayer';
 
 export type StarState = {
-	/** Mercator xyz per object, 3 floats each. */
-	positions: Float32Array;
+	/** Unit direction per object (Mercator axes: +x east, +y south, +z up), 3 floats each. */
+	dirs: Float32Array;
 	/** Point diameter in CSS pixels, one per object. */
 	sizes: Float32Array;
 	/** 0..1 per object. */
@@ -24,7 +29,7 @@ export type StarState = {
 };
 
 export const emptyStarState = (): StarState => ({
-	positions: new Float32Array(0),
+	dirs: new Float32Array(0),
 	sizes: new Float32Array(0),
 	alphas: new Float32Array(0),
 	count: 0,
@@ -33,14 +38,16 @@ export const emptyStarState = (): StarState => ({
 });
 
 const VERTEX = `
-attribute vec3 a_pos;
+attribute vec3 a_dir;
 attribute float a_size;
 attribute float a_alpha;
 uniform mat4 u_matrix;
+uniform vec3 u_cam;         // camera position in Mercator units, fresh every frame
+uniform float u_dist;       // sky offset in Mercator units — anchors the star to the camera (no parallax)
 uniform float u_scale;      // devicePixelRatio: gl_PointSize is in device pixels, sizes are in CSS px
 varying float v_alpha;
 void main() {
-  vec4 clip = u_matrix * vec4(a_pos, 1.0);
+  vec4 clip = u_matrix * vec4(u_cam + a_dir * u_dist, 1.0);
   // Same guard as the Sun: these sit far out in the sky, and without it the far plane clips them away.
   clip.z = min(clip.z, clip.w * 0.9999);
   gl_Position = clip;
@@ -69,6 +76,7 @@ export function createStarLayer(state: StarState, color: [number, number, number
 	let posBuf: WebGLBuffer, sizeBuf: WebGLBuffer, alphaBuf: WebGLBuffer;
 	let aPos: number, aSize: number, aAlpha: number;
 	let uploaded = -1;
+	let map: MlMap;
 	const u: Record<string, WebGLUniformLocation | null> = {};
 
 	return {
@@ -76,7 +84,8 @@ export function createStarLayer(state: StarState, color: [number, number, number
 		type: 'custom',
 		renderingMode: '3d',
 
-		onAdd(_m, gl) {
+		onAdd(m, gl) {
+			map = m;
 			const compile = (type: number, src: string): WebGLShader => {
 				const sh = gl.createShader(type)!;
 				gl.shaderSource(sh, src);
@@ -90,10 +99,10 @@ export function createStarLayer(state: StarState, color: [number, number, number
 			gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAGMENT));
 			gl.linkProgram(prog);
 			if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) ?? 'link error');
-			aPos = gl.getAttribLocation(prog, 'a_pos');
+			aPos = gl.getAttribLocation(prog, 'a_dir');
 			aSize = gl.getAttribLocation(prog, 'a_size');
 			aAlpha = gl.getAttribLocation(prog, 'a_alpha');
-			for (const n of ['u_matrix', 'u_scale', 'u_color']) u[n] = gl.getUniformLocation(prog, n);
+			for (const n of ['u_matrix', 'u_cam', 'u_dist', 'u_scale', 'u_color']) u[n] = gl.getUniformLocation(prog, n);
 			posBuf = gl.createBuffer()!;
 			sizeBuf = gl.createBuffer()!;
 			alphaBuf = gl.createBuffer()!;
@@ -107,7 +116,7 @@ export function createStarLayer(state: StarState, color: [number, number, number
 			// DYNAMIC_DRAW: the whole set is rewritten on every scrub step, as the sky turns.
 			if (uploaded !== state.version) {
 				gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
-				gl.bufferData(gl.ARRAY_BUFFER, state.positions, gl.DYNAMIC_DRAW);
+				gl.bufferData(gl.ARRAY_BUFFER, state.dirs, gl.DYNAMIC_DRAW);
 				gl.bindBuffer(gl.ARRAY_BUFFER, sizeBuf);
 				gl.bufferData(gl.ARRAY_BUFFER, state.sizes, gl.DYNAMIC_DRAW);
 				gl.bindBuffer(gl.ARRAY_BUFFER, alphaBuf);
@@ -126,6 +135,10 @@ export function createStarLayer(state: StarState, color: [number, number, number
 			gl.vertexAttribPointer(aAlpha, 1, gl.FLOAT, false, 0, 0);
 
 			gl.uniformMatrix4fv(u.u_matrix, false, options.defaultProjectionData.mainMatrix);
+			// Camera anchoring (see the header): position = camera + direction x offset, every frame.
+			const cam = cameraMercator(map);
+			gl.uniform3f(u.u_cam, cam[0], cam[1], cam[2]);
+			gl.uniform1f(u.u_dist, SKY_OFFSET_MERC);
 			gl.uniform1f(u.u_scale, gl.drawingBufferHeight / (gl.canvas as HTMLCanvasElement).clientHeight || 1);
 			gl.uniform3f(u.u_color, color[0], color[1], color[2]);
 
