@@ -43,7 +43,7 @@ test.describe('B3 camera @webgl', () => {
 
 	test.beforeEach(async () => {
 		// Reset the camera so one test's drag cannot leak into the next.
-		await page.locator(`${B3} .maplibregl-ctrl-group`).last().locator('button').last().click();
+		await page.locator(`${B3} .b3-recenter`).click();
 		await page.waitForTimeout(400);
 	});
 
@@ -73,7 +73,7 @@ test.describe('B3 camera @webgl', () => {
 		// Wheel, pinch and double-click drive the dolly; the +/- buttons are deliberately gone.
 		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-in`)).toHaveCount(0);
 		await expect(page.locator(`${B3} .maplibregl-ctrl-zoom-out`)).toHaveCount(0);
-		const recentre = page.locator(`${B3} .maplibregl-ctrl-group`).last().locator('button').last();
+		const recentre = page.locator(`${B3} .b3-recenter`);
 		await expect(recentre).toBeVisible();
 		// Translated at runtime, so assert a non-empty label rather than pinning copy.
 		await expect(recentre).toHaveAttribute('aria-label', /\S/);
@@ -122,6 +122,20 @@ test.describe('B3 camera @webgl', () => {
 		expect((await scene()).equals(sceneBefore), 'the wheel dollied nothing').toBe(false);
 	});
 
+	test('goes fullscreen with the time slider riding along', async () => {
+		// The fullscreen target is the map+timebar wrapper, not the bare canvas: a fullscreen sky view
+		// without its slider would freeze the reader at one instant of the eclipse.
+		const fs = page.locator(`${B3} .maplibregl-ctrl-fullscreen`);
+		await expect(fs).toBeVisible();
+		await fs.click();
+		await expect.poll(() => page.evaluate(() => document.fullscreenElement?.className ?? null)).toContain('b3-stage');
+		await expect(page.locator(`${B3} .timebar input[type="range"]`)).toBeVisible();
+		// leave through the control (it toggles to "shrink"): the Escape key is browser chrome that a
+		// synthetic keypress cannot reach — and this file's shared page must not stay fullscreen.
+		await page.locator(`${B3} .maplibregl-ctrl-shrink`).click();
+		await expect.poll(() => page.evaluate(() => document.fullscreenElement)).toBeNull();
+	});
+
 	test('labels the horizon with localized compass points', async () => {
 		// The German page: the shot faces the setting Sun (~west), so W must be on screen — and in this
 		// locale east would be O, so a hardcoded ASCII compass would fail here by design.
@@ -146,7 +160,7 @@ test.describe('B3 camera @webgl', () => {
 		await page.waitForTimeout(400);
 		expect(await xOf()).toBeGreaterThan(before + 40);
 
-		await page.locator(`${B3} .maplibregl-ctrl-group`).last().locator('button').last().click();
+		await page.locator(`${B3} .b3-recenter`).click();
 		await page.waitForTimeout(400);
 		expect(Math.abs((await xOf()) - before)).toBeLessThan(2);
 	});
@@ -188,7 +202,7 @@ test.describe('B3 camera @webgl', () => {
 		expect(dragged.transform).not.toBe(before.transform);
 
 		// the last control in the B3 group is the recentre button
-		await page.locator(`${B3} .maplibregl-ctrl-group`).last().locator('button').last().click();
+		await page.locator(`${B3} .b3-recenter`).click();
 		await page.waitForTimeout(800);
 
 		const after = await locatorState(page);

@@ -59,11 +59,14 @@ test.describe('mobile layout @mobile', () => {
 	});
 
 	test('offers no fullscreen control on a phone @webgl', async ({ page }) => {
-		// A phone screen already is the full screen — the browser chrome stays either way.
+		// A phone screen already is the full screen — the browser chrome stays either way. Holds for
+		// both map screens: the A2 globe and the B3 sky view.
 		test.skip(test.info().project.name !== 'mobile', 'coarse-pointer behaviour — mobile project only');
-		await page.goto(localeUrl('de', '?debug'));
+		await page.goto(localeUrl('de', '?debug&lat=43.3603&lon=-5.8448'));
 		await mapReady(page, 'section.a2');
 		await expect(page.locator('section.a2 .maplibregl-ctrl-fullscreen')).toHaveCount(0);
+		await mapReady(page, 'section.b3');
+		await expect(page.locator('section.b3 .maplibregl-ctrl-fullscreen')).toHaveCount(0);
 	});
 
 	test('keeps the language switcher usable', async ({ page }) => {

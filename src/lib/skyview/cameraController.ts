@@ -194,6 +194,7 @@ export function createCameraController(opts: {
 			c.className = 'maplibregl-ctrl maplibregl-ctrl-group';
 			const b = document.createElement('button');
 			b.type = 'button';
+			b.className = 'b3-recenter'; // stable hook — specs must not select controls by position
 			b.title = label('b3.recenter');
 			b.setAttribute('aria-label', b.title);
 			b.innerHTML =

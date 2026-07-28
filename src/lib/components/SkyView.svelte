@@ -32,6 +32,7 @@
 	import { SKY_PALETTE } from '$lib/config';
 
 	let mapContainer: HTMLDivElement;
+	let stageWrap: HTMLDivElement; // map + timebar — the fullscreen target, so the slider comes along
 	let ready = $state(false);
 	let clock = $state('--:--');
 	let altTxt = $state('–');
@@ -177,6 +178,14 @@
 					// pinch, double-click.)
 					cam.addControls();
 
+					// Fullscreen, wrapping map + slider together — and not on phones, same reasoning as A2:
+					// a phone screen already is the full screen. The framing is NOT recomputed on the aspect
+					// change: the vertical framing (Sun, horizon, marker) is aspect-independent by design,
+					// a wider frame simply shows more sky sideways.
+					const phone =
+						window.matchMedia('(pointer: coarse)').matches && window.matchMedia('(max-width: 700px)').matches;
+					if (!phone) m.addControl(new maplibregl.FullscreenControl({ container: stageWrap }), 'top-right');
+
 					function update() {
 						const date = new Date(times[frameIndex]);
 						const geo = eclipseGeometry(LAT, LON, date);
@@ -299,51 +308,79 @@
 	</div>
 	<p class="sub">{$t('b3.subtitle')}</p>
 
-	<div class="stage bleed">
-		<div class="stage-canvas" bind:this={mapContainer}></div>
+	<!-- Map + time slider in one wrapper — what goes fullscreen, so the slider stays usable there
+	     (same pattern as A2's .a2-stage). -->
+	<div class="b3-stage" bind:this={stageWrap}>
+		<div class="stage bleed">
+			<div class="stage-canvas" bind:this={mapContainer}></div>
 
-		<!-- Compass-point labels over the horizon ruler (compassLayer.ts projects, this places) -->
-		<CompassLabels bind:this={compassLabels} />
+			<!-- Compass-point labels over the horizon ruler (compassLayer.ts projects, this places) -->
+			<CompassLabels bind:this={compassLabels} />
 
-		<!-- A) loupe inset + B) Sun locator square & tangent leaders; bound so the render loop can drive it -->
-		<SkyLoupe
-			bind:this={loupe}
-			{ready}
-			loupeR={LOUPE_R}
-			{loupeSky}
-			{loupeGround}
-			{horizonY}
-			{crescent}
-			{coronaSize}
-			{coronaOpacity}
-		/>
-
-		{#if !ready}<div class="stage-loading">{$t('b3.loading')}</div>{/if}
-	</div>
-
-	<div class="timebar">
-		<div class="readout tnum">
-			<span class="clock" style:--clock-ch={clockCh}>{clock}</span>
-			<span>☀ {$t('b3.altitude')} <b>{altTxt}</b></span>
-			<span>{$t('b3.azimuth')} <b>{azTxt}</b></span>
-			<span>◐ {$t('b3.coverage')} <b>{obscTxt}</b></span>
-		</div>
-		{#if axis}
-			<TimeScrubber
-				value={frameIndex}
-				max={axis.max}
-				ariaLabel={$t('b3.title')}
-				ticks={axis.ticks}
-				band={axis.band}
-				sunsetFrac={axis.sunsetFrac}
-				sunsetNote={axis.sunsetNote}
-				onscrub={(i) => setFrame(i)}
+			<!-- A) loupe inset + B) Sun locator square & tangent leaders; bound so the render loop can drive it -->
+			<SkyLoupe
+				bind:this={loupe}
+				{ready}
+				loupeR={LOUPE_R}
+				{loupeSky}
+				{loupeGround}
+				{horizonY}
+				{crescent}
+				{coronaSize}
+				{coronaOpacity}
 			/>
-		{/if}
+
+			{#if !ready}<div class="stage-loading">{$t('b3.loading')}</div>{/if}
+		</div>
+
+		<div class="timebar">
+			<div class="readout tnum">
+				<span class="clock" style:--clock-ch={clockCh}>{clock}</span>
+				<span>☀ {$t('b3.altitude')} <b>{altTxt}</b></span>
+				<span>{$t('b3.azimuth')} <b>{azTxt}</b></span>
+				<span>◐ {$t('b3.coverage')} <b>{obscTxt}</b></span>
+			</div>
+			{#if axis}
+				<TimeScrubber
+					value={frameIndex}
+					max={axis.max}
+					ariaLabel={$t('b3.title')}
+					ticks={axis.ticks}
+					band={axis.band}
+					sunsetFrac={axis.sunsetFrac}
+					sunsetNote={axis.sunsetNote}
+					onscrub={(i) => setFrame(i)}
+				/>
+			{/if}
+		</div>
 	</div>
 </section>
 
 <style>
+	.b3-stage:fullscreen {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		height: 100%;
+		background: #000;
+
+		.stage {
+			margin-inline: 0;
+			flex: 1;
+			min-height: 0;
+		}
+		.stage-canvas {
+			height: 100%;
+			background: #000;
+		}
+		.timebar {
+			margin: 0;
+			align-self: center;
+			width: min(760px, 100%);
+			padding: 12px var(--edge) 16px;
+		}
+	}
+
 	/* No B3-only map chrome left to style: the twilight veil moved into the WebGL scene (veilLayer.ts) so
 	   the stars could be drawn over it, and the shared chrome — controls, attribution, the .user-pin
 	   marker — lives in styles/map.css. */
