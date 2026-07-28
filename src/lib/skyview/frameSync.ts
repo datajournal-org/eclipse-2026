@@ -21,9 +21,9 @@ import type { PlacedObject } from '$lib/skyview/skyObjects';
 // sub-pixel specks. The scale is chosen so the compression pivots at the top: Venus's ~6.9 magnitudes
 // at full totality still land exactly on the cap, while a star half a magnitude over the threshold
 // grows from 2.0 to 3.5 px.
-const MIN_STAR_PX = 1.4,
+const MIN_STAR_PX = 0.3,
 	MAX_STAR_PX = 9,
-	STAR_PX_PER_ROOT_MAG = 2.9;
+	STAR_PX_PER_ROOT_MAG = 1.5;
 
 /**
  * A unit direction along (azimuth, altitude), in Mercator axis convention: +x east, +y SOUTH (Mercator y
