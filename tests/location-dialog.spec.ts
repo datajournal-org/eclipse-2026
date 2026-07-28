@@ -1,4 +1,4 @@
-import { test, expect, localeUrl } from './fixtures';
+import { test, expect, localeUrl, LANG, PHOTON } from './fixtures';
 
 const openDialog = async (page: import('@playwright/test').Page) => {
 	await page.goto(localeUrl());
@@ -91,6 +91,31 @@ test.describe('location dialog', () => {
 			return getComputedStyle(dialog).display !== 'none';
 		});
 		expect(blocked).toBe(false);
+	});
+
+	test('labels the pin with coordinates when the name service is down', async ({ page, stubGeocoder }) => {
+		// Reverse geocoding is decoration: with the geocoder failing (or timed out), the footer must fall
+		// back to the coordinates — the real content — instead of an eternal "…" that reads as loading.
+		await stubGeocoder({}, 500);
+		await page.goto(localeUrl());
+		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		const place = page.locator('dialog.picker-dlg .summary .place');
+		await expect(place).toContainText(/43\.000°, -4\.500°/); // the corridor default point
+		// the eclipse verdict beside it is computed locally and owes the geocoder nothing
+		await expect(page.locator('dialog.picker-dlg .verdict')).toContainText('Totalität');
+	});
+
+	test('upgrades the committed location when its name arrives after confirming', async ({ page, stubGeocoder }) => {
+		// Confirming faster than the geocoder answers used to freeze the location as raw coordinates
+		// forever. The late answer now upgrades the committed location — if it is for exactly that point.
+		await stubGeocoder(PHOTON.oviedo, 200, 1500);
+		await page.goto(localeUrl(LANG, '?lat=43.3603&lon=-5.8448'));
+		await expect(page.locator('.place .pname')).toContainText('43.360'); // no name yet
+		await page.getByRole('button', { name: 'ändern' }).click();
+		await page.getByRole('button', { name: /Diesen Ort verwenden/ }).click(); // outrun the geocoder
+		await expect(page.locator('dialog.picker-dlg')).not.toBeVisible();
+		// …and once the slow answer lands, the page header trades coordinates for the name
+		await expect(page.locator('.place .pname')).toContainText('Oviedo', { timeout: 5000 });
 	});
 
 	test('offers the confirm button in a disabled state until a place is pending', async ({ page, stubGeocoder }) => {

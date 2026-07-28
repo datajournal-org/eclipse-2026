@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { userLocation, type Place } from '$lib/stores/location';
+	import { userLocation, placeLabel } from '$lib/stores/location';
 	import { localEclipse } from '$lib/stores/localEclipse';
 	import { eclipseVisible } from '$lib/eclipse';
 	import { t } from '$lib/i18n';
@@ -15,7 +15,6 @@
 	import SafetyFooter from '$lib/components/SafetyFooter.svelte';
 	import SiteFooter from '$lib/components/SiteFooter.svelte';
 
-	const label = (p: Place) => p.name ?? `${p.lat.toFixed(3)}°, ${p.lon.toFixed(3)}°`;
 	let pickerOpen = $state(false);
 </script>
 
@@ -29,7 +28,7 @@
 		<!-- B — the personal briefing, opened by a clear section break -->
 		<SectionDivider label={$t('b.your_sky')} />
 		<div class="place block">
-			<div class="pname">📍 {label($userLocation)}</div>
+			<div class="pname">📍 {placeLabel($userLocation)}</div>
 			<button onclick={() => (pickerOpen = true)}>{$t('b.change')}</button>
 		</div>
 		<Verdict />

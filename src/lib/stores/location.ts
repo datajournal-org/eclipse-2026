@@ -8,6 +8,9 @@ const KEY = 'eclipse.location';
 
 export type Place = { lat: number; lon: number; name: string | null };
 
+/** How a place is shown wherever a name may be missing: the name, else its coordinates. */
+export const placeLabel = (p: Place): string => p.name ?? `${p.lat.toFixed(3)}°, ${p.lon.toFixed(3)}°`;
+
 /**
  * On the client the value is read SYNCHRONOUSLY (URL debug override, then localStorage) at module load, so
  * the very first client render already shows the located "B" state. Deferring this to onMount flipped the layout a tick

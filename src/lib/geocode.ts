@@ -2,6 +2,21 @@
 // Photon returns plain GeoJSON; we flatten it into a place with a two-line label.
 const BASE = 'https://geocode.versatiles.org';
 
+/**
+ * Deadline for every geocoder request, matching the GPS lookup's 8 s (LocationDialog). Without one, an
+ * overloaded server that accepts the connection and stalls left "Suche …" on screen until the OS-level
+ * TCP stack gave up minutes later — the one network failure the UI could not convert into its own error
+ * state. A timeout abort carries the name "TimeoutError" (not "AbortError"), so the search state machine
+ * reports it as a failure rather than swallowing it like a superseded request.
+ */
+export const REQUEST_TIMEOUT_MS = 8000;
+
+/** The caller's abort signal (if any) combined with the request deadline. */
+const withTimeout = (signal?: AbortSignal): AbortSignal =>
+	signal
+		? AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)])
+		: AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+
 export type GeoHit = { lat: number; lon: number; label: string; sub: string };
 
 /** Shortest query worth sending: one character matches most of the planet. */
@@ -34,7 +49,7 @@ export async function searchPlaces(query: string, locale = 'de', limit = 6, sign
 	const q = query.trim();
 	if (q.length < MIN_QUERY_LENGTH) return [];
 	const url = `${BASE}/api?q=${encodeURIComponent(q)}&limit=${limit}&lang=${photonLang(locale)}`;
-	const res = await fetch(url, { signal });
+	const res = await fetch(url, { signal: withTimeout(signal) });
 	if (!res.ok) throw new Error(`geocode ${res.status}`);
 	const data = (await res.json()) as PhotonResponse;
 	return (data.features ?? [])
@@ -50,7 +65,7 @@ export async function searchPlaces(query: string, locale = 'de', limit = 6, sign
 export async function reverseGeocode(lat: number, lon: number, locale = 'de'): Promise<string | null> {
 	try {
 		const url = `${BASE}/reverse?lon=${lon}&lat=${lat}&lang=${photonLang(locale)}`;
-		const res = await fetch(url);
+		const res = await fetch(url, { signal: withTimeout() });
 		if (!res.ok) return null;
 		const data = (await res.json()) as PhotonResponse;
 		const f = data.features?.[0];

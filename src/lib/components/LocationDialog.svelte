@@ -6,7 +6,7 @@
 	import { get } from 'svelte/store';
 	import { browser } from '$app/environment';
 	import { t, locale } from '$lib/i18n';
-	import { userLocation, setLocation } from '$lib/stores/location';
+	import { userLocation, setLocation, placeLabel } from '$lib/stores/location';
 	import { localCircumstances } from '$lib/eclipse';
 	import { reverseGeocode, type GeoHit } from '$lib/geocode';
 	import { createPlaceSearch } from '$lib/placeSearch';
@@ -51,11 +51,25 @@
 
 	// ---- pending pin: reverse-geocode its name + preview the eclipse verdict ----
 	let revSeq = 0;
+	// Whether a name lookup is in flight for the CURRENT pin. Split from `pending.name` deliberately:
+	// name === null means two different things — "still resolving" (show …) and "the service failed"
+	// (show the coordinates, which are the real content anyway). One nullable field cannot say both.
+	let nameResolving = $state(false);
 	function setPending(lat: number, lon: number, name: string | null) {
 		pending = { lat, lon, name };
+		nameResolving = true;
 		const seq = ++revSeq;
 		reverseGeocode(lat, lon, get(locale)).then((n) => {
-			if (seq === revSeq && pending && n) pending = { ...pending, name: n };
+			if (seq !== revSeq) return;
+			nameResolving = false;
+			if (pending && n) pending = { ...pending, name: n };
+			// The user may have confirmed before the name arrived — the committed location then carries
+			// name: null and the page shows raw coordinates. If the answer is for exactly that point,
+			// upgrade the committed location in place (same coordinates → SkyView's key won't rebuild).
+			const committed = get(userLocation);
+			if (n && committed && committed.name === null && committed.lat === lat && committed.lon === lon) {
+				setLocation({ lat, lon, name: n });
+			}
 		});
 	}
 	function onPinMove(lat: number, lon: number) {
@@ -221,7 +235,10 @@
 		<p class="adjust">{$t('a4.adjust_hint')}</p>
 		<footer class="foot">
 			<div class="summary">
-				<span class="place">📍 {pending?.name ?? '…'}</span>
+				<!-- "…" only while a name is actually being resolved; once the lookup fails or times out,
+				     the coordinates are the honest label (and what would be committed). -->
+				<span class="place">📍 {pending ? (pending.name ?? (nameResolving ? '…' : placeLabel(pending))) : '…'}</span
+				>
 				{#if preview}
 					{#if !preview.visible}
 						<span class="verdict none">{$t('a4.verdict_none')}</span>

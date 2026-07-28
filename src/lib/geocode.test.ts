@@ -30,6 +30,31 @@ describe('searchPlaces', () => {
 		expect(spy).not.toHaveBeenCalled();
 	});
 
+	it('carries a deadline on every request, even without a caller signal', async () => {
+		// The one network failure the UI cannot convert into its own error state is a server that accepts
+		// and stalls — the timeout signal turns that into a TimeoutError after REQUEST_TIMEOUT_MS.
+		const spy = vi.fn(async (_url: string, init?: RequestInit) => {
+			expect(init?.signal).toBeInstanceOf(AbortSignal);
+			return { ok: true, status: 200, json: async () => ({ features: [] }) };
+		});
+		vi.stubGlobal('fetch', spy);
+		await searchPlaces('Oviedo');
+		await reverseGeocode(43.36, -5.84);
+		expect(spy).toHaveBeenCalledTimes(2);
+	});
+
+	it('still honours the caller abort alongside the deadline', async () => {
+		// AbortSignal.any: whichever fires first wins — a superseded search must still abort instantly.
+		const controller = new AbortController();
+		const spy = vi.fn(async (_url: string, init?: RequestInit) => {
+			controller.abort();
+			expect(init?.signal?.aborted).toBe(true);
+			throw new DOMException('aborted', 'AbortError');
+		});
+		vi.stubGlobal('fetch', spy);
+		await expect(searchPlaces('Oviedo', 'de', 6, controller.signal)).rejects.toThrow();
+	});
+
 	it('queries the VersaTiles Photon instance', async () => {
 		const spy = stubJson({ features: [] });
 		await searchPlaces('Oviedo');

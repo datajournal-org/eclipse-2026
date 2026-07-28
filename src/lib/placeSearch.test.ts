@@ -189,6 +189,21 @@ describe('superseded requests', () => {
 		expect(fake.calls[0].signal?.aborted).toBe(true);
 	});
 
+	it('reports a timed-out request as an error, not as superseded', async () => {
+		// geocode.ts aborts stalled requests with a TimeoutError after its deadline. Unlike an AbortError
+		// (us superseding ourselves), a timeout is a real service failure the user must hear about.
+		const fake = deferredSearch();
+		const s = createPlaceSearch({ search: fake.search });
+		s.setQuery('Oviedo', 'de');
+		await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS);
+
+		const timeout = new Error('signal timed out');
+		timeout.name = 'TimeoutError';
+		fake.pending[0].reject(timeout);
+		await settle();
+		expect(get(s.state).status).toBe('error');
+	});
+
 	it('treats an AbortError as nothing to report', async () => {
 		const fake = deferredSearch();
 		const s = createPlaceSearch({ search: fake.search });
