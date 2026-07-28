@@ -50,7 +50,8 @@ precisely in discussion. Terms use the exact names found in the code where one e
 - **Chips** — the altitude / azimuth / coverage readout row under the slider.
 - **Reset button** — B3 control that returns the camera to the Sun-facing framing (orbit 0).
 - **Sun billboard** — WebGL disc with the Moon crescent cut out (`sunLayer`), drawn at real angular size, always on top.
-- **Framing** — `computeFraming`: picks vertical FOV + center azimuth so one fixed B3 shot spans the Sun's arc.
+- **Framing** — `computeFraming`: picks vertical FOV, center azimuth and the camera's two angles (`aimEl`, `camDep`) so one fixed B3 shot spans the Sun's arc.
+- **`aimEl` / `camDep`** — where the shot points (elevation of the view centre; + = above the horizon) and how far the marker sits below the camera's horizontal. A high Sun drives `aimEl` positive — pitch past 90° — and `camDep` towards zero.
 - **Envelope** — the Sun's azimuth span + peak altitude sampled over the eclipse window, fed to `computeFraming`.
 - **Orbit** — horizontal drag on B3 rotates the camera around the marker (bearing only; height stays constant).
 - **Hillshade** — terrain relief-shading layer; its illumination direction tracks the Sun's azimuth.

@@ -108,7 +108,11 @@
 				zoom: 16,
 				pitch: 85,
 				bearing: 290,
-				maxPitch: 85,
+				// Far above MapLibre's default 60: away from the path of totality the Sun is high (64° in New
+				// York) and the shot has to aim ABOVE the horizon to hold it, which is a pitch past 90°.
+				// Nothing but applyFraming() ever sets the pitch — every built-in handler is disabled below —
+				// so a permissive ceiling costs nothing and framing.ts stays the single place that decides.
+				maxPitch: 170,
 				attributionControl: { compact: false },
 				style
 			});
@@ -122,7 +126,7 @@
 			// for a visual side effect. `idle` fires once the style, sources and first frame are all done.
 			m.once('idle', () => mapContainer.setAttribute('data-map-ready', 'true'));
 			// Horizontal drag orbits the camera around the marker (handlers below); disable MapLibre's own
-			// pan/rotate/zoom so they don't fight it. Pitch/height never change → no >90° bug.
+			// pan/rotate/zoom so they don't fight it. Only the bearing ever changes after the initial framing.
 			m.dragPan.disable();
 			m.dragRotate.disable();
 			m.scrollZoom.disable();
@@ -147,7 +151,6 @@
 						lat: LAT,
 						lon: LON,
 						framing,
-						altMax,
 						label: (key) => get(t)(key)
 					});
 					detachDrag = cam.detach;
@@ -158,7 +161,11 @@
 					// globe. A DOM element, so it stays at full brightness above the veil in the canvas.
 					const pin = document.createElement('div');
 					pin.className = 'user-pin';
-					new maplibregl.Marker({ element: pin }).setLngLat([LON, LAT]).addTo(m);
+					// opacityWhenCovered: MapLibre fades a marker to 0.2 when terrain stands between it and the
+					// camera. For a Sun high in the sky the camera sits near eye level, where any rise in the
+					// ground counts as cover and the pin all but vanished. It marks a place, not an object in
+					// the scene — the Sun billboard ignores terrain occlusion for the same reason.
+					new maplibregl.Marker({ element: pin, opacityWhenCovered: '1' }).setLngLat([LON, LAT]).addTo(m);
 
 					// Zoom (+/-) and reset controls — same look as the A2 globe.
 					cam.addControls();

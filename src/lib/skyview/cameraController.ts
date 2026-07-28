@@ -5,6 +5,7 @@
 // sky/Sun don't scale. Returns applyFraming (re-derive the pose), addControls (+/- and reset buttons) and
 // detach (drop the window/rAF listeners on teardown).
 import type { IControl, Map as MlMap } from 'maplibre-gl';
+import type { Framing } from '$lib/skyview/framing';
 import { destPoint } from '$lib/shadow-globe/vec3';
 import { DEG_TO_RAD as D2R } from '$lib/constants';
 
@@ -16,38 +17,54 @@ export function createCameraController(opts: {
 	m: MlMap;
 	lat: number;
 	lon: number;
-	framing: { fov: number; meanAz: number };
-	altMax: number;
+	framing: Framing;
 	label: (key: string) => string;
 }) {
-	const { maplibregl, m, lat: LAT, lon: LON, framing, altMax, label } = opts;
+	const { maplibregl, m, lat: LAT, lon: LON, framing, label } = opts;
 
-	const DIST_MIN = 50,
-		DIST_MAX = 1000,
-		DIST_DEFAULT = 200; // camera distance behind the marker (m): min / default / max for the zoom
+	// Camera distance behind the marker (m). 200 m for the drone shot over a low Sun — but the setback and
+	// the camera's height are locked together by framing.camDep, and for a high Sun that angle is nearly
+	// flat, so 200 m would leave the camera a few metres off the ground: inside whatever building stands
+	// there, filling the frame with an interior wall (measured in Manhattan and the Chicago Loop, where it
+	// happens more often than not). Backing off until it clears the rooftops costs nothing in framing —
+	// the rig is scale-invariant, so the marker, the horizon and the Sun stay exactly where framing.ts put
+	// them, and only the scale of the scene between them changes.
+	const MIN_CAM_HEIGHT = 100; // metres of clearance over the built-up ground
+	const DIST_DEFAULT = Math.max(200, Math.min(6000, MIN_CAM_HEIGHT / Math.tan(framing.camDep * D2R)));
+	const DIST_MIN = DIST_DEFAULT / 4, // the dolly range keeps its 0.25x..5x span around whatever that is
+		DIST_MAX = Math.min(DIST_DEFAULT * 5, 8000); // ...up to a ceiling, past which nothing new comes into view
 	let camDist = DIST_DEFAULT; // vertical-drag offset → dolly the camera toward/away from the marker
 	let orbitDeg = 0; // horizontal-drag offset → the camera orbits around the marker
 
-	// Positioned camera: `camDist` metres behind the marker, at a sea-level-referenced altitude so the
-	// marker sits ~10% from the bottom. The whole rig scales with camDist (camera pos + view centre), so the
-	// marker keeps its screen spot while near terrain grows/shrinks → a dolly zoom. camAlt is constant across
-	// the orbit (only the bearing changes) and centerClampedToGround is off, so the camera height never bobs.
+	// How far ahead the view centre is put. Nothing in the shot depends on it — the image follows from the
+	// camera's position, orientation and FOV, all of which are fixed above — but MapLibre derives its
+	// `zoom`, and so its tile LOD, from the camera-to-centre distance. The bounds keep that LOD in the band
+	// where the scene has detail to draw: the 3D buildings only exist in zoom-14 tiles and up, which a
+	// centre a couple of kilometres out (where an upward aim lands) would drop the whole scene below.
+	const FOCUS_PER_DIST = 2.5,
+		FOCUS_MIN = 400,
+		FOCUS_MAX = 900;
+
+	// Positioned camera: `camDist` metres behind the marker, at a sea-level-referenced altitude that puts
+	// the marker `framing.camDep`° below the camera's horizontal, looking `framing.aimEl`° above (or below)
+	// it. The whole rig scales with camDist (camera pos + view centre), so the marker keeps its screen spot
+	// while near terrain grows/shrinks → a dolly zoom. camAlt is constant across the orbit (only the bearing
+	// changes) and centerClampedToGround is off, so the camera height never bobs.
 	function applyFraming() {
 		const gAlt = m.queryTerrainElevation([LON, LAT] as [number, number]) ?? 0;
-		// view-centre depression (deg below horizontal): keep the frame's top just above the Sun's peak
-		const c = Math.max(6, Math.min(18, framing.fov / 2 - (altMax + 6)));
-		const delta = c + 0.4 * framing.fov; // depression to the marker → 90% down (10% from bottom)
-		const camAlt = gAlt + camDist * Math.tan(delta * D2R);
+		const camAlt = gAlt + camDist * Math.tan(framing.camDep * D2R);
 		const az = framing.meanAz + orbitDeg; // orbit the whole rig around the marker
 		const [cLon, cLat] = destPoint(LAT, LON, az + 180, camDist); // camera behind the marker (circle)
-		const centerDist = (camAlt - gAlt) / Math.tan(c * D2R); // ground distance to the view centre
-		const [tLon, tLat] = destPoint(cLat, cLon, az, centerDist); // view-centre ground point
+		// view centre: a point this far along the aim direction
+		const focus = Math.max(FOCUS_MIN, Math.min(FOCUS_MAX, camDist * FOCUS_PER_DIST));
+		const [tLon, tLat] = destPoint(cLat, cLon, az, focus);
+		const tAlt = camAlt + focus * Math.tan(framing.aimEl * D2R);
 		m.jumpTo(
 			m.calculateCameraOptionsFromTo(
 				new maplibregl.LngLat(cLon, cLat),
 				camAlt,
 				new maplibregl.LngLat(tLon, tLat),
-				gAlt
+				tAlt
 			)
 		);
 	}

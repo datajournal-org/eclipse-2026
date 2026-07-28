@@ -125,12 +125,19 @@ reads as being at infinity.
 
 **2. Correct camera (third-person orbit).**
 MapLibre (v6 today, v5 when this was written) **has no `FreeCameraOptions`**, so the camera is built with
-**`map.calculateCameraOptionsFromTo(from, fromAlt, to, toAlt)`**: it sits ~200 m behind a marker
-at the location, at a **constant sea-level altitude** (`setCenterClampedToGround(false)`, so it
-does not bob as the view centre moves over terrain), framed by `skyview/framing.ts` (a wide
-`setVerticalFieldOfView` + centre azimuth) to show the whole Sun arc with the marker in the lower
-third. Horizontal drag **orbits** the camera around the marker (bearing only, height fixed → the
-pitch stays < 90°); a reset control returns to the Sun-facing framing.
+**`map.calculateCameraOptionsFromTo(from, fromAlt, to, toAlt)`**: it sits behind a marker at the
+location, at a **constant sea-level altitude** (`setCenterClampedToGround(false)`, so it does not
+bob as the view centre moves over terrain), framed by `skyview/framing.ts` — a wide
+`setVerticalFieldOfView`, a centre azimuth, and the two angles that place the camera — to show the
+whole Sun arc with the marker in the lower tenth. **How high the Sun gets decides the whole pose.**
+On the path it never passes 25°, and the classic drone shot (~200 m back, ~115 m up, looking down)
+holds it. Away from the path it does: 64° in New York. There the camera sinks towards the ground,
+the aim tips **above** the horizon — a pitch past 90°, which MapLibre supports — and the setback
+grows to whatever keeps the camera clear of the rooftops (the rig is scale-invariant, so that
+changes the scale of the scene without moving anything in the frame). Past ~65° the marker reaches
+the bottom edge and the lens opens further to hold at least the horizon; only a near-overhead Sun
+gives up the ground altogether. Horizontal drag **orbits** the camera around the marker (bearing
+only, height fixed); a reset control returns to the Sun-facing framing.
 
 **Appearance — real size, no occlusion.**
 The Sun/Moon discs come from `astronomy-engine` (angular radii ~0.25°, Moon offset from the
@@ -154,9 +161,10 @@ and Espenak; numbers visible in the UI → realism is verifiable, not asserted.
 
 - **Elevation z12** coarse in the near field — check whether mountains on the horizon look
   visually convincing; the near field is carried by the buildings.
-- **Camera over steep terrain:** the camera sits ~200 m behind the marker at a constant altitude
+- **Camera over steep terrain:** the camera sits behind the marker at a constant altitude
   (`setCenterClampedToGround(false)`); on very steep ground near the location, verify the framing
-  doesn't clip.
+  doesn't clip. The eye-level pose a high Sun forces (see §2 above) is the exposed case — its
+  clearance is measured from the marker's ground, not from the hill the camera stands on.
 - **Live shadow (A2):** built and scrubbed end to end (`tests/a2-shadow-run.spec.ts`), but **no wall-clock
   budget is asserted** — see TESTING.md §7 for why a threshold would measure the renderer rather than the
   app. The performance question is open by decision, not by neglect.

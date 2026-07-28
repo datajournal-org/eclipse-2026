@@ -6,6 +6,9 @@ const OVIEDO = byName('Oviedo');
 // Northern Spain, inside totality and close to the coast — the eclipse runs into sunset here, which is
 // what makes the loupe's horizon worth rendering at all.
 const CUDILLERO = { lat: 43.5465336, lon: -6.5320917, name: 'Cudillero' };
+// Far off the path, where the Sun is 64° up over the eclipse window — more than twice as high as anywhere
+// on it, and the case a downward-looking camera can never frame.
+const NEW_YORK = { lat: 40.7128, lon: -74.006, name: 'New York' };
 
 /**
  * Building a B3 scene costs ~2 s, and most of these tests inspect the same scene from different angles —
@@ -146,6 +149,37 @@ test.describe('B3 sky view @webgl', () => {
 		test('marks sunset on the track where it falls inside the window', async () => {
 			const page = get();
 			await expect(page.locator(`${B3} .track .dusk`)).toBeVisible();
+		});
+	});
+
+	scene('at New York', NEW_YORK, (get) => {
+		test('shows the Sun in the stage even though it is 64° up', async () => {
+			// The regression this guards: framed like an on-path location, the shot tops out around 30° of
+			// altitude and a Sun this high is simply above the frame — the stage shows a street scene with
+			// no Sun in it. The locator is hidden whenever the Sun is off-screen, so its visibility, and a
+			// box inside the stage, is the assertion.
+			const page = get();
+			const locator = page.locator(`${B3} .b3-locator`);
+			await expect(locator).not.toHaveClass(/hidden/);
+
+			const stage = (await page.locator(`${B3} .stage-canvas`).boundingBox())!;
+			const box = (await locator.boundingBox())!;
+			expect(box.y).toBeGreaterThanOrEqual(stage.y);
+			expect(box.y + box.height).toBeLessThanOrEqual(stage.y + stage.height);
+			expect(box.x).toBeGreaterThanOrEqual(stage.x);
+			expect(box.x + box.width).toBeLessThanOrEqual(stage.x + stage.width);
+			// Up in the sky, not down in the scenery: the Sun's own arc peaks in the frame's top eighth,
+			// and the opening frame is past that peak, so it sits in the upper half.
+			expect(box.y + box.height / 2).toBeLessThan(stage.y + stage.height / 2);
+		});
+
+		test('keeps the horizon and the marker in the frame under it', async () => {
+			// The other half of the framing: aiming above the horizon must not throw the ground away.
+			const page = get();
+			const stage = (await page.locator(`${B3} .stage-canvas`).boundingBox())!;
+			const pin = (await page.locator(`${B3} .user-pin`).boundingBox())!;
+			expect(pin.y).toBeGreaterThan(stage.y + stage.height * 0.5); // in the lower half…
+			expect(pin.y + pin.height).toBeLessThanOrEqual(stage.y + stage.height); // …and still on screen
 		});
 	});
 });

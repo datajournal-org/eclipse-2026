@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { Map as MlMap } from 'maplibre-gl';
 import { createCameraController } from './cameraController';
+import type { Framing } from './framing';
 import { createFakeMap, fakeMaplibregl, installFakeRaf, type FakeMap } from '$lib/testing/fakes';
 import { byName } from '$lib/testing/reference';
 
 const OVIEDO = byName('Oviedo');
-const FRAMING = { fov: 60, meanAz: 280 };
+// A typical on-path shot: a wide-ish lens, the camera up behind the marker, aiming just below the horizon.
+const FRAMING = { fov: 60, meanAz: 280, aimEl: -9, camDep: 30 };
 
 type Rig = {
 	m: FakeMap;
@@ -15,7 +17,7 @@ type Rig = {
 
 let rigs: Rig[] = [];
 
-function makeRig(opts: { terrainElevation?: number | null; altMax?: number } = {}): Rig {
+function makeRig(opts: { terrainElevation?: number | null; framing?: Partial<Framing> } = {}): Rig {
 	const raf = installFakeRaf();
 	const m = createFakeMap({ terrainElevation: opts.terrainElevation ?? 0 });
 	const controller = createCameraController({
@@ -23,8 +25,7 @@ function makeRig(opts: { terrainElevation?: number | null; altMax?: number } = {
 		m: m as unknown as MlMap,
 		lat: OVIEDO.lat,
 		lon: OVIEDO.lon,
-		framing: FRAMING,
-		altMax: opts.altMax ?? 10.3,
+		framing: { ...FRAMING, ...opts.framing },
 		label: (key) => key
 	});
 	const rig = { m, controller, raf };
@@ -42,7 +43,7 @@ function lastPose(m: FakeMap) {
 		{ lng: number; lat: number },
 		number
 	];
-	return { from, camAlt: fromAlt, to, groundAlt: toAlt };
+	return { from, camAlt: fromAlt, to, targetAlt: toAlt };
 }
 
 beforeEach(() => {
@@ -67,7 +68,36 @@ describe('applyFraming', () => {
 		expect(pose.from.lng).toBeGreaterThan(OVIEDO.lon);
 		expect(pose.to.lng).toBeLessThan(OVIEDO.lon);
 		expect(pose.camAlt).toBeGreaterThan(0);
-		expect(pose.groundAlt).toBe(0);
+		// Aiming below the horizon, the view centre is lower than the camera. Only the DIRECTION of that
+		// centre is part of the shot — its distance just sets MapLibre's zoom, and so the tile LOD.
+		expect(pose.targetAlt).toBeLessThan(pose.camAlt);
+	});
+
+	it('aims above the horizon when the Sun is too high to look down at', () => {
+		// The New York case: a 64° Sun. The camera drops to eye level and the view centre lifts into the
+		// sky — a MapLibre pitch past 90°, which is the only pose that can hold a Sun that high.
+		const { m, controller } = makeRig({ framing: { aimEl: 33.7, camDep: 1.5 } });
+		controller.applyFraming();
+		const pose = lastPose(m)!;
+		expect(pose.targetAlt).toBeGreaterThan(pose.camAlt); // the centre is up in the sky, not on the ground
+	});
+
+	it('backs the camera off far enough to clear the rooftops', () => {
+		// camDep alone fixes the ratio of height to setback, so a nearly flat angle at the default 200 m
+		// would leave the camera a few metres up — inside the nearest building. The rig is scale-invariant,
+		// so the fix is distance: the angles, and with them the framing, are untouched.
+		const flat = makeRig({ framing: { aimEl: 33.7, camDep: 1.5 } });
+		const drone = makeRig({ framing: { aimEl: -9, camDep: 30 } });
+		flat.controller.applyFraming();
+		drone.controller.applyFraming();
+		const setback = (rig: Rig) => {
+			const { from } = lastPose(rig.m)!;
+			return Math.hypot((from.lng - OVIEDO.lon) * Math.cos((OVIEDO.lat * Math.PI) / 180), from.lat - OVIEDO.lat);
+		};
+		expect(lastPose(flat.m)!.camAlt).toBeCloseTo(100, 6); // the clearance, exactly
+		expect(setback(flat)).toBeGreaterThan(4 * setback(drone));
+		// The drone shot is untouched: at 30° the default 200 m already clears everything.
+		expect(lastPose(drone.m)!.camAlt).toBeCloseTo(200 * Math.tan((30 * Math.PI) / 180), 6);
 	});
 
 	it('reads the ground elevation under the marker', () => {
@@ -90,17 +120,16 @@ describe('applyFraming', () => {
 		expect(Number.isFinite(lastPose(m)!.camAlt)).toBe(true);
 	});
 
-	it('clamps the view-centre depression into 6°..18°', () => {
-		// c = clamp(fov/2 - (altMax + 6), 6, 18) — a high Sun would otherwise push it negative and tip
-		// the camera above the horizon.
-		const high = makeRig({ altMax: 60 }); // fov/2 - 66 → far below the floor
-		const low = makeRig({ altMax: 0 }); // fov/2 - 6 = 24 → above the ceiling
-		high.controller.applyFraming();
-		low.controller.applyFraming();
-		for (const rig of [high, low]) {
-			const pose = lastPose(rig.m)!;
-			expect(pose.camAlt).toBeGreaterThan(0);
-			expect(Number.isFinite(pose.to.lat) && Number.isFinite(pose.to.lng)).toBe(true);
+	it('keeps the view centre finite at every aim, including dead level', () => {
+		// aimEl = 0 is the singular case: the aim never meets the ground, so the ground-distance ratio is
+		// infinite and only the FOCUS clamp keeps the view centre a real point.
+		for (const aimEl of [-40, -9, -0.001, 0, 0.001, 20, 60]) {
+			const { m, controller } = makeRig({ framing: { aimEl } });
+			controller.applyFraming();
+			const pose = lastPose(m)!;
+			expect(Number.isFinite(pose.to.lat) && Number.isFinite(pose.to.lng), `aim ${aimEl}`).toBe(true);
+			expect(Number.isFinite(pose.targetAlt), `aim ${aimEl}`).toBe(true);
+			expect(pose.camAlt, `aim ${aimEl}`).toBeGreaterThan(0);
 		}
 	});
 });
