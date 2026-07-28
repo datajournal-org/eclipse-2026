@@ -4,6 +4,7 @@
      (nothing is committed until "use this location"). -->
 <script lang="ts">
 	import { get } from 'svelte/store';
+	import { browser } from '$app/environment';
 	import { t, locale } from '$lib/i18n';
 	import { userLocation, setLocation } from '$lib/stores/location';
 	import { localCircumstances } from '$lib/eclipse';
@@ -91,10 +92,16 @@
 	}
 
 	// ---- device location ----
+	// API support is knowable synchronously, so an unsupported browser gets no button at all rather than
+	// a dead-end click (geolocation is [SecureContext]: it is absent on insecure mirrors and in some
+	// locked-down webviews). Permission denial and timeouts are only discoverable on click — those stay
+	// as the error path below. `browser`-guarded so prerendering (no `navigator`) does not crash; the
+	// dialog only opens after hydration anyway.
+	const geoSupported = browser && 'geolocation' in navigator;
 	let geoBusy = $state(false);
 	function useGeo() {
 		if (!navigator.geolocation) {
-			geoErr = true;
+			geoErr = true; // belt and braces — unreachable while the chip is gated on geoSupported
 			return;
 		}
 		geoBusy = true;
@@ -164,21 +171,24 @@
 
 				<!-- The "fast path": a labelled chip rather than an icon in the search bar. The crosshair glyph
 				     alone is map-app vocabulary; the visible sentence is what tells a general reader that NOT
-				     typing is an option. While the device is locating, the label says so. -->
-				<button class="geo-chip" onclick={useGeo} disabled={geoBusy}>
-					<svg
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						aria-hidden="true"
-					>
-						<circle cx="12" cy="12" r="6" />
-						<path d="M12 1v4M12 19v4M1 12h4M19 12h4" />
-					</svg>
-					{geoBusy ? $t('a4.geo_busy') : $t('a4.geo')}
-				</button>
+				     typing is an option. While the device is locating, the label says so. Not rendered at all
+				     where the API does not exist — search and map remain the two working paths. -->
+				{#if geoSupported}
+					<button class="geo-chip" onclick={useGeo} disabled={geoBusy}>
+						<svg
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							aria-hidden="true"
+						>
+							<circle cx="12" cy="12" r="6" />
+							<path d="M12 1v4M12 19v4M1 12h4M19 12h4" />
+						</svg>
+						{geoBusy ? $t('a4.geo_busy') : $t('a4.geo')}
+					</button>
+				{/if}
 
 				{#if geoErr || $searchState.status !== 'idle'}
 					<ul class="results">

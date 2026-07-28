@@ -88,6 +88,25 @@ test.describe('use my location', () => {
 		expect(chip.y).toBeGreaterThan(bar.y + bar.height - 1);
 	});
 
+	test('does not exist at all where the browser has no geolocation API', async ({ page, stubGeocoder }) => {
+		// API absence is knowable before rendering (unlike permission denial, which stays a click-time
+		// error), so an unsupported browser — insecure-context mirrors, locked-down webviews — gets no
+		// dead-end button. Search and the map pin remain the working paths.
+		await stubGeocoder();
+		await page.addInitScript(() => {
+			// geolocation is an accessor on Navigator.prototype; deleting it is exactly what an
+			// insecure context looks like to feature detection.
+			delete (Navigator.prototype as unknown as Record<string, unknown>).geolocation;
+		});
+		await page.goto(localeUrl());
+		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		await expect(page.locator('dialog.picker-dlg')).toBeVisible();
+		await expect(page.locator('dialog.picker-dlg .geo-chip')).toHaveCount(0);
+		// the other two paths are untouched
+		await expect(page.getByRole('searchbox', { name: 'Stadt oder Adresse suchen' })).toBeVisible();
+		await expect(page.getByRole('button', { name: /Diesen Ort verwenden/ })).toBeEnabled();
+	});
+
 	test('reports progress in its own label while locating', async ({ page, context, stubGeocoder }) => {
 		await context.grantPermissions(['geolocation']);
 		await stubGeocoder(PHOTON.oviedo);
