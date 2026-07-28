@@ -2,6 +2,17 @@ import { test, expect, byName, localeUrl, mapReady, switchLanguage } from './fix
 
 // Runs on the mobile project (Pixel 7) — the phone in someone's hand on eclipse day.
 test.describe('mobile layout @mobile', () => {
+	test('declares a non-scalable viewport', async ({ page }) => {
+		// The maps carry their own zoom; pinching mid-gesture should never scale the page chrome.
+		// (iOS ignores user-scalable for pinch — the touch-action rule below the fold covers the
+		// double-tap vector there; Android honours this outright.)
+		await page.goto(localeUrl());
+		const content = await page.locator('meta[name="viewport"]').getAttribute('content');
+		expect(content).toContain('maximum-scale=1');
+		expect(content).toContain('user-scalable=no');
+		expect(await page.evaluate(() => getComputedStyle(document.documentElement).touchAction)).toBe('manipulation');
+	});
+
 	test('never scrolls horizontally', async ({ page, locatedPage }) => {
 		await locatedPage(byName('Oviedo'));
 		// ...and the page is GLUED to the viewport: horizontal overflow is clipped without creating a

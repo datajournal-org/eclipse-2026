@@ -13,6 +13,9 @@ body {
 	   rather than `hidden`, so no scroll container is created. */
 	overflow-x: clip;
 	overscroll-behavior-x: none;
+	/* No double-tap-to-zoom anywhere: the reliable, cross-platform half of "don't scale the page" —
+	   iOS ignores user-scalable=no, but it honours this. Pan and (where the OS insists) pinch remain. */
+	touch-action: manipulation;
 	background: radial-gradient(1200px 620px at 50% -8%, var(--glow) 0%, transparent 60%), var(--bg);
 	background-attachment: fixed;
 	color: var(--text);
