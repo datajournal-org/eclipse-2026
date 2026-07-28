@@ -28,7 +28,11 @@ test.describe('B3 time scrubber @webgl', () => {
 		const input = slider(page, B3);
 		await expect(input).toHaveAttribute('aria-label', /\S/);
 		await expect(input).toHaveAttribute('min', '0');
-		expect(await maxFrame(page, B3)).toBe(240);
+		// One frame ≈ 10 s of the local window (timeline.ts), so Oviedo's ~2.2 h window needs ~780
+		// frames — a range, not a constant, so a padding tweak doesn't fail the spec.
+		const max = await maxFrame(page, B3);
+		expect(max).toBeGreaterThan(600);
+		expect(max).toBeLessThan(1100);
 	});
 
 	test('moves with the arrow keys', async () => {

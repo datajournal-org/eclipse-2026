@@ -87,8 +87,8 @@ export function horizonFor(
  */
 export function skyDarkness(obscuration: number, sunAltDeg: number): number {
 	// 0 at 95 % coverage, 1 at 99.9 %. The window starts where the scene's own twilight veil is already
-	// well under way, so the sky fills in gradually instead of in one step — at 30 s per slider frame a
-	// ramp that began at 98 % had barely two frames to work with. The limiting magnitude keeps this
+	// well under way, so the sky fills in gradually instead of in one step — at the slider's original
+	// 30 s per frame a ramp that began at 98 % had barely two frames to work with. The limiting magnitude keeps this
 	// honest: at 95 % it is about -4, so the only thing that clears it is Venus, faintly. Which is right —
 	// Venus is findable in a deep partial eclipse. Nothing else joins it until the sky truly goes.
 	const eclipse = Math.max(0, Math.min(1, (obscuration - 0.95) / 0.049));
