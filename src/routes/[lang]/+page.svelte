@@ -12,7 +12,6 @@
 	import SkyView from '$lib/components/SkyView.svelte';
 	import Checklist from '$lib/components/Checklist.svelte';
 	import Donate from '$lib/components/Donate.svelte';
-	import SafetyFooter from '$lib/components/SafetyFooter.svelte';
 	import SiteFooter from '$lib/components/SiteFooter.svelte';
 
 	let pickerOpen = $state(false);
@@ -55,5 +54,4 @@
 </main>
 
 <LocationDialog bind:open={pickerOpen} />
-<SafetyFooter />
 <SiteFooter />

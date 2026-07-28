@@ -21,7 +21,7 @@ test.describe('donate box', () => {
 		await expect(page.locator('section.donate a.tip')).toBeVisible();
 	});
 
-	test('sits at the end of the content, before the safety notice', async ({ page, locatedPage }) => {
+	test('sits at the end of the content, after the checklist', async ({ page, locatedPage }) => {
 		await locatedPage(byName('Oviedo'));
 		const donate = (await page.locator('section.donate').boundingBox())!;
 		const checklist = (await page.locator('section.b6').boundingBox())!;

@@ -87,7 +87,7 @@ test.describe('accessibility', () => {
 	test('hides decorative glyphs from screen readers', async ({ page, locatedPage }) => {
 		// The emoji and icon spans carry no meaning; unhidden, they get read out as noise.
 		await locatedPage(byName('Oviedo'));
-		for (const selector of ['header.hdr .mark', 'footer.safety .icon', 'section.a2 .track']) {
+		for (const selector of ['header.hdr .mark', 'section.a2 .track']) {
 			await expect(page.locator(selector).first()).toHaveAttribute('aria-hidden', 'true');
 		}
 	});

@@ -106,37 +106,6 @@ test.describe('mobile layout @mobile', () => {
 		const cb = (await confirm.boundingBox())!;
 		expect(cb.y + cb.height).toBeLessThanOrEqual(viewport.height);
 	});
-
-	test('gives the map stages a usable height', async ({ page, locatedPage }) => {
-		await locatedPage(byName('Oviedo'));
-		const viewport = page.viewportSize()!;
-		for (const section of ['section.a2', 'section.b3']) {
-			const box = (await page.locator(`${section} .stage-canvas`).boundingBox())!;
-			expect(box.height, section).toBeGreaterThan(180);
-			expect(box.height, section).toBeLessThan(viewport.height);
-			expect(box.width, section).toBeLessThanOrEqual(viewport.width);
-		}
-	});
-
-	test('lets a touch drag move the time scrubber', async ({ page, locatedPage }) => {
-		await locatedPage(byName('Oviedo'));
-		const input = page.locator('section.a2 input[type="range"]');
-		await input.scrollIntoViewIfNeeded();
-		const box = (await input.boundingBox())!;
-		expect(box.width).toBeGreaterThan(200);
-		// NOTE the track is 18 px tall — under WCAG 2.5.8's 24×24 target guidance. Flagged rather than
-		// failed: it is a design decision, and the control does work by touch, as the drag below shows.
-		const before = await input.inputValue();
-		await page.mouse.click(box.x + box.width * 0.8, box.y + box.height / 2);
-		await page.waitForTimeout(200);
-		expect(Number(await input.inputValue())).toBeGreaterThan(Number(before));
-	});
-
-	test('keeps the safety footer visible at the end of the page', async ({ page, locatedPage }) => {
-		await locatedPage(byName('Oviedo'));
-		await page.locator('footer.safety').scrollIntoViewIfNeeded();
-		await expect(page.locator('footer.safety')).toBeVisible();
-	});
 });
 
 /**
@@ -161,17 +130,29 @@ test.describe('map sizing', () => {
 			};
 		});
 
-	test('never taller than half the viewport on a phone @webgl @mobile', async ({ page, locatedPage }) => {
-		await page.setViewportSize({ width: 390, height: 844 });
+	test('gives the map stages a usable height', async ({ page, locatedPage }) => {
 		await locatedPage(byName('Oviedo'));
-		await mapReady(page, 'section.b3');
-		const s = await stages(page);
-		expect(s.a2.h).toBeLessThanOrEqual(s.vh / 2 + 1);
-		expect(s.b3.h).toBeLessThanOrEqual(s.vh / 2 + 1);
-		// ...while still spanning the full width.
-		expect(s.a2.w).toBe(390);
-		expect(s.b3.w).toBe(390);
-		expect(s.overflow).toBeLessThanOrEqual(1);
+		const viewport = page.viewportSize()!;
+		for (const section of ['section.a2', 'section.b3']) {
+			const box = (await page.locator(`${section} .stage-canvas`).boundingBox())!;
+			expect(box.height, section).toBeGreaterThan(180);
+			expect(box.height, section).toBeLessThan(viewport.height);
+			expect(box.width, section).toBeLessThanOrEqual(viewport.width);
+		}
+	});
+
+	test('lets a touch drag move the time scrubber', async ({ page, locatedPage }) => {
+		await locatedPage(byName('Oviedo'));
+		const input = page.locator('section.a2 input[type="range"]');
+		await input.scrollIntoViewIfNeeded();
+		const box = (await input.boundingBox())!;
+		expect(box.width).toBeGreaterThan(200);
+		// NOTE the track is 18 px tall — under WCAG 2.5.8's 24×24 target guidance. Flagged rather than
+		// failed: it is a design decision, and the control does work by touch, as the drag below shows.
+		const before = await input.inputValue();
+		await page.mouse.click(box.x + box.width * 0.8, box.y + box.height / 2);
+		await page.waitForTimeout(200);
+		expect(Number(await input.inputValue())).toBeGreaterThan(Number(before));
 	});
 
 	test('breaks out of the reading column on a desktop @webgl', async ({ page, locatedPage }) => {

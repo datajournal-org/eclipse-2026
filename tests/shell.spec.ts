@@ -2,12 +2,11 @@ import { test, expect, mapReady, localeUrl } from './fixtures';
 import de from '../src/lib/i18n/messages/de';
 
 test.describe('app shell', () => {
-	test('renders the brand, the un-located sections and the safety footer', async ({ page, locatedPage }) => {
+	test('renders the brand and the un-located sections', async ({ page, locatedPage }) => {
 		await page.goto(localeUrl());
 		await expect(page.locator('header.hdr .name')).toHaveText('Eclipse 2026');
 		await expect(page.locator('section.cd')).toBeVisible(); // countdown
 		await expect(page.locator('section.a2')).toBeVisible(); // shadow run
-		await expect(page.locator('footer.safety')).toBeVisible();
 		expect(locatedPage).toBeTruthy();
 	});
 
@@ -17,12 +16,12 @@ test.describe('app shell', () => {
 		// than racing it — WebKit is slow enough to lose that race reliably.
 		await expect(page.locator('section.b6')).toBeVisible();
 		const order = await page.evaluate(() =>
-			[...document.querySelectorAll('section, footer.safety')]
-				.map((el) => [...el.classList].find((c) => /^(cd|a2|b1|b3|b6|safety)$/.test(c)))
+			[...document.querySelectorAll('section')]
+				.map((el) => [...el.classList].find((c) => /^(cd|a2|b1|b3|b6)$/.test(c)))
 				.filter(Boolean)
 		);
-		// countdown → shadow run → verdict → sky view → checklist → safety
-		expect(order).toEqual(['cd', 'a2', 'b1', 'b3', 'b6', 'safety']);
+		// countdown → shadow run → verdict → sky view → checklist
+		expect(order).toEqual(['cd', 'a2', 'b1', 'b3', 'b6']);
 	});
 
 	test('loads without console errors or failed requests @webgl', async ({ page, pageProblems, locatedPage }) => {

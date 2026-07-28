@@ -2,9 +2,10 @@
      locale-aware, so a reader who spots a clumsy sentence lands on the file that contains it rather than
      on a repository root they then have to search.
 
-     Deliberately NOT a second <footer> element: SafetyFooter already contributes one, and two of them map
-     to two `contentinfo` landmarks, which is exactly the ambiguity landmarks exist to avoid. Two utility
-     links also do not warrant a <nav> of their own — reading order reaches them fine. -->
+     The page's one <footer>/contentinfo landmark (it used to be a plain div while the eye-safety bar
+     held that role; the bar is gone — safety now lives in context: the verdict's accent line, the
+     checklist's why-line, the calendar entry). Two utility links do not warrant a <nav> of their own —
+     reading order reaches them fine. -->
 <script lang="ts">
 	import { t, locale } from '$lib/i18n';
 	import { REPO_URL, translationFileUrl } from '$lib/config';
@@ -13,14 +14,14 @@
 <!-- eslint-disable svelte/no-navigation-without-resolve --
      Both links leave the site entirely (absolute github.com URLs from config.ts), so `resolve` and the
      `base` path do not apply. The rule cannot tell that through the constant and the helper. -->
-<div class="colophon">
+<footer class="colophon">
 	<div class="inner">
 		<a href={REPO_URL}>{$t('footer.source')}</a>
 		<span class="sep" aria-hidden="true">·</span>
 		<!-- The file for the language currently being read, not a fixed one. -->
 		<a href={translationFileUrl($locale)}>{$t('footer.translation')}</a>
 	</div>
-</div>
+</footer>
 
 <style>
 	.colophon {

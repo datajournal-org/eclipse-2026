@@ -60,7 +60,8 @@ One scrollable screen. Order and content of the blocks:
   (89%) · Rome (40%).
 - **A4 — Location call:** heading "What do you see from where you are?" (not "Allow location"),
   three equal buttons: 📍 Use location · 🔍 Search place · 🗺 Tap on map.
-- **Eye-safety footer:** ⚠ "Never look at the Sun without tested eclipse glasses."
+- **Eye safety:** no global banner — the warning lives in context, where it is read: the verdict's
+  accent line (with the injury reason), the checklist's glasses item, and the calendar entry.
 
 ---
 
@@ -126,9 +127,9 @@ Plus "📅 Export to calendar" with the correct local phase times.
 
 ## Order on a single page (scroll order)
 
-**State A (planned):** Header → A1 countdown → A2 shadow run → A3 three locations → A4 location call →
-eye safety.
-**State A (built):** Header → A1 countdown → A2 shadow run → TimeZoneNote → A4 location call → eye safety.
+**State A (planned):** Header → A1 countdown → A2 shadow run → A3 three locations → A4 location call.
+**State A (built):** Header → A1 countdown → A2 shadow run (time-zone note as its footer) → A4 location
+call → donate → colophon.
 
 **State B (planned):** Header → 📍 location → B1 verdict → B3 3D horizon → B2 timeline → B6 checklist.
 **State B (built):** Header → A1 countdown → A2 shadow run → TimeZoneNote → divider → 📍 location →

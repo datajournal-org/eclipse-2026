@@ -41,18 +41,19 @@ test.describe('colophon footer', () => {
 		);
 	});
 
-	test('sits below the safety notice and adds no second contentinfo landmark', async ({ page }) => {
+	test('is the page’s one contentinfo landmark, at the very end', async ({ page }) => {
 		await page.goto(localeUrl());
-		// One page-level footer: a second would give assistive tech two "contentinfo" landmarks. The
-		// location dialog has a <footer> too, but it is scoped to the <dialog> and so maps to `generic`.
+		// Exactly one page-level footer: the colophon (promoted to <footer> when the eye-safety bar was
+		// removed). The location dialog has a <footer> too, but it is scoped to the <dialog> and so maps
+		// to `generic`, not `contentinfo`.
 		const pageLevelFooters = await page
 			.locator('footer')
-			.evaluateAll((els) => els.filter((el) => !el.closest('dialog')).length);
-		expect(pageLevelFooters).toBe(1);
-		const [safetyY, colophonY] = await Promise.all([
-			page.locator('footer.safety').evaluate((el) => el.getBoundingClientRect().top),
-			page.locator('.colophon').evaluate((el) => el.getBoundingClientRect().top)
-		]);
-		expect(colophonY).toBeGreaterThan(safetyY);
+			.evaluateAll((els) => els.filter((el) => !el.closest('dialog')).map((el) => el.className));
+		expect(pageLevelFooters).toHaveLength(1);
+		expect(pageLevelFooters[0]).toContain('colophon');
+		// and nothing renders below it
+		const bottom = await page.locator('footer.colophon').evaluate((el) => el.getBoundingClientRect().bottom);
+		const docBottom = await page.evaluate(() => document.body.getBoundingClientRect().bottom);
+		expect(bottom).toBeGreaterThanOrEqual(docBottom - 1);
 	});
 });
