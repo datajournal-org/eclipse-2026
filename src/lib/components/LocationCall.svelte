@@ -17,6 +17,7 @@
 
 <style>
 	.cta {
+		margin-bottom: var(--space-xl);
 		text-align: center;
 		padding: 26px 22px;
 		border-radius: var(--radius);

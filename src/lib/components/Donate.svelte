@@ -21,6 +21,7 @@
 
 <style>
 	.card {
+		margin-top: var(--space-xl);
 		text-align: center;
 		padding: 22px 22px 24px;
 		border-radius: var(--radius);
