@@ -109,6 +109,10 @@ const messages: Messages = {
 		b1: 'Verdict card',
 		b1_note: 'Obscuration, contact times and eye-safety verdict for your location — coming soon.'
 	},
+	donate: {
+		text: 'This app cost me a lot of time and work. But it is my gift to you and your friends, and I will not add annoying ad banners. If you would like to support my work, please leave me a small tip.',
+		button: 'Leave a tip'
+	},
 	footer: {
 		source: 'Source code on GitHub',
 		translation: 'Improve this translation'

@@ -19,6 +19,12 @@ export const SITE_URL: string = import.meta.env?.VITE_SITE_URL ?? 'https://dataj
 export const REPO_URL = 'https://github.com/datajournal-org/eclipse-2026';
 
 /**
+ * The tip jar (Stripe payment link) behind the donate box at the end of the page.
+ * NOTE: currently a Stripe TEST-mode link (`test_` prefix) — swap in the live link before launch.
+ */
+export const DONATE_URL = 'https://donate.stripe.com/00w6oJ3EMfca6J35Jb1ck00';
+
+/**
  * Where a locale's message catalogue lives, so the footer can send a reader straight to the file that
  * holds the words they are reading. Points at `main` rather than a commit: the invitation is to improve
  * the current translation, not to inspect the deployed one.

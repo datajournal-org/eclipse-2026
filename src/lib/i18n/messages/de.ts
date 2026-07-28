@@ -108,6 +108,10 @@ const messages = {
 		b1: 'Verdikt-Karte',
 		b1_note: 'Bedeckungsgrad, Kontaktzeiten und Augenschutz-Verdikt für deinen Ort — folgt.'
 	},
+	donate: {
+		text: 'Diese App hat mich viel Zeit und Arbeit gekostet. Aber ich schenke sie dir und deinen Freunden und werde keine nervigen Werbebanner einfügen. Wenn du meine Arbeit unterstützen möchtest, hinterlasse mir bitte ein kleines Trinkgeld.',
+		button: 'Trinkgeld hinterlassen'
+	},
 	footer: {
 		source: 'Quelltext auf GitHub',
 		translation: 'Diese Übersetzung verbessern'

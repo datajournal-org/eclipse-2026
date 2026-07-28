@@ -109,6 +109,10 @@ const messages: Messages = {
 		b1: 'Tarjeta de veredicto',
 		b1_note: 'Ocultación, tiempos de contacto y veredicto de seguridad ocular para tu ubicación — próximamente.'
 	},
+	donate: {
+		text: 'Esta aplicación me ha costado mucho tiempo y trabajo. Pero te la regalo a ti y a tus amigos, y no añadiré molestos banners de publicidad. Si quieres apoyar mi trabajo, déjame una pequeña propina.',
+		button: 'Dejar una propina'
+	},
 	footer: {
 		source: 'Código fuente en GitHub',
 		translation: 'Mejorar esta traducción'

@@ -12,6 +12,7 @@
 	import Verdict from '$lib/components/Verdict.svelte';
 	import SkyView from '$lib/components/SkyView.svelte';
 	import Checklist from '$lib/components/Checklist.svelte';
+	import Donate from '$lib/components/Donate.svelte';
 	import SafetyFooter from '$lib/components/SafetyFooter.svelte';
 	import SiteFooter from '$lib/components/SiteFooter.svelte';
 
@@ -54,6 +55,8 @@
 	{:else}
 		<LocationCall onchoose={() => (pickerOpen = true)} />
 	{/if}
+
+	<Donate />
 </main>
 
 <LocationDialog bind:open={pickerOpen} />
