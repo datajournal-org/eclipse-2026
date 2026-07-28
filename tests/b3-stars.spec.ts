@@ -61,10 +61,12 @@ test.describe('B3 stars and planets @webgl', () => {
 		// Every frame, not a sample: a single frame that let one through would be the bug.
 		await open(page, BERLIN);
 		const max = await maxFrame(page, B3);
-		// Sample every ~90 s of simulated time (the same cadence this test has always used), independent
-		// of the slider's own resolution — at 10 s frames, stepping every frame would triple the runtime
-		// for no extra coverage of a sky that changes over minutes.
-		const step = Math.max(1, Math.round(max / 80));
+		// Sample every ~3 min of simulated time, independent of the slider's own resolution. Dense enough
+		// that no star-visible window could hide between samples — visibility needs >95 % obscuration and
+		// Berlin never exceeds 85 %, with coverage changing over tens of minutes — and sparse enough that
+		// this sweep stays well inside the 30 s test budget on a loaded machine (at ~80 samples it did
+		// not, and flaked exactly when the full suite ran in parallel).
+		const step = Math.max(1, Math.round(max / 45));
 		for (let f = 0; f <= max; f += step) {
 			await setFrame(page, B3, f);
 			const { count, objects } = await sky(page);
@@ -83,7 +85,10 @@ test.describe('B3 stars and planets @webgl', () => {
 		// positions at the 10 s resolution. A coarse sweep steps clean over it — which is exactly how an
 		// earlier version of this test passed while proving nothing.
 		let peak = { count: 0, objects: [] as PlacedDebug[], frame: -1 };
-		for (let f = Math.round(max * 0.45); f <= Math.round(max * 0.55); f++) {
+		// Every second frame (20 s of simulated time): totality spans ~10 frames at the 10 s resolution,
+		// so this cannot step over it — and the full-density sweep breached the 30 s test budget when the
+		// suite ran in parallel on a loaded machine.
+		for (let f = Math.round(max * 0.45); f <= Math.round(max * 0.55); f += 2) {
 			await setFrame(page, B3, f);
 			const seen = await sky(page);
 			if (seen.count > peak.count) peak = { ...seen, frame: f };
@@ -103,7 +108,10 @@ test.describe('B3 stars and planets @webgl', () => {
 		await open(page, OVIEDO);
 		const max = await maxFrame(page, B3);
 		let best = { frame: -1, n: 0 };
-		for (let f = Math.round(max * 0.45); f <= Math.round(max * 0.55); f++) {
+		// Every second frame (20 s of simulated time): totality spans ~10 frames at the 10 s resolution,
+		// so this cannot step over it — and the full-density sweep breached the 30 s test budget when the
+		// suite ran in parallel on a loaded machine.
+		for (let f = Math.round(max * 0.45); f <= Math.round(max * 0.55); f += 2) {
 			await setFrame(page, B3, f);
 			const n = (await sky(page)).count;
 			if (n > best.n) best = { frame: f, n };
