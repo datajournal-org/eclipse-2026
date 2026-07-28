@@ -12,7 +12,7 @@ const messages: Messages = {
 	},
 	nav: { about: 'Over', language: 'Taal' },
 	countdown: {
-		to_totality: 'tot de totale zonsverduistering',
+		to_totality: 'tot het hoogtepunt van de totale zonsverduistering',
 		since: 'De eerste totale zonsverduistering boven Europa sinds 1999.',
 		happening: 'De verduistering is nu bezig.',
 		past: 'De verduistering is voorbij.',
@@ -70,7 +70,8 @@ const messages: Messages = {
 		sun_alt: 'Zon {alt}° boven de horizon',
 		sun_below: 'Zon onder de horizon',
 		safe_total: 'Alleen tijdens de totaliteit ({from}–{to}) zonder bril — anders altijd een beschermbril.',
-		safe_partial: 'Doorlopend een gecertificeerde eclipsbril (ISO 12312-2) nodig.'
+		safe_partial:
+			'Doorlopend een gecertificeerde eclipsbril (ISO 12312-2) nodig — zelfs een korte blik in de zon kan de ogen blijvend beschadigen.'
 	},
 	b3: {
 		title: 'Jouw zicht op de zon',
@@ -94,8 +95,11 @@ const messages: Messages = {
 		until_max: 'tot het maximum',
 		past: 'Het maximum is voorbij.',
 		glasses: 'Gecertificeerde eclipsbril (ISO 12312-2)',
+		glasses_why: 'Gewone zonnebrillen volstaan niet — zonder bescherming dreigt blijvende oogschade.',
 		view: 'Vrij zicht naar het westen (azimut {az}°)',
+		view_why: 'Controleer vooraf of gebouwen of bomen de zon op dat moment verbergen.',
 		weather: 'Weersverwachting checken',
+		weather_why: 'Bij dicht wolkendek helpt alleen een andere plek — houd een alternatief achter de hand.',
 		add_calendar: '📅 Aan agenda toevoegen',
 		event_title: 'Zonsverduistering 2026'
 	},

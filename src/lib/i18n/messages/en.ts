@@ -12,7 +12,7 @@ const messages: Messages = {
 	},
 	nav: { about: 'About', language: 'Language' },
 	countdown: {
-		to_totality: 'until the total solar eclipse',
+		to_totality: 'until the peak of the total solar eclipse',
 		since: 'The first total solar eclipse over Europe since 1999.',
 		happening: 'The eclipse is happening now.',
 		past: 'The eclipse is over.',
@@ -71,7 +71,8 @@ const messages: Messages = {
 		sun_below: 'Sun below the horizon',
 		safe_total:
 			'Only during totality ({from}–{to}) may you look without glasses — otherwise always wear eclipse glasses.',
-		safe_partial: 'Certified eclipse glasses (ISO 12312-2) required the whole time.'
+		safe_partial:
+			'Certified eclipse glasses (ISO 12312-2) required the whole time — even a brief look at the Sun can permanently damage your eyes.'
 	},
 	b3: {
 		title: 'Your view of the Sun',
@@ -95,8 +96,11 @@ const messages: Messages = {
 		until_max: 'until maximum',
 		past: 'Maximum has passed.',
 		glasses: 'Certified eclipse glasses (ISO 12312-2)',
+		glasses_why: 'Ordinary sunglasses are not enough — without protection you risk lasting eye damage.',
 		view: 'Clear view to the west (azimuth {az}°)',
+		view_why: 'Check in advance whether buildings or trees block the Sun at that time.',
 		weather: 'Check the weather forecast',
+		weather_why: 'Under thick clouds only a change of place helps — have an alternative ready.',
 		add_calendar: '📅 Add to calendar',
 		event_title: 'Solar eclipse 2026'
 	},
@@ -109,7 +113,7 @@ const messages: Messages = {
 		b1_note: 'Obscuration, contact times and eye-safety verdict for your location — coming soon.'
 	},
 	donate: {
-		text: 'Many evenings of work went into this app. Still, it is my gift to you and your friends – no ads, no tracking. If you like it, a small tip is very welcome.',
+		text: 'Many evenings of work went into this app. Still, it is my gift to you and your friends – no ads, no tracking. If you like it, please leave a small tip.',
 		button: 'Leave a tip'
 	},
 	footer: {

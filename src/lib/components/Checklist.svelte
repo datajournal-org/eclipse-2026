@@ -2,7 +2,7 @@
      (glasses, clear view to the Sun's azimuth, weather) and a one-tap calendar export (.ics, built
      client-side so nothing leaves the device). Times/azimuth from the shared localEclipse store. -->
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, fmt } from '$lib/i18n';
 	import { localEclipse } from '$lib/stores/localEclipse';
 	import { userLocation } from '$lib/stores/location';
 	import { sunMoonHorizon } from '$lib/eclipse';
@@ -19,9 +19,9 @@
 	const parts = $derived(splitDuration(remaining));
 
 	const items = $derived([
-		{ key: 'glasses', text: $t('b6.glasses') },
-		{ key: 'view', text: $t('b6.view', { az: az ?? '—' }) },
-		{ key: 'weather', text: $t('b6.weather') }
+		{ key: 'glasses', text: $t('b6.glasses'), why: $t('b6.glasses_why') },
+		{ key: 'view', text: $t('b6.view', { az: az ?? '—' }), why: $t('b6.view_why') },
+		{ key: 'weather', text: $t('b6.weather'), why: $t('b6.weather_why') }
 	]);
 
 	function icsStamp(d: Date): string {
@@ -30,10 +30,23 @@
 			.replace(/[-:]/g, '')
 			.replace(/\.\d{3}/, '');
 	}
+	/** RFC 5545 text escaping: backslash first, then the separators; newlines become literal \n. */
+	function icsText(text: string): string {
+		return text.replaceAll('\\', '\\\\').replaceAll(';', '\\;').replaceAll(',', '\\,').replaceAll('\n', '\\n');
+	}
 	function downloadIcs() {
 		if (!lc || !peak) return;
 		const start = lc.partialBegin?.time ?? new Date(peak.time.getTime() - 3600_000);
 		const end = lc.partialEnd?.time ?? new Date(peak.time.getTime() + 3600_000);
+		// The entry should be useful when it fires: the local phase times, how much of the Sun is
+		// covered here, and the one safety line — reusing the exact strings the page itself shows.
+		// Times are formatted in the viewer's zone, matching how their calendar will display DTSTART.
+		const description = [
+			`${$t('b3.phase_start')}: ${$fmt.time(start)}`,
+			`${$t('b3.phase_max')}: ${$fmt.time(peak.time)} — ${$t('b1.obscured', { pct: Math.round(lc.obscuration * 100) })}`,
+			`${$t('b3.phase_end')}: ${$fmt.time(end)}`,
+			$t('safety')
+		].join('\n');
 		const ics = [
 			'BEGIN:VCALENDAR',
 			'VERSION:2.0',
@@ -43,8 +56,9 @@
 			`DTSTAMP:${icsStamp(new Date())}`,
 			`DTSTART:${icsStamp(start)}`,
 			`DTEND:${icsStamp(end)}`,
-			`SUMMARY:${$t('b6.event_title')}`,
-			loc?.name ? `LOCATION:${loc.name}` : '',
+			`SUMMARY:${icsText($t('b6.event_title'))}`,
+			`DESCRIPTION:${icsText(description)}`,
+			loc?.name ? `LOCATION:${icsText(loc.name)}` : '',
 			'END:VEVENT',
 			'END:VCALENDAR'
 		]
@@ -79,7 +93,10 @@
 
 		<ul class="checks">
 			{#each items as it (it.key)}
-				<li>{it.text}</li>
+				<li>
+					{it.text}
+					<span class="why">{it.why}</span>
+				</li>
 			{/each}
 		</ul>
 
@@ -88,6 +105,13 @@
 {/if}
 
 <style>
+	.why {
+		display: block;
+		margin-top: 2px;
+		font-size: var(--text-caption);
+		color: var(--muted);
+	}
+
 	.count {
 		display: flex;
 		flex-wrap: wrap;

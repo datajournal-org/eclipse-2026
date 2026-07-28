@@ -139,8 +139,9 @@ location call is replaced — B is appended below it.
 
 Every section on the page is at most four slots, in this order (shared classes in `base.css`):
 
-1. **Header** — `.block-head`: one `h2`, optionally one right-aligned meta (`.eyebrow` date on A2, the
-   `.place` name + change button on B1). Nothing else at heading weight.
+1. **Header** — `.block-head`: one `h2`, optionally one right-aligned meta (the `.place` name + change
+   button on B1). Nothing else at heading weight. Dates and times belong with the time UI they describe
+   (A2's date sits in its slider readout), not in headers.
 2. **Intro** — `.sub`: optional, **one line**, muted. If it needs a second sentence, the graphic is not
    carrying its weight — fix the graphic, not the text.
 3. **Content** — the stage / list / graphic. All controls (time sliders, readouts, buttons) live inside

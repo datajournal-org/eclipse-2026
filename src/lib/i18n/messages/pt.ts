@@ -11,7 +11,7 @@ const messages: Messages = {
 	},
 	nav: { about: 'Sobre', language: 'Idioma' },
 	countdown: {
-		to_totality: 'até ao eclipse solar total',
+		to_totality: 'até ao ponto máximo do eclipse solar total',
 		since: 'O primeiro eclipse solar total sobre a Europa desde 1999.',
 		happening: 'O eclipse está a decorrer.',
 		past: 'O eclipse já passou.',
@@ -69,7 +69,8 @@ const messages: Messages = {
 		sun_alt: 'Sol a {alt}° acima do horizonte',
 		sun_below: 'Sol abaixo do horizonte',
 		safe_total: 'Sem óculos apenas durante a totalidade ({from}–{to}) — de resto, sempre com óculos de proteção.',
-		safe_partial: 'Óculos de eclipse certificados (ISO 12312-2) necessários todo o tempo.'
+		safe_partial:
+			'Óculos de eclipse certificados (ISO 12312-2) necessários todo o tempo — até um olhar breve para o Sol pode danificar os olhos de forma permanente.'
 	},
 	b3: {
 		title: 'A tua vista para o Sol',
@@ -93,8 +94,11 @@ const messages: Messages = {
 		until_max: 'até ao máximo',
 		past: 'O máximo já passou.',
 		glasses: 'Óculos de eclipse certificados (ISO 12312-2)',
+		glasses_why: 'Óculos de sol comuns não bastam — sem proteção há risco de danos oculares permanentes.',
 		view: 'Vista desimpedida para oeste (azimute {az}°)',
+		view_why: 'Verifica antes se edifícios ou árvores tapam o Sol a essa hora.',
 		weather: 'Verificar a previsão do tempo',
+		weather_why: 'Com nuvens densas só ajuda mudar de lugar — tem uma alternativa preparada.',
 		add_calendar: '📅 Adicionar ao calendário',
 		event_title: 'Eclipse solar 2026'
 	},

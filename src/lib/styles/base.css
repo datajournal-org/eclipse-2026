@@ -100,7 +100,7 @@ button {
    vertical rhythm comes from the .content gap.
 
    SEGMENT GRAMMAR (docs/WIREFRAMES.md § Segment grammar): every section is at most four slots —
-     1. header   `.block-head` — one h2, optionally one `.eyebrow`/`.place` meta on the right;
+     1. header   `.block-head` — one h2, optionally one meta on the right (B1's `.place` name);
      2. intro    `.sub`        — optional, ONE line, muted;
      3. content  the stage/list/graphic, with its controls (sliders, readouts) inside it;
      4. footer   `.seg-foot`   — optional, one caption line (provenance/context).

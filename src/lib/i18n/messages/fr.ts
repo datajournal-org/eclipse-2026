@@ -11,7 +11,7 @@ const messages: Messages = {
 	},
 	nav: { about: 'À propos', language: 'Langue' },
 	countdown: {
-		to_totality: 'avant l’éclipse totale de Soleil',
+		to_totality: 'avant le maximum de l’éclipse totale de Soleil',
 		since: 'La première éclipse totale de Soleil au-dessus de l’Europe depuis 1999.',
 		happening: 'L’éclipse est en cours.',
 		past: 'L’éclipse est terminée.',
@@ -70,7 +70,8 @@ const messages: Messages = {
 		sun_below: 'Soleil sous l’horizon',
 		safe_total:
 			'Sans lunettes uniquement pendant la totalité ({from}–{to}) — sinon toujours des lunettes de protection.',
-		safe_partial: 'Lunettes d’éclipse certifiées (ISO 12312-2) indispensables en permanence.'
+		safe_partial:
+			'Lunettes d’éclipse certifiées (ISO 12312-2) indispensables en permanence — même un bref regard vers le Soleil peut abîmer les yeux de façon durable.'
 	},
 	b3: {
 		title: 'Ta vue vers le Soleil',
@@ -94,8 +95,12 @@ const messages: Messages = {
 		until_max: 'avant le maximum',
 		past: 'Le maximum est passé.',
 		glasses: 'Lunettes d’éclipse certifiées (ISO 12312-2)',
+		glasses_why:
+			'Les lunettes de soleil ordinaires ne suffisent pas — sans protection, tu risques des lésions oculaires durables.',
 		view: 'Vue dégagée vers l’ouest (azimut {az}°)',
+		view_why: 'Vérifie à l’avance si des bâtiments ou des arbres masquent le Soleil à cette heure.',
 		weather: 'Vérifier la météo',
+		weather_why: 'Sous une couverture nuageuse épaisse, seul un changement de lieu aide — prévois une alternative.',
 		add_calendar: '📅 Ajouter au calendrier',
 		event_title: 'Éclipse solaire 2026'
 	},

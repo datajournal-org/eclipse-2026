@@ -12,7 +12,7 @@ const messages = {
 	},
 	nav: { about: 'Über', language: 'Sprache' },
 	countdown: {
-		to_totality: 'bis zur totalen Sonnenfinsternis',
+		to_totality: 'bis zum Höhepunkt der totalen Sonnenfinsternis',
 		since: 'Die erste totale Sonnenfinsternis über Europa seit 1999.',
 		happening: 'Die Finsternis findet gerade statt.',
 		past: 'Die Finsternis ist vorüber.',
@@ -70,7 +70,8 @@ const messages = {
 		sun_alt: 'Sonne {alt}° über dem Horizont',
 		sun_below: 'Sonne unter dem Horizont',
 		safe_total: 'Nur während der Totalität ({from}–{to}) ohne Brille — sonst immer Schutzbrille.',
-		safe_partial: 'Durchgehend zertifizierte Finsternisbrille (ISO 12312-2) nötig.'
+		safe_partial:
+			'Durchgehend zertifizierte Finsternisbrille (ISO 12312-2) nötig — schon ein kurzer Blick in die Sonne kann die Augen dauerhaft schädigen.'
 	},
 	b3: {
 		title: 'Deine Sicht zur Sonne',
@@ -94,8 +95,11 @@ const messages = {
 		until_max: 'bis zum Maximum',
 		past: 'Das Maximum ist vorüber.',
 		glasses: 'Zertifizierte Sonnenfinsternisbrille (ISO 12312-2)',
+		glasses_why: 'Normale Sonnenbrillen reichen nicht — ohne Schutz drohen bleibende Augenschäden.',
 		view: 'Freie Sicht nach Westen (Azimut {az}°)',
+		view_why: 'Prüfe vorher, ob Gebäude oder Bäume die Sonne zu dieser Zeit verdecken.',
 		weather: 'Wettervorhersage prüfen',
+		weather_why: 'Bei dichter Bewölkung hilft nur ein Ortswechsel — plane eine Alternative ein.',
 		add_calendar: '📅 Zum Kalender hinzufügen',
 		event_title: 'Sonnenfinsternis 2026'
 	},

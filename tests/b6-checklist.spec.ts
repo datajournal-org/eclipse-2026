@@ -11,6 +11,15 @@ test.describe('B6 checklist', () => {
 		for (const text of await list.allInnerTexts()) expect(text.trim()).not.toBe('');
 	});
 
+	test('explains WHY each item matters, not just what to do', async ({ page, locatedPage }) => {
+		// "Certified glasses" alone reads as bureaucracy; "ordinary sunglasses are not enough — lasting
+		// eye damage" is a reason to comply. Every item carries its why as a sub-line.
+		await locatedPage(OVIEDO);
+		const whys = page.locator('section.b6 .checks li .why');
+		expect(await whys.count()).toBe(await page.locator('section.b6 .checks li').count());
+		for (const text of await whys.allInnerTexts()) expect(text.trim().length).toBeGreaterThan(20);
+	});
+
 	test('counts down to the local maximum', async ({ page, locatedPage }) => {
 		await locatedPage(OVIEDO);
 		const count = page.locator('section.b6 .count');
@@ -59,6 +68,16 @@ test.describe('B6 checklist', () => {
 		expect(end).toBeGreaterThan(maximum);
 		expect(end - start).toBeGreaterThan(60 * 60_000); // a partial phase runs well over an hour
 		expect(ics).toContain('LOCATION:Oviedo');
+
+		// The entry must be useful when it fires: local phase times, coverage, and the safety line —
+		// the same strings the page shows. 20:27 is Oviedo's maximum in the suite's Europe/Berlin zone.
+		expect(ics).toContain('DESCRIPTION:');
+		const description = ics.match(/DESCRIPTION:([^\r\n]*)/)![1];
+		expect(description).toContain('20:27');
+		expect(description).toContain('100');
+		expect(description).toContain('ISO 12312-2');
+		// three phase lines joined with escaped newlines, per RFC 5545
+		expect(description.split('\\n').length).toBeGreaterThanOrEqual(4);
 	});
 
 	test('is absent until a location is chosen', async ({ page }) => {
