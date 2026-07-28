@@ -1,4 +1,4 @@
-import { test, expect, BASE } from './fixtures';
+import { test, expect, BASE, ALL_LANGS } from './fixtures';
 
 /**
  * The bare root dispatches readers to their language before first paint (the inline script in app.html).
@@ -75,7 +75,7 @@ test.describe('root language dispatch @i18n', () => {
 
 	test('never redirects a language page', async ({ page }) => {
 		// The pathname guard is what stops an infinite loop.
-		for (const lang of ['de', 'en', 'es', 'fr', 'nl', 'pt']) {
+		for (const lang of ALL_LANGS) {
 			await page.goto(`${BASE}/${lang}/`);
 			await page.waitForTimeout(300);
 			await expect(page).toHaveURL(new RegExp(`${BASE}/${lang}/$`));

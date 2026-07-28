@@ -13,6 +13,14 @@ export const BASE = '/eclipse-2026';
 /** The language every spec uses unless it is specifically about language selection. */
 export const LANG = 'de';
 
+/**
+ * Every language the site ships, pinned HERE rather than imported from $lib/i18n — deliberately. This is
+ * the test suite's independent statement of what the product offers: if a language is accidentally
+ * dropped from the app's registry, specs iterating this list fail loudly instead of silently adapting.
+ * Adding a language therefore means extending this pin too — that is the review moment, not a chore.
+ */
+export const ALL_LANGS = ['de', 'en', 'es', 'fr', 'nl', 'pt'] as const;
+
 /** URL of a language's page, with optional query. */
 export const localeUrl = (lang = LANG, query = '') => `${BASE}/${lang}/${query}`;
 

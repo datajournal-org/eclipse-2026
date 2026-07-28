@@ -1,4 +1,4 @@
-import { test, expect, localeUrl } from './fixtures';
+import { test, expect, localeUrl, ALL_LANGS } from './fixtures';
 import { REPO_URL, translationFileUrl } from '../src/lib/config';
 
 const LABELS = {
@@ -20,7 +20,7 @@ test.describe('colophon footer', () => {
 
 	// The point of the second link: it must name the file holding the words on THIS page, so a reader who
 	// spots a clumsy sentence is not dropped at a repository root to go hunting for it.
-	for (const lang of ['de', 'en', 'es', 'fr', 'nl', 'pt'] as const) {
+	for (const lang of ALL_LANGS) {
 		test(`points at the ${lang} catalogue when reading ${lang}`, async ({ page }) => {
 			await page.goto(localeUrl(lang));
 			const link = page.getByRole('link', { name: LABELS[lang].translation });

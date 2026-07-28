@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, ALL_LANGS } from './fixtures';
 import { searchPlaces, reverseGeocode } from '../src/lib/geocode';
 
 /**
@@ -64,7 +64,7 @@ test.describe('live VersaTiles Photon', { tag: '@live' }, () => {
 	});
 
 	test('honours the language parameter without erroring', async () => {
-		for (const locale of ['de', 'en', 'es', 'fr', 'nl', 'pt']) {
+		for (const locale of ALL_LANGS) {
 			const hits = await searchPlaces('München', locale, 3);
 			expect(hits.length, locale).toBeGreaterThan(0);
 		}

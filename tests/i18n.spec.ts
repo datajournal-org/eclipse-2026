@@ -1,4 +1,4 @@
-import { test, expect, byName, localeUrl, BASE } from './fixtures';
+import { test, expect, byName, localeUrl, BASE, ALL_LANGS } from './fixtures';
 
 // Titles come from the catalogues rather than being repeated here: the copy is expected to change, and a
 // copy edit should not fail a routing test.
@@ -17,8 +17,8 @@ test.describe('language switching @i18n', () => {
 		// Links, not buttons: each language is its own prerendered URL, so switching is navigation.
 		await page.goto(localeUrl());
 		const group = page.getByRole('group', { name: /Sprache|Language|Idioma/ });
-		await expect(group.getByRole('link')).toHaveCount(6);
-		for (const l of ['de', 'en', 'es', 'fr', 'nl', 'pt']) {
+		await expect(group.getByRole('link')).toHaveCount(ALL_LANGS.length);
+		for (const l of ALL_LANGS) {
 			await expect(group.getByRole('link', { name: l.toUpperCase(), exact: true })).toHaveAttribute(
 				'href',
 				`${BASE}/${l}/`
@@ -104,7 +104,7 @@ test.describe('language switching @i18n', () => {
 	});
 
 	test('keeps the brand name untranslated', async ({ page }) => {
-		for (const code of ['de', 'en', 'es', 'fr', 'nl', 'pt']) {
+		for (const code of ALL_LANGS) {
 			await page.goto(localeUrl(code));
 			await expect(page.locator('header.hdr .name')).toHaveText('Eclipse 2026');
 		}

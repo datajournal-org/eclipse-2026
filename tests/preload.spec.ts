@@ -1,4 +1,4 @@
-import { test, expect, BASE, localeUrl } from './fixtures';
+import { test, expect, BASE, localeUrl, ALL_LANGS } from './fixtures';
 
 // The two network warm-ups that beat the map's load waterfall (see scripts/inject-maplibre-preload.ts
 // and the head of +layout.svelte). Asserted against the PRERENDERED HTML — both only help if the browser
@@ -16,7 +16,7 @@ test.describe('resource hints', () => {
 		// SvelteKit only emits preloads for static imports; the postbuild script announces the dynamic
 		// MapLibre chunk. The href must resolve — a stale hash would silently restore the four-hop
 		// waterfall while everything still works.
-		for (const path of ['/', '/de/', '/en/', '/es/', '/fr/', '/nl/', '/pt/'].map((p) => `${BASE}${p}`)) {
+		for (const path of ['/', ...ALL_LANGS.map((l) => `/${l}/`)].map((p) => `${BASE}${p}`)) {
 			const html = await (await request.get(path)).text();
 			const href = html.match(/<link rel="modulepreload" href="([^"]*)">\s*<\/head>/)?.[1];
 			expect(href, `${path} carries the injected preload`).toBeTruthy();

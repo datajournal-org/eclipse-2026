@@ -1,4 +1,4 @@
-import { test, expect, BASE } from './fixtures';
+import { test, expect, BASE, ALL_LANGS } from './fixtures';
 import { SITE_URL } from '../src/lib/config';
 
 /**
@@ -8,8 +8,9 @@ import { SITE_URL } from '../src/lib/config';
  */
 // Imported rather than repeated: if the origin ever moves, a stale copy here would assert the old one.
 const ORIGIN = SITE_URL;
-const PAGES = ['/', '/de/', '/en/', '/es/'];
-const LOCALES = ['de', 'en', 'es', 'fr', 'nl', 'pt'] as const;
+// The root plus EVERY language page — a stale copy here once let three locales skip these checks.
+const PAGES = ['/', ...ALL_LANGS.map((l) => `/${l}/`)];
+const LOCALES = ALL_LANGS;
 
 const fetchHtml = async (request: import('@playwright/test').APIRequestContext, path: string) => {
 	const response = await request.get(`${BASE}${path}`);
