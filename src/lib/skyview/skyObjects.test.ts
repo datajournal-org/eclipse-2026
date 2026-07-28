@@ -1,0 +1,260 @@
+import { describe, it, expect } from 'vitest';
+import * as Astronomy from 'astronomy-engine';
+import { gmstDeg, horizonFor, skyDarkness, visibleSkyObjects } from './skyObjects';
+import { SKY_OBJECTS } from './sky.generated';
+import { BRIGHT_STARS } from './starCatalog';
+import { byName } from '$lib/testing/reference';
+import { TIMELINE_START, TIMELINE_END } from '$lib/config';
+
+const OVIEDO = byName('Oviedo');
+const MAX = new Date('2026-08-12T18:27:00Z');
+
+describe('horizonFor', () => {
+	/**
+	 * The whole reason this module can skip astronomy-engine at runtime: a rotation by local sidereal time
+	 * gives the same answer as the library's full `Horizon`, because the build already folded precession,
+	 * nutation and aberration into the stored coordinates. If that ever stops being true, it stops here.
+	 */
+	it.each([
+		['Oviedo', OVIEDO.lat, OVIEDO.lon],
+		['Reykjavík', 64.1466, -21.9426],
+		['Sydney (southern hemisphere)', -33.87, 151.21],
+		['Quito (equator)', -0.18, -78.47],
+		['Longyearbyen (high latitude)', 78.22, 15.65]
+	])('agrees with astronomy-engine at %s', (_label, lat, lon) => {
+		const observer = new Astronomy.Observer(lat, lon, 0);
+		let checked = 0;
+		for (const object of SKY_OBJECTS) {
+			const mine = horizonFor(object.ra, object.dec, lat, lon, MAX);
+			// Feed astronomy-engine the same of-date coordinates, so only the rotation is under test.
+			const theirs = Astronomy.Horizon(MAX, observer, object.ra, object.dec, 'normal');
+			// Only what can be drawn. Well below the horizon the two taper refraction differently — this
+			// module clamps where astronomy-engine fades toward the nadir — but nothing there is ever
+			// rendered, so matching it would be dead precision.
+			if (theirs.altitude < -1) continue;
+			checked++;
+			// 0.01° = 36 arcsec. The residual is how the two apply refraction, not the rotation, and at
+			// B3's ~0.1°/px it is a seventh of a pixel — far below anything that can be drawn.
+			expect(Math.abs(mine.alt - theirs.altitude), `${object.name} altitude`).toBeLessThan(0.01);
+			// Azimuth is meaningless at the zenith, and wraps at 360.
+			if (Math.abs(mine.alt) < 89.5) {
+				const delta = Math.abs(((mine.az - theirs.azimuth + 540) % 360) - 180);
+				expect(delta, `${object.name} azimuth (${mine.az} vs ${theirs.azimuth})`).toBeLessThan(0.01);
+			}
+		}
+		expect(checked, 'no object was above the horizon — the comparison proved nothing').toBeGreaterThan(20);
+	});
+
+	it('tracks the sky turning over the eclipse window', () => {
+		// Earth turns 15°/h, so an object's hour angle must advance with it rather than sit still.
+		const vega = SKY_OBJECTS.find((o) => o.name === 'Vega')!;
+		const start = horizonFor(vega.ra, vega.dec, OVIEDO.lat, OVIEDO.lon, MAX);
+		const later = horizonFor(vega.ra, vega.dec, OVIEDO.lat, OVIEDO.lon, new Date(MAX.getTime() + 3600_000));
+		expect(Math.abs(later.az - start.az)).toBeGreaterThan(1);
+	});
+
+	it('puts a near-pole star due north, within its own circle of the pole', () => {
+		// Polaris sits 0.74° off the pole, so from Berlin its altitude circles 51.3°..52.7° — the naive
+		// "altitude of the pole equals the latitude" only holds for the pole itself.
+		const north = horizonFor(2.53, 89.26, 52, 13, MAX);
+		expect(Math.abs(north.alt - 52)).toBeLessThan(0.8);
+		expect(Math.min(north.az, 360 - north.az)).toBeLessThan(1);
+	});
+});
+
+describe('gmstDeg', () => {
+	it('matches astronomy-engine sidereal time', () => {
+		for (const iso of ['2026-08-12T00:00:00Z', '2026-08-12T18:27:00Z', '2000-01-01T12:00:00Z']) {
+			const when = new Date(iso);
+			const mine = gmstDeg(when);
+			const theirs = (((Astronomy.SiderealTime(when) * 15) % 360) + 360) % 360;
+			expect(Math.abs(((mine - theirs + 540) % 360) - 180), iso).toBeLessThan(0.01);
+		}
+	});
+});
+
+describe('skyDarkness', () => {
+	it('is zero for every partial eclipse a reader is likely to be under', () => {
+		// The concept's central honesty point: 90 % is not almost total, and it reveals nothing. Central
+		// Europe sees 85–92 %, so this is the range that has to stay empty.
+		for (const obsc of [0, 0.5, 0.85, 0.9, 0.95]) expect(skyDarkness(obsc, 10)).toBe(0);
+	});
+
+	it('rises only in the last few percent, and gradually', () => {
+		expect(skyDarkness(0.95, 10)).toBe(0);
+		// Monotonic and smooth across the run-up, so the sky fills in rather than snapping on.
+		const steps = [0.96, 0.97, 0.98, 0.99, 1].map((o) => skyDarkness(o, 10));
+		for (let i = 1; i < steps.length; i++) expect(steps[i]).toBeGreaterThan(steps[i - 1]);
+		expect(steps[0]).toBeLessThan(0.3); // 96 % is barely dark at all
+	});
+
+	it('is deeper when the Sun is already low', () => {
+		expect(skyDarkness(1, 3)).toBeGreaterThan(skyDarkness(1, 25));
+	});
+});
+
+describe('visibleSkyObjects', () => {
+	it('shows nothing at a partial location', () => {
+		expect(visibleSkyObjects(52.52, 13.405, MAX, 0.848, 3.5)).toEqual([]);
+	});
+
+	it('shows Venus first at Oviedo during totality', () => {
+		const seen = visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, 1, 10.4);
+		expect(seen.length).toBeGreaterThan(3);
+		const venus = seen.find((p) => p.object.name === 'Venus');
+		expect(venus, 'Venus is the one object everyone is told to look for').toBeDefined();
+		expect(venus!.alt).toBeGreaterThan(20);
+		expect(venus!.brightness).toBeCloseTo(1, 1);
+	});
+
+	it('never returns anything below the horizon', () => {
+		for (const [lat, lon] of [
+			[OVIEDO.lat, OVIEDO.lon],
+			[-33.87, 151.21]
+		]) {
+			for (const p of visibleSkyObjects(lat, lon, MAX, 1, 5)) expect(p.alt).toBeGreaterThan(0);
+		}
+	});
+
+	it('drops the faintest stars as the sky brightens again', () => {
+		const deep = visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, 1, 10.4);
+		const shallow = visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, 0.99, 10.4);
+		expect(shallow.length).toBeLessThan(deep.length);
+	});
+
+	const venusAt = (obsc: number) =>
+		visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, obsc, 10.4).find((p) => p.object.name === 'Venus');
+
+	it('fades everything in and out rather than switching it on', () => {
+		// What a reader sees scrubbing into totality: the same object getting brighter, not appearing at
+		// full strength. Venus is the one bright enough to be there across the whole run-up.
+		const ramp = [0.96, 0.97, 0.98, 0.99, 1].map((o) => venusAt(o)?.brightness ?? 0);
+		for (let i = 1; i < ramp.length; i++) expect(ramp[i], `at step ${i}`).toBeGreaterThanOrEqual(ramp[i - 1]);
+		expect(ramp[0]).toBeGreaterThan(0); // present on entry...
+		expect(ramp[0]).toBeLessThan(0.35); // ...but faint
+		expect(ramp[1]).toBeGreaterThan(ramp[0]); // genuinely ramping, not flat
+		expect(ramp[ramp.length - 1]).toBe(1); // saturating only at the end
+	});
+
+	it('keeps growing after the opacity has saturated', () => {
+		// `headroom` is what the renderer turns into pixels. It has to go on rising once opacity caps, or
+		// the deepest part of totality would look identical to its beginning — and a point source has no
+		// angular size of its own, so how big it looks IS how much light arrives.
+		const heads = [0.96, 0.97, 0.98, 0.99, 1].map((o) => venusAt(o)?.headroom ?? 0);
+		for (let i = 1; i < heads.length; i++) expect(heads[i], `at step ${i}`).toBeGreaterThan(heads[i - 1]);
+		expect(venusAt(0.98)!.brightness).toBe(1); // opacity is already capped here...
+		expect(heads[4]).toBeGreaterThan(heads[2] * 1.2); // ...yet it keeps swelling afterwards
+	});
+
+	it('gives a brighter object more headroom than a fainter one in the same sky', () => {
+		const seen = visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, 1, 10.4);
+		const venus = seen.find((p) => p.object.name === 'Venus')!;
+		const faintest = seen.reduce((a, b) => (a.object.mag > b.object.mag ? a : b));
+		expect(venus.headroom).toBeGreaterThan(faintest.headroom);
+		expect(faintest.headroom).toBeGreaterThan(0);
+	});
+
+	it('costs an object headroom for sitting low in the horizon haze', () => {
+		// The same object placed low must come out dimmer and smaller than it would high up, because it is
+		// seen through more air and the horizon's leftover glow.
+		const seen = visibleSkyObjects(OVIEDO.lat, OVIEDO.lon, MAX, 1, 10.4);
+		const low = seen.filter((p) => p.alt < 6);
+		expect(low.length, 'no low object to compare').toBeGreaterThan(0);
+		for (const p of low) {
+			// Headroom below what an unextinguished object of this magnitude would have had.
+			const unextinguished = seen.find((q) => q.alt > 20 && Math.abs(q.object.mag - p.object.mag) < 0.6);
+			if (unextinguished) expect(p.headroom, p.object.name).toBeLessThan(unextinguished.headroom);
+		}
+	});
+});
+
+describe('the catalogue', () => {
+	it('holds the 93 stars of magnitude 2.5 or brighter', () => {
+		expect(BRIGHT_STARS).toHaveLength(93);
+		for (const s of BRIGHT_STARS) {
+			expect(s.mag, s.name).toBeLessThanOrEqual(2.5);
+			expect(s.ra, s.name).toBeGreaterThanOrEqual(0);
+			expect(s.ra, s.name).toBeLessThan(24);
+			expect(Math.abs(s.dec), s.name).toBeLessThanOrEqual(90);
+		}
+		expect(new Set(BRIGHT_STARS.map((s) => s.name)).size).toBe(93);
+	});
+
+	it('pins a few positions against independently known values', () => {
+		// Spot-check against catalogue values that are common knowledge, so a mangled import cannot pass.
+		const at = (name: string) => BRIGHT_STARS.find((s) => s.name === name)!;
+		expect(at('Sirius').ra).toBeCloseTo(6.752, 2); // 06h 45m
+		expect(at('Sirius').dec).toBeCloseTo(-16.716, 2); // -16° 43'
+		expect(at('Vega').ra).toBeCloseTo(18.616, 2); // 18h 37m
+		expect(at('Vega').dec).toBeCloseTo(38.784, 2); // +38° 47'
+		expect(at('Betelgeuse').ra).toBeCloseTo(5.919, 2);
+		expect(at('Sirius').mag).toBeLessThan(-1.4); // the brightest star in the sky
+	});
+
+	it('carries the planets, precessed and merged into one list', () => {
+		const planets = SKY_OBJECTS.filter((o) => o.kind === 'planet').map((o) => o.name);
+		expect(planets).toEqual(expect.arrayContaining(['Venus', 'Jupiter', 'Mercury', 'Mars', 'Saturn']));
+		expect(SKY_OBJECTS.filter((o) => o.kind === 'star')).toHaveLength(93);
+		// Precession since J2000 is ~0.35°, so of-date coordinates must differ from the catalogue's.
+		const sirius = SKY_OBJECTS.find((o) => o.name === 'Sirius')!;
+		expect(Math.abs(sirius.ra - BRIGHT_STARS.find((s) => s.name === 'Sirius')!.ra)).toBeGreaterThan(0.005);
+	});
+});
+
+describe('sky.generated.ts', () => {
+	/**
+	 * The same guard the corridor has: the checked-in file must still be what the script produces. It is
+	 * committed rather than built on demand, so nothing else would notice it drifting from the catalogue
+	 * it was derived from.
+	 */
+	it('is not stale', () => {
+		const GEOCENTRE = new Astronomy.Observer(0, 0, 0);
+		const MID = new Date((TIMELINE_START.getTime() + TIMELINE_END.getTime()) / 2);
+
+		for (const star of BRIGHT_STARS) {
+			Astronomy.DefineStar(Astronomy.Body.Star1, star.ra, star.dec, 1000);
+			const eq = Astronomy.Equator(Astronomy.Body.Star1, MID, GEOCENTRE, true, true);
+			const stored = SKY_OBJECTS.find((o) => o.name === star.name && o.kind === 'star');
+			expect(stored, `${star.name} missing from the generated file`).toBeDefined();
+			expect(stored!.ra, star.name).toBeCloseTo(eq.ra, 5);
+			expect(stored!.dec, star.name).toBeCloseTo(eq.dec, 4);
+			expect(stored!.mag, star.name).toBe(star.mag);
+		}
+
+		for (const body of [
+			Astronomy.Body.Venus,
+			Astronomy.Body.Jupiter,
+			Astronomy.Body.Mercury,
+			Astronomy.Body.Mars,
+			Astronomy.Body.Saturn
+		]) {
+			const eq = Astronomy.Equator(body, MID, GEOCENTRE, true, true);
+			const stored = SKY_OBJECTS.find((o) => o.name === String(body))!;
+			expect(stored, `${body} missing`).toBeDefined();
+			expect(stored.ra, String(body)).toBeCloseTo(eq.ra, 5);
+			expect(stored.dec, String(body)).toBeCloseTo(eq.dec, 4);
+		}
+	});
+
+	it('holds each planet still enough for one position to cover the window', () => {
+		// What the build script asserts, restated as a test: if the timeline were ever widened, a single
+		// mid-window position would stop being good enough and this is where that shows up.
+		//
+		// The quantity that matters is the error against the position actually STORED — the mid-window one
+		// — at the worst instant, not the total travel from end to end. Mercury moves fastest, ~0.15° across
+		// the whole window, so the stored position is never more than half that wrong: under a pixel at
+		// B3's ~0.1°/px.
+		const GEOCENTRE = new Astronomy.Observer(0, 0, 0);
+		for (const name of ['Venus', 'Mercury', 'Mars', 'Jupiter', 'Saturn']) {
+			const stored = SKY_OBJECTS.find((o) => o.name === name)!;
+			const worst = Math.max(
+				...[TIMELINE_START, TIMELINE_END].map((edge) => {
+					const at = Astronomy.Equator(name as Astronomy.Body, edge, GEOCENTRE, true, true);
+					const dRa = (at.ra - stored.ra) * 15 * Math.cos((stored.dec * Math.PI) / 180);
+					return Math.hypot(dRa, at.dec - stored.dec);
+				})
+			);
+			expect(worst, `${name} strays ${worst.toFixed(3)}° from its stored position`).toBeLessThan(0.1);
+		}
+	});
+});

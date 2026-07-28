@@ -52,6 +52,7 @@ export const SKY_PALETTE = {
 	sky: '#8fb4e0', // upper sky
 	horizon: '#f4c48a', // horizon glow
 	fog: '#e6c39a', // atmospheric fog
-	sun: '#ffedb8' // eclipsed Sun disc
+	sun: '#ffedb8', // eclipsed Sun disc
+	star: '#ffffff' // stars and planets during totality — near-white, as the eye sees them
 	// note: 3D buildings inherit the map's own land/background colour (read from the style) — not set here
 } as const;

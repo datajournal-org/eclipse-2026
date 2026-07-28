@@ -11,7 +11,12 @@
 /** The blue-grey the scene fades toward near totality (the DOM veil colour). */
 export const DUSK_HEX = '#20263a';
 
-const MAX_VEIL = 0.97; // opacity of the dusk veil at totality (near-black, once its colour darkens too)
+// Opacity of the dusk veil at totality. 0.97 left only 3 % of the daylight scene showing — measured sky
+// luma 12 of 255, i.e. black, with the terrain gone. Totality is not black: it reads like the deep
+// twilight twenty minutes after sunset, where the landscape is still legible and the horizon still glows.
+// 0.88 measures 28/30 against 177/202 in daylight — a ~6× plunge that keeps the ground visible.
+// This is the one number to turn if totality should be darker or lighter.
+const MAX_VEIL = 0.88;
 const VEIL_STEEP = 9; // higher → gentle dimming through the partial phase, then a sharp plunge near totality
 
 const LIGHT_COLOR = '#fff2dc'; // constant warm white of the directional building light

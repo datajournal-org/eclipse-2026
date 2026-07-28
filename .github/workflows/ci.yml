@@ -41,9 +41,9 @@ jobs:
          - name: Install dependencies
            run: npm ci
 
-         # `corridor` runs `svelte-kit sync` itself, so the generated tsconfig the type checks need exists.
-         - name: Generate the totality corridor
-           run: npm run corridor
+         # `precompute` runs `svelte-kit sync` itself, so the generated tsconfig the type checks need exists.
+         - name: Generate the corridor and the eclipse-day sky
+           run: npm run precompute
 
          - name: Check formatting (Prettier)
            run: npm run check:format
@@ -106,8 +106,8 @@ jobs:
               restore-keys: |
                  tiles-${{ runner.os }}-${{ matrix.shard }}-
 
-         - name: Generate the totality corridor
-           run: npm run corridor
+         - name: Generate the corridor and the eclipse-day sky
+           run: npm run precompute
 
          # Browsers are ~400 MB and unchanged between runs; key on the Playwright version so a bump
          # invalidates it. Playwright stores them under ~/Library/Caches on macOS, not ~/.cache.

@@ -1,0 +1,120 @@
+import { test, expect, mapReady, localeUrl, byName, setFrame, maxFrame } from './fixtures';
+import type { Map as MlMap } from 'maplibre-gl';
+
+const B3 = 'section.b3';
+const OVIEDO = byName('Oviedo'); // total — the sky really does go dark here
+const BERLIN = byName('Berlin'); // 85 % partial — it does not
+
+const sky = (page: import('@playwright/test').Page) =>
+	page.evaluate(() => {
+		const w = window as unknown as { __b3stars?: number; __b3skyNames?: string[] };
+		return { count: w.__b3stars ?? 0, names: w.__b3skyNames ?? [] };
+	});
+
+const open = async (page: import('@playwright/test').Page, site: { lat: number; lon: number }) => {
+	await page.goto(localeUrl('de', `?lat=${site.lat}&lon=${site.lon}&debug`));
+	await mapReady(page, B3);
+};
+
+/**
+ * How many bright pixels sit in the sky, read straight off the live framebuffer.
+ *
+ * An ABSOLUTE threshold rather than a diff against the same frame with the layer removed. The diff was
+ * the obvious approach and was flaky one run in three under parallel load: two GPU readbacks taken a
+ * moment apart are not guaranteed to show the same scene. Absolute works because totality has enormous
+ * separation — the veiled sky measures luma ~28 while the sprites are drawn at near-white over it, and at
+ * totality the Sun itself is an occulted disc with nothing bright left in the canvas.
+ *
+ * This test exists because the first version of the spec asserted only that objects were *placed*, and
+ * passed while the screen showed nothing. Counting placements tests the arithmetic; this tests the feature.
+ */
+const brightSkyPixels = (page: import('@playwright/test').Page) =>
+	page.evaluate(
+		() =>
+			new Promise<number>((resolve) => {
+				const m = (window as unknown as { __b3map: MlMap }).__b3map;
+				const gl = (m.getCanvas() as HTMLCanvasElement).getContext('webgl2') as WebGL2RenderingContext;
+				const once = () => {
+					m.off('render', once);
+					// Sky half only, and inside a render callback: MapLibre's context does not preserve its
+					// drawing buffer, so reading anywhere else returns black.
+					const w = gl.drawingBufferWidth;
+					const h = Math.round(gl.drawingBufferHeight * 0.5);
+					const buf = new Uint8Array(w * h * 4);
+					gl.readPixels(0, gl.drawingBufferHeight - h, w, h, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+					let bright = 0;
+					for (let i = 0; i < buf.length; i += 4) {
+						if (0.2126 * buf[i] + 0.7152 * buf[i + 1] + 0.0722 * buf[i + 2] > 150) bright++;
+					}
+					resolve(bright);
+				};
+				m.on('render', once);
+				m.triggerRepaint();
+			})
+	);
+
+test.describe('B3 stars and planets @webgl', () => {
+	test('shows nothing at a partial location, at any moment of the eclipse', async ({ page }) => {
+		// The concept's line about "90 % is almost total" being wrong, made enforceable: at 85 % coverage
+		// the sky stays daylight-bright and a real observer sees not one star. Drawing any would be a lie.
+		// Every frame, not a sample: a single frame that let one through would be the bug.
+		await open(page, BERLIN);
+		const max = await maxFrame(page, B3);
+		for (let f = 0; f <= max; f += 3) {
+			await setFrame(page, B3, f);
+			const { count, names } = await sky(page);
+			expect(count, `frame ${f} of ${max} showed ${names.join(', ')}`).toBe(0);
+		}
+	});
+
+	test('fills the sky at totality, and only there', async ({ page }) => {
+		await open(page, OVIEDO);
+		const max = await maxFrame(page, B3);
+
+		await setFrame(page, B3, 0);
+		expect((await sky(page)).count, 'at first contact the Sun is still almost whole').toBe(0);
+
+		// Totality at Oviedo lasts about 100 s inside a two-hour window, so at 30 s per frame it occupies
+		// roughly THREE of the 240 slider positions. A coarse sweep steps clean over it — which is exactly
+		// how an earlier version of this test passed while proving nothing.
+		let peak = { count: 0, names: [] as string[], frame: -1 };
+		for (let f = Math.round(max * 0.45); f <= Math.round(max * 0.55); f++) {
+			await setFrame(page, B3, f);
+			const seen = await sky(page);
+			if (seen.count > peak.count) peak = { ...seen, frame: f };
+		}
+
+		expect(peak.count, 'nothing appeared anywhere near maximum').toBeGreaterThan(8);
+		// Venus is the object every eclipse guide tells you to look for: magnitude -4.4, 46° from the Sun.
+		expect(peak.names).toContain('Venus');
+		// ...and it must not be alone — the bright stars come out too.
+		expect(
+			peak.names.filter((n) => !['Venus', 'Jupiter', 'Mercury', 'Mars', 'Saturn'].includes(n)).length
+		).toBeGreaterThan(3);
+	});
+
+	test('actually puts them on the screen, not just in the buffers', async ({ page }) => {
+		await open(page, OVIEDO);
+		const max = await maxFrame(page, B3);
+		let best = { frame: -1, n: 0 };
+		for (let f = Math.round(max * 0.45); f <= Math.round(max * 0.55); f++) {
+			await setFrame(page, B3, f);
+			const n = (await sky(page)).count;
+			if (n > best.n) best = { frame: f, n };
+		}
+		await setFrame(page, B3, best.frame);
+		// Scrub updates are coalesced into an animation frame, so under load the buffers can still be a
+		// frame behind when the readback runs. Wait for the placement before measuring the pixels.
+		await expect.poll(async () => (await sky(page)).count, { timeout: 5000 }).toBeGreaterThan(0);
+		const bright = await brightSkyPixels(page);
+		expect(bright, 'the star layer put nothing bright in the sky').toBeGreaterThan(10);
+	});
+
+	test('takes them away again as the Moon moves off', async ({ page }) => {
+		await open(page, OVIEDO);
+		const max = await maxFrame(page, B3);
+		// Ten frames (five minutes) past mid-eclipse the Sun is well clear again and the sky has recovered.
+		await setFrame(page, B3, Math.round(max * 0.5) + 12);
+		expect((await sky(page)).count).toBe(0);
+	});
+});

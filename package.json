@@ -7,12 +7,11 @@
 		"dev": "vite dev",
 		"dev:https": "DEV_HTTPS=1 vite dev",
 		"cert": "./scripts/dev-cert.sh",
-		"corridor": "svelte-kit sync && tsx scripts/build-corridor.ts",
-		"prebuild": "npm run corridor",
+		"prebuild": "npm run precompute",
 		"build": "vite build",
 		"preview": "vite preview",
 		"sync": "svelte-kit sync",
-		"precheck": "npm run corridor",
+		"precheck": "npm run precompute",
 		"check": "npm run check:format && npm run check:ts && npm run lint && npm run check:svelte && npm run test",
 		"check:svelte": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:ts": "tsc --noEmit",
@@ -29,7 +28,8 @@
 		"test:headed": "playwright test --headed",
 		"test:report": "playwright show-report",
 		"upgrade": "ncu -u --target minor && npm install",
-		"upgrade:check": "ncu"
+		"upgrade:check": "ncu",
+		"precompute": "svelte-kit sync && tsx scripts/build-corridor.ts && tsx scripts/build-sky.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

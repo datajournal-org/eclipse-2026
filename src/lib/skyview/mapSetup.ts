@@ -5,6 +5,8 @@
 import type { Map as MlMap } from 'maplibre-gl';
 import { sunMoonHorizon } from '$lib/eclipse';
 import { createSunLayer, type SunState } from '$lib/skyview/sunLayer';
+import { createStarLayer, type StarState } from '$lib/skyview/starLayer';
+import { createVeilLayer, type VeilState } from '$lib/skyview/veilLayer';
 import { SKY_PALETTE } from '$lib/config';
 import { hexToRgb } from '$lib/brand';
 
@@ -27,7 +29,10 @@ export function buildMapStyle(colorful: (typeof import('@versatiles/style'))['co
 }
 
 // Terrain, sky, hillshade, 3D buildings and the Sun billboard — added once the map has loaded.
-export function addSceneLayers(m: MlMap, opts: { sun: SunState; landColor: string }) {
+export function addSceneLayers(
+	m: MlMap,
+	opts: { sun: SunState; stars: StarState; veil: VeilState; landColor: string }
+) {
 	m.setTerrain({ source: 'dem', exaggeration: 1.0 });
 	// Pin the camera to the sea-level-referenced altitude we compute in the controller, instead of clamping
 	// the view centre onto the terrain: over mountainous ground that terrain height swings as the camera
@@ -76,6 +81,10 @@ export function addSceneLayers(m: MlMap, opts: { sun: SunState; landColor: strin
 		},
 		firstSymbol
 	);
+	// Order matters and is the whole reason the veil is a layer rather than a DOM overlay: the veil dims
+	// the map, terrain and buildings beneath it, then the stars and the Sun draw over it at full contrast.
+	m.addLayer(createVeilLayer(opts.veil));
+	m.addLayer(createStarLayer(opts.stars, hexToRgb(SKY_PALETTE.star)));
 	m.addLayer(createSunLayer(opts.sun, hexToRgb(SKY_PALETTE.sun)));
 }
 

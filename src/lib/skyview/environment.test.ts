@@ -8,10 +8,14 @@ describe('environment', () => {
 		expect(e.veil).toBe(0);
 	});
 
-	it('is near-black at totality', () => {
+	it('reaches its deepest veil at totality', () => {
 		const e = environment(1);
 		expect(e.brightness).toBe(0);
-		expect(e.veil).toBeCloseTo(0.97, 6);
+		// Deliberately a range, not the literal: MAX_VEIL is a look-and-feel dial (it came down from 0.97
+		// to 0.88 when totality turned out to render as pure black rather than deep twilight). What must
+		// hold is that totality is heavily veiled but not totally opaque — a real one is not black.
+		expect(e.veil).toBeGreaterThan(0.8);
+		expect(e.veil).toBeLessThan(0.95);
 	});
 
 	it('stays gentle through the partial phase', () => {
@@ -37,9 +41,12 @@ describe('environment', () => {
 	});
 
 	it('keeps veil and brightness complementary', () => {
+		// Derived from the function itself rather than hard-coded, so re-tuning the depth of totality does
+		// not break a test that is really about the two staying in step.
+		const maxVeil = environment(1).veil;
 		for (let o = 0; o <= 1; o += 0.1) {
 			const e = environment(o);
-			expect(e.veil / 0.97).toBeCloseTo(1 - e.brightness, 12);
+			expect(e.veil / maxVeil).toBeCloseTo(1 - e.brightness, 12);
 		}
 	});
 

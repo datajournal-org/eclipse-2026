@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Map as MlMap } from 'maplibre-gl';
 import { buildMapStyle, addSceneLayers, sunArcEnvelope } from './mapSetup';
+import { emptyStarState } from './starLayer';
+import { emptyVeilState } from './veilLayer';
 import { SKY_PALETTE } from '$lib/config';
 import { byName } from '$lib/testing/reference';
 import { createFakeMap, type FakeMap } from '$lib/testing/fakes';
@@ -95,7 +97,13 @@ describe('addSceneLayers', () => {
 		m.layers.push({ id: 'building' }, { id: 'building:outline' });
 	});
 
-	const add = () => addSceneLayers(m as unknown as MlMap, { sun, landColor: '#f9f4ee' });
+	const add = () =>
+		addSceneLayers(m as unknown as MlMap, {
+			sun,
+			stars: emptyStarState(),
+			veil: emptyVeilState(),
+			landColor: '#f9f4ee'
+		});
 
 	it('turns on terrain from the DEM source', () => {
 		add();

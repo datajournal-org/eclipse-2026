@@ -12,14 +12,17 @@
 	import { localCircumstances, sunset } from '$lib/eclipse';
 	import type { SunState } from '$lib/skyview/sunLayer';
 	import { eclipseGeometry } from '$lib/skyview/eclipseGeometry';
-	import { cssRgb, veilColour, loupeSkyCss, loupeGroundCss } from '$lib/skyview/colors';
+	import { veilColour, loupeSkyCss, loupeGroundCss } from '$lib/skyview/colors';
 	import { buildTimeline } from '$lib/skyview/timeline';
 	import { buildTimeAxis, type TimeAxis } from '$lib/skyview/timeAxis';
 	import TimeScrubber from '$lib/components/TimeScrubber.svelte';
 	import { buildMapStyle, addSceneLayers, sunArcEnvelope } from '$lib/skyview/mapSetup';
 	import { createCameraController } from '$lib/skyview/cameraController';
-	import { placeSun, syncMapLighting } from '$lib/skyview/frameSync';
-	import { environment, duskVeil, DUSK_HEX } from '$lib/skyview/environment';
+	import { placeSun, placeSkyObjects, syncMapLighting } from '$lib/skyview/frameSync';
+	import { emptyStarState } from '$lib/skyview/starLayer';
+	import { emptyVeilState } from '$lib/skyview/veilLayer';
+	import { visibleSkyObjects } from '$lib/skyview/skyObjects';
+	import { environment, duskVeil } from '$lib/skyview/environment';
 	import { computeFraming } from '$lib/skyview/framing';
 	import SkyLoupe from '$lib/components/SkyLoupe.svelte';
 	import { loadMaplibre } from '$lib/maplibre';
@@ -47,6 +50,8 @@
 
 	let clockCh = $state('0'); // widest clock string in this window, so the chips beside it never shift
 	let scrubFrame = 0; // pending rAF id for the coalesced scrub update (0 = none)
+	// `?debug` exposes the scene for the console and for specs; it must never cost anything otherwise.
+	const debug = typeof location !== 'undefined' && new URLSearchParams(location.search).has('debug');
 
 	onMount(() => {
 		const loc = get(userLocation);
@@ -80,6 +85,11 @@
 				fmtTime: (d) => get(fmt).time(d)
 			});
 
+			// Stars and planets, drawn only once the sky is actually dark enough to show them.
+			const stars = emptyStarState();
+			// The twilight wash they are drawn ON TOP of — see veilLayer.ts for why it is not a DOM overlay.
+			const veil = emptyVeilState();
+
 			const sun: SunState = {
 				center: [0, 0, 0, 1],
 				moon: [0, 0],
@@ -105,7 +115,7 @@
 			map = m;
 			// Same `?debug` handle the A2 globe exposes, so the scene can be inspected and profiled from
 			// the console or a spec without reaching into component internals.
-			if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { __b3map: m });
+			if (debug) Object.assign(window, { __b3map: m });
 			// Surface style/terrain/WebGL errors that would otherwise be swallowed (and can stall loading).
 			m.on('error', (e) => console.error('[B3] map error:', (e as { error?: unknown }).error ?? e));
 			// Test hook: the end-to-end suite waits on this instead of guessing at a timeout or watching
@@ -122,7 +132,7 @@
 
 			m.on('load', () => {
 				try {
-					addSceneLayers(m, { sun, landColor });
+					addSceneLayers(m, { sun, stars, veil, landColor });
 
 					// ---- orientation framing: one fixed shot showing the whole Sun arc + the location marker ----
 					const { azMin, azMax, altMax } = sunArcEnvelope(LAT, LON, times, N, 8);
@@ -142,24 +152,15 @@
 					});
 					detachDrag = cam.detach;
 
-					// twilight veil — dims the whole rendered scene (sky, terrain, buildings, base map) as the
-					// eclipse deepens. It lives INSIDE the map's canvas container, appended just BEFORE the marker,
-					// so the marker (a UI element, like the A2 globe's) sits above it at full brightness rather than
-					// being dimmed with the scene. update() drives its opacity from the obscuration.
-					const duskEl = document.createElement('div');
-					duskEl.className = 'b3-dusk';
-					duskEl.style.background = DUSK_HEX;
-					m.getCanvasContainer().appendChild(duskEl);
-
 					// location marker — a DOM marker, exactly like the A2 globe. MapLibre keeps it on the terrain
 					// surface at [LON,LAT] every frame; now that the camera height no longer bobs, it holds its
 					// screen position as the camera orbits. Shared .user-pin dot (styles/map.css), same as the A2
-					// globe. Added after the veil → above it.
+					// globe. A DOM element, so it stays at full brightness above the veil in the canvas.
 					const pin = document.createElement('div');
 					pin.className = 'user-pin';
 					new maplibregl.Marker({ element: pin }).setLngLat([LON, LAT]).addTo(m);
 
-					// Zoom (+/-) and reset controls — added after the veil/marker, same look as the A2 globe.
+					// Zoom (+/-) and reset controls — same look as the A2 globe.
 					cam.addControls();
 
 					function update() {
@@ -174,10 +175,26 @@
 						// Combine the eclipse dimming with a dusk dimming from the Sun's altitude (screen blend), so the
 						// whole scene — terrain, buildings, sky, loupe — also darkens as the Sun sets, not only as it's
 						// covered. The eclipse owns the plunge to totality; dusk owns the fade after sunset.
-						const veil = 1 - (1 - env.veil) * (1 - duskVeil(s.alt));
-						duskEl.style.opacity = String(veil); // dims the whole rendered scene, not the marker
+						const veilAlpha = 1 - (1 - env.veil) * (1 - duskVeil(s.alt));
+
+						// The sky over the observer at this instant. Nothing is placed at a partial location: the
+						// list comes back empty until the eclipse is essentially total. No veil compensation —
+						// the stars are drawn OVER the veil layer now, so they keep their own contrast.
+						const sky = visibleSkyObjects(LAT, LON, date, geo.obsc, s.alt);
+						placeSkyObjects(stars, sky, { maplibregl, m, lat: LAT, lon: LON });
+						if (debug)
+							Object.assign(window, {
+								__b3stars: sky.length,
+								__b3skyNames: sky.map((p) => p.object.name),
+								__b3sky: sky.map((p) => ({ name: p.object.name, alt: p.alt, az: p.az, b: p.brightness })),
+								__b3starState: stars,
+								__b3veil: veil
+							});
 						const veilRgb = veilColour(geo.obsc, s.alt);
-						duskEl.style.background = cssRgb(veilRgb);
+						veil.alpha = veilAlpha; // dims the map beneath it; stars and Sun draw over it
+						// `veilColour` already returns 0..1 — `cssRgb` is what scales to 0..255. Dividing here
+						// crushed the dusk-blue tint to pure black and took the scene with it.
+						veil.color = veilRgb;
 						syncMapLighting(m, s.az, s.alt, env);
 
 						clock = get(fmt).time(date);
@@ -186,11 +203,11 @@
 						obscTxt = (geo.obsc * 100).toFixed(0) + '%';
 						// loupe crescent (changes only with time): Moon-disc offset/size in Sun-radius units × R
 						crescent = { x: sun.moon[0] * LOUPE_R, y: -sun.moon[1] * LOUPE_R, r: sun.moonR * LOUPE_R };
-						loupeSky = loupeSkyCss(s.alt, veilRgb, veil);
+						loupeSky = loupeSkyCss(s.alt, veilRgb, veilAlpha);
 						// loupe horizon: the Sun sits `s.alt`° above the horizon → the horizon line is that far below
 						// the centred Sun, in loupe units (loupeR units = one solar radius = geo.sunAngR°).
 						horizonY = (s.alt / geo.sunAngR) * LOUPE_R;
-						loupeGround = loupeGroundCss(landColor, veilRgb, veil);
+						loupeGround = loupeGroundCss(landColor, veilRgb, veilAlpha);
 						// corona overlay (test): the image's Moon (270 of 512 px = radius 135) is mapped onto the loupe
 						// Moon disc, and only shown in true totality — obscuration reaches 1 (never at partial locations).
 						coronaSize = crescent.r * (512 / 135);
@@ -298,18 +315,7 @@
 </section>
 
 <style>
-	/* B3-only MapLibre DOM (added outside the component tree). Shared map chrome (controls, attribution,
-	   the .user-pin marker) lives in styles/map.css; only the twilight veil is B3-specific. */
-	:global {
-		.b3 {
-			/* twilight veil — inside the map's canvas container, under the marker: dims the rendered scene but
-		   not the location marker above it. */
-			.b3-dusk {
-				position: absolute;
-				inset: 0;
-				pointer-events: none;
-				transition: opacity 150ms linear;
-			}
-		}
-	}
+	/* No B3-only map chrome left to style: the twilight veil moved into the WebGL scene (veilLayer.ts) so
+	   the stars could be drawn over it, and the shared chrome — controls, attribution, the .user-pin
+	   marker — lives in styles/map.css. */
 </style>
