@@ -34,7 +34,7 @@ test.describe('root language dispatch @i18n', () => {
 	});
 
 	test.describe('a browser in a language we do not have', () => {
-		test.use({ locale: 'fr-FR' });
+		test.use({ locale: 'it-IT' });
 		test('falls back to the default language', async ({ page }) => {
 			await page.goto(ROOT);
 			await expect(page).toHaveURL(new RegExp(`${BASE}/en/$`));
@@ -50,7 +50,7 @@ test.describe('root language dispatch @i18n', () => {
 		});
 
 		test('is not misled by a stored language we no longer support', async ({ page }) => {
-			await page.addInitScript(() => window.localStorage.setItem('locale', 'fr'));
+			await page.addInitScript(() => window.localStorage.setItem('locale', 'it'));
 			await page.goto(ROOT);
 			await expect(page).toHaveURL(new RegExp(`${BASE}/de/$`));
 		});
@@ -75,7 +75,7 @@ test.describe('root language dispatch @i18n', () => {
 
 	test('never redirects a language page', async ({ page }) => {
 		// The pathname guard is what stops an infinite loop.
-		for (const lang of ['de', 'en', 'es']) {
+		for (const lang of ['de', 'en', 'es', 'fr', 'nl', 'pt']) {
 			await page.goto(`${BASE}/${lang}/`);
 			await page.waitForTimeout(300);
 			await expect(page).toHaveURL(new RegExp(`${BASE}/${lang}/$`));

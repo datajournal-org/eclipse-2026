@@ -64,7 +64,7 @@ test.describe('live VersaTiles Photon', { tag: '@live' }, () => {
 	});
 
 	test('honours the language parameter without erroring', async () => {
-		for (const locale of ['de', 'en', 'es']) {
+		for (const locale of ['de', 'en', 'es', 'fr', 'nl', 'pt']) {
 			const hits = await searchPlaces('München', locale, 3);
 			expect(hits.length, locale).toBeGreaterThan(0);
 		}

@@ -4,6 +4,9 @@ import { detectLocale } from './index';
 import de from './messages/de';
 import en from './messages/en';
 import es from './messages/es';
+import fr from './messages/fr';
+import nl from './messages/nl';
+import pt from './messages/pt';
 
 /** Fresh module instance — `locale` is module state and `initLocale` reads the environment once. */
 async function load(opts: { stored?: string | null } = {}) {
@@ -35,17 +38,18 @@ describe('detectLocale', () => {
 	});
 
 	it('skips languages we do not have', () => {
-		expect(detectLocale(null, ['fr-FR', 'it', 'es-ES'])).toBe('es');
+		expect(detectLocale(null, ['it-IT', 'ja', 'es-ES'])).toBe('es'); // it/ja unsupported; es wins
+		expect(detectLocale(null, ['fr-FR', 'it', 'es-ES'])).toBe('fr'); // French is a supported locale now
 	});
 
 	it('falls back to English when nothing matches', () => {
 		// English, not German: the root is the international entry point.
-		expect(detectLocale(null, ['fr-FR', 'ja'])).toBe('en');
+		expect(detectLocale(null, ['it-IT', 'ja'])).toBe('en');
 		expect(detectLocale(null, [])).toBe('en');
 	});
 
 	it('ignores a stored language we no longer support', () => {
-		expect(detectLocale('fr', ['de'])).toBe('de');
+		expect(detectLocale('it', ['de'])).toBe('de');
 	});
 });
 
@@ -71,7 +75,7 @@ describe('applyLocale', () => {
 
 	it('ignores an unknown tag rather than blanking the UI', async () => {
 		const { locale, applyLocale } = await load();
-		applyLocale('fr' as 'de');
+		applyLocale('it' as 'de');
 		expect(get(locale)).toBe('en');
 		expect(localStorage.getItem('locale')).toBeNull();
 	});
@@ -145,7 +149,7 @@ describe('t', () => {
 
 describe('message catalogues', () => {
 	// One test that prevents most i18n bugs: the three files must stay structurally identical.
-	const catalogues = { de, en, es } as const;
+	const catalogues = { de, en, es, fr, nl, pt } as const;
 
 	it('define the same set of keys', () => {
 		const reference = allKeys(de).sort();

@@ -9,7 +9,7 @@ import { SITE_URL } from '../src/lib/config';
 // Imported rather than repeated: if the origin ever moves, a stale copy here would assert the old one.
 const ORIGIN = SITE_URL;
 const PAGES = ['/', '/de/', '/en/', '/es/'];
-const LOCALES = ['de', 'en', 'es'] as const;
+const LOCALES = ['de', 'en', 'es', 'fr', 'nl', 'pt'] as const;
 
 const fetchHtml = async (request: import('@playwright/test').APIRequestContext, path: string) => {
 	const response = await request.get(`${BASE}${path}`);
@@ -36,7 +36,7 @@ test.describe('prerendered SEO metadata', () => {
 		const titles = await Promise.all(
 			LOCALES.map(async (l) => attr(await fetchHtml(request, `/${l}/`), /<title>([^<]*)<\/title>/g)[0])
 		);
-		expect(new Set(titles).size).toBe(3);
+		expect(new Set(titles).size).toBe(LOCALES.length);
 		for (const title of titles) expect(title.trim().length).toBeGreaterThan(10);
 	});
 
@@ -45,7 +45,7 @@ test.describe('prerendered SEO metadata', () => {
 		const descriptions = await Promise.all(
 			LOCALES.map(async (l) => attr(await fetchHtml(request, `/${l}/`), pattern)[0])
 		);
-		expect(new Set(descriptions).size).toBe(3);
+		expect(new Set(descriptions).size).toBe(LOCALES.length);
 		for (const d of descriptions) expect(d.length).toBeGreaterThan(40);
 	});
 
@@ -79,7 +79,7 @@ test.describe('prerendered SEO metadata', () => {
 				lang: m[1],
 				href: m[2]
 			}));
-			expect(links.map((l) => l.lang).sort(), path).toEqual(['de', 'en', 'es', 'x-default']);
+			expect(links.map((l) => l.lang).sort(), path).toEqual(['de', 'en', 'es', 'fr', 'nl', 'pt', 'x-default']);
 			for (const link of links) expect(link.href, `${path} → ${link.lang}`).toMatch(/^https:\/\//);
 			for (const l of LOCALES) {
 				expect(links.find((x) => x.lang === l)!.href, `${path} → ${l}`).toBe(`${ORIGIN}${BASE}/${l}/`);
@@ -117,7 +117,7 @@ test.describe('prerendered SEO metadata', () => {
 	});
 
 	test('declares the territory-coded og:locale and its alternates', async ({ request }) => {
-		const expected = { de: 'de_DE', en: 'en_GB', es: 'es_ES' };
+		const expected = { de: 'de_DE', en: 'en_GB', es: 'es_ES', fr: 'fr_FR', nl: 'nl_NL', pt: 'pt_PT' };
 		for (const l of LOCALES) {
 			const html = await fetchHtml(request, `/${l}/`);
 			expect(attr(html, /property="og:locale" content="([^"]*)"/g)[0], l).toBe(expected[l]);
@@ -177,7 +177,7 @@ test.describe('prerendered SEO metadata', () => {
 
 	test('answers an unknown language with a 404, not an empty shell', async ({ request }) => {
 		// There is no SPA fallback any more, precisely so this cannot come back as a soft 404.
-		const response = await request.get(`${BASE}/fr/`);
+		const response = await request.get(`${BASE}/it/`);
 		expect(response.status()).toBe(404);
 	});
 });

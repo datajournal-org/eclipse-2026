@@ -14,7 +14,7 @@
 			// The language list is duplicated from $lib/i18n (this has to run before the bundle loads); a
 			// unit test reads this file and asserts the two stay in step.
 			(function () {
-				var LOCALES = ['de', 'en', 'es'];
+				var LOCALES = ['de', 'en', 'es', 'fr', 'nl', 'pt'];
 				var base = '/eclipse-2026';
 				// Only ever fires on the root itself, so /de/ and friends can never loop back here.
 				if (location.pathname !== base + '/' && location.pathname !== base) return;

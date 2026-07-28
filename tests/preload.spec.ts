@@ -16,7 +16,7 @@ test.describe('resource hints', () => {
 		// SvelteKit only emits preloads for static imports; the postbuild script announces the dynamic
 		// MapLibre chunk. The href must resolve — a stale hash would silently restore the four-hop
 		// waterfall while everything still works.
-		for (const path of ['/', '/de/', '/en/', '/es/'].map((p) => `${BASE}${p}`)) {
+		for (const path of ['/', '/de/', '/en/', '/es/', '/fr/', '/nl/', '/pt/'].map((p) => `${BASE}${p}`)) {
 			const html = await (await request.get(path)).text();
 			const href = html.match(/<link rel="modulepreload" href="([^"]*)">\s*<\/head>/)?.[1];
 			expect(href, `${path} carries the injected preload`).toBeTruthy();

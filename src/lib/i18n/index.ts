@@ -4,12 +4,22 @@ import { browser } from '$app/environment';
 import de, { type Messages } from './messages/de';
 import en from './messages/en';
 import es from './messages/es';
+import fr from './messages/fr';
+import nl from './messages/nl';
+import pt from './messages/pt';
 
-export const LOCALES = ['de', 'en', 'es'] as const;
+export const LOCALES = ['de', 'en', 'es', 'fr', 'nl', 'pt'] as const;
 export type Locale = (typeof LOCALES)[number];
 
-const DICTS: Record<Locale, Messages> = { de, en, es };
-export const LOCALE_NAMES: Record<Locale, string> = { de: 'Deutsch', en: 'English', es: 'Español' };
+const DICTS: Record<Locale, Messages> = { de, en, es, fr, nl, pt };
+export const LOCALE_NAMES: Record<Locale, string> = {
+	de: 'Deutsch',
+	en: 'English',
+	es: 'Español',
+	fr: 'Français',
+	nl: 'Nederlands',
+	pt: 'Português'
+};
 
 /**
  * The language the bare root (`/eclipse-2026/`) serves, and the fallback for any reader whose language
@@ -18,7 +28,14 @@ export const LOCALE_NAMES: Record<Locale, string> = { de: 'Deutsch', en: 'Englis
 export const DEFAULT_LOCALE: Locale = 'en';
 
 /** Open Graph wants full territory codes, not the bare language tags used in the URLs. */
-export const OG_LOCALE: Record<Locale, string> = { de: 'de_DE', en: 'en_GB', es: 'es_ES' };
+export const OG_LOCALE: Record<Locale, string> = {
+	de: 'de_DE',
+	en: 'en_GB',
+	es: 'es_ES',
+	fr: 'fr_FR',
+	nl: 'nl_NL',
+	pt: 'pt_PT'
+};
 
 export function isLocale(x: string | null | undefined): x is Locale {
 	return !!x && (LOCALES as readonly string[]).includes(x);

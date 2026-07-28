@@ -6,15 +6,11 @@
        choice as real links rather than a "redirecting…" placeholder. -->
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { LOCALES, LOCALE_NAMES, DEFAULT_LOCALE } from '$lib/i18n';
-	import de from '$lib/i18n/messages/de';
-	import en from '$lib/i18n/messages/en';
-	import es from '$lib/i18n/messages/es';
-
-	// Read straight from the catalogues rather than through the `t` store: this page is deliberately
-	// multilingual — its own chrome is in the default language, but each link names its language natively.
-	const DICTS = { de, en, es };
-	const copy = DICTS[DEFAULT_LOCALE];
+	import { LOCALES, LOCALE_NAMES } from '$lib/i18n';
+	// Read straight from the default-language catalogue rather than through the `t` store: this page is
+	// deliberately multilingual — its own chrome is in the default language (English, see DEFAULT_LOCALE),
+	// but each link names its language natively via LOCALE_NAMES.
+	import copy from '$lib/i18n/messages/en';
 
 	// Trailing slash appended for the same reason as in Header.svelte: it is what the canonical form is.
 	const langHref = (l: string) => `${resolve('/[lang]', { lang: l })}/`;

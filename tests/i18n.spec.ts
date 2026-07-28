@@ -13,12 +13,12 @@ const LANGS = {
 };
 
 test.describe('language switching @i18n', () => {
-	test('offers all three languages as links in the header', async ({ page }) => {
+	test('offers every language as a link in the header', async ({ page }) => {
 		// Links, not buttons: each language is its own prerendered URL, so switching is navigation.
 		await page.goto(localeUrl());
 		const group = page.getByRole('group', { name: /Sprache|Language|Idioma/ });
-		await expect(group.getByRole('link')).toHaveCount(3);
-		for (const l of ['de', 'en', 'es']) {
+		await expect(group.getByRole('link')).toHaveCount(6);
+		for (const l of ['de', 'en', 'es', 'fr', 'nl', 'pt']) {
 			await expect(group.getByRole('link', { name: l.toUpperCase(), exact: true })).toHaveAttribute(
 				'href',
 				`${BASE}/${l}/`
@@ -104,7 +104,7 @@ test.describe('language switching @i18n', () => {
 	});
 
 	test('keeps the brand name untranslated', async ({ page }) => {
-		for (const code of ['de', 'en', 'es']) {
+		for (const code of ['de', 'en', 'es', 'fr', 'nl', 'pt']) {
 			await page.goto(localeUrl(code));
 			await expect(page.locator('header.hdr .name')).toHaveText('Eclipse 2026');
 		}
