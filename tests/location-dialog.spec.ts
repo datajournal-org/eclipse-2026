@@ -93,6 +93,36 @@ test.describe('location dialog', () => {
 		expect(blocked).toBe(false);
 	});
 
+	test('locks the page scroll behind it, and releases it on close', async ({ page, stubGeocoder }) => {
+		// showModal() makes the background inert for clicks and focus, but NOT for scrolling — without
+		// the lock, touch gestures chained out of the sheet and the page (with its maps) visibly slid
+		// and flickered underneath the fullscreen mobile dialog.
+		await stubGeocoder();
+		await page.goto(localeUrl());
+		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		await expect(page.locator('dialog.picker-dlg')).toBeVisible();
+
+		// let the click's own smooth scroll settle first, or its tail reads as background scrolling
+		await expect
+			.poll(async () => {
+				const a = await page.evaluate(() => window.scrollY);
+				await page.waitForTimeout(120);
+				return (await page.evaluate(() => window.scrollY)) - a;
+			})
+			.toBe(0);
+		const before = await page.evaluate(() => window.scrollY);
+		await page.evaluate(() => window.scrollBy(0, 400));
+		expect(
+			Math.abs((await page.evaluate(() => window.scrollY)) - before),
+			'page scrolled behind the modal'
+		).toBeLessThan(2);
+
+		await page.keyboard.press('Escape');
+		await expect(page.locator('dialog.picker-dlg')).not.toBeVisible();
+		await page.evaluate(() => window.scrollBy(0, 400));
+		expect(await page.evaluate(() => window.scrollY), 'scroll stayed locked after closing').toBeGreaterThan(before);
+	});
+
 	test('labels the pin with coordinates when the name service is down', async ({ page, stubGeocoder }) => {
 		// Reverse geocoding is decoration: with the geocoder failing (or timed out), the footer must fall
 		// back to the coordinates — the real content — instead of an eternal "…" that reads as loading.

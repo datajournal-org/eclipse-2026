@@ -26,6 +26,21 @@ body {
 	text-rendering: optimizeLegibility;
 }
 
+/* While a modal dialog is open (LocationDialog sets this): the page behind it must not scroll —
+   showModal() inerts clicks and focus but not scrolling, and a scrolling background flickers through
+   under the fullscreen mobile dialog. */
+html.modal-open {
+	overflow: hidden;
+}
+html.modal-open body {
+	/* position:fixed, not overflow — WebKit scrolls the document straight past overflow:hidden. The
+	   dialog code sets an inline negative `top` so the page stays visually in place, and restores the
+	   scroll offset on close. */
+	position: fixed;
+	inset-inline: 0;
+	overflow: hidden;
+}
+
 h1,
 h2,
 h3 {

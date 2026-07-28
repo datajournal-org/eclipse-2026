@@ -32,6 +32,15 @@
 		if (!dlgEl) return;
 		if (open) {
 			if (!dlgEl.open) dlgEl.showModal();
+			// showModal() makes the background inert for clicks and focus, but NOT for scrolling — the
+			// document behind the modal still scrolls (chained from the sheet's edges on touch), which
+			// visibly shifts and re-composites the page under the dialog. Freezing the body via
+			// position:fixed is the only lock every engine honours (WebKit scrolls straight past a mere
+			// overflow:hidden); the negative top keeps the page visually where it was, and the cleanup
+			// (close OR unmount) restores the scroll position instantly.
+			const lockY = window.scrollY;
+			document.documentElement.classList.add('modal-open');
+			document.body.style.top = `-${lockY}px`;
 			opened = true;
 			// (re)initialise from the committed location, else a point in the totality corridor
 			const loc = get(userLocation);
@@ -40,6 +49,12 @@
 			query = '';
 			geoErr = false;
 			placeSearch.reset();
+			// declared inside the open branch, so it can restore the scroll position it captured
+			return () => {
+				document.documentElement.classList.remove('modal-open');
+				document.body.style.top = '';
+				window.scrollTo({ top: lockY, behavior: 'instant' });
+			};
 		} else if (dlgEl.open) {
 			dlgEl.close();
 		}
@@ -286,6 +301,7 @@
 	.sheet {
 		display: flex;
 		flex-direction: column;
+		overscroll-behavior: contain; /* results list & map gestures must not chain into the page */
 		width: min(460px, 94vw);
 		height: min(660px, 88vh);
 		background: var(--bg);
