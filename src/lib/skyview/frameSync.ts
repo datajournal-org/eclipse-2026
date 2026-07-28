@@ -29,8 +29,9 @@ const MIN_STAR_PX = 0.3,
  * A unit direction along (azimuth, altitude), in Mercator axis convention: +x east, +y SOUTH (Mercator y
  * grows downward on the map), +z up. Mercator is conformal and MapLibre scales altitude by the same
  * per-latitude factor as the ground axes, so a locally isotropic unit vector keeps its true direction.
+ * Exported for the other camera-anchored sky furniture (the compass ruler).
  */
-function dirFromAzAlt(azDeg: number, altDeg: number): [number, number, number] {
+export function dirFromAzAlt(azDeg: number, altDeg: number): [number, number, number] {
 	const az = azDeg * D2R,
 		alt = altDeg * D2R;
 	return [Math.cos(alt) * Math.sin(az), -Math.cos(alt) * Math.cos(az), Math.sin(alt)];

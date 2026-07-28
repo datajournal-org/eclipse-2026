@@ -6,6 +6,7 @@ import { emptyVeilState } from './veilLayer';
 import { SKY_PALETTE } from '$lib/config';
 import { byName } from '$lib/testing/reference';
 import { createFakeMap, type FakeMap } from '$lib/testing/fakes';
+import { emptyCompassState } from './compassLayer';
 import { buildTimeline } from './timeline';
 import { localCircumstances, sunMoonHorizon } from '$lib/eclipse';
 import type { SunState } from './sunLayer';
@@ -100,6 +101,7 @@ describe('addSceneLayers', () => {
 	const add = () =>
 		addSceneLayers(m as unknown as MlMap, {
 			sun,
+			compass: emptyCompassState(),
 			stars: emptyStarState(),
 			veil: emptyVeilState(),
 			landColor: '#f9f4ee'
@@ -170,6 +172,16 @@ describe('addSceneLayers', () => {
 		const ids = m.callsTo('addLayer').map((c) => (c.args[0] as { id: string }).id);
 		expect(ids).toContain('sun');
 		expect(ids.at(-1)).toBe('sun');
+	});
+
+	it('stacks the sky furniture in contrast order: veil, compass, stars, sun', () => {
+		// The veil dims everything below it; the compass ruler draws over the veil so it stays legible in
+		// totality, but under the stars and the Sun — reference chrome must not cover content.
+		add();
+		const ids = m.callsTo('addLayer').map((c) => (c.args[0] as { id: string }).id);
+		const order = ['twilight-veil', 'compass', 'stars', 'sun'].map((id) => ids.indexOf(id));
+		expect(order.every((i) => i >= 0)).toBe(true);
+		expect(order).toEqual([...order].sort((a, b) => a - b));
 	});
 
 	it('does not try to remove building layers that are not in the style', () => {

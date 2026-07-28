@@ -84,7 +84,9 @@ const messages = {
 		phase_start: 'Beginn',
 		phase_max: 'Maximum',
 		phase_end: 'Ende',
-		sunset: 'Sonnenuntergang'
+		sunset: 'Sonnenuntergang',
+		// Compass points for the horizon ruler and the azimuth chip (cardinal initials are locale-specific)
+		compass: { n: 'N', ne: 'NO', e: 'O', se: 'SO', s: 'S', sw: 'SW', w: 'W', nw: 'NW' }
 	},
 	b6: {
 		title: 'Deine Checkliste',

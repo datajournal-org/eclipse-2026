@@ -31,7 +31,7 @@ export function buildTimeline(
 
 	const iStart = Math.floor((tStart.getTime() - PAD) / STEP_MS);
 	const iEnd = Math.ceil((tEnd.getTime() + PAD) / STEP_MS);
-	
+
 	const N = Math.max(1, iEnd - iStart);
 	const times = Array.from({ length: N + 1 }, (_, i) => (iStart + i) * STEP_MS);
 

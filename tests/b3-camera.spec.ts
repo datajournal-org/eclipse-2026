@@ -126,6 +126,57 @@ test.describe('B3 camera @webgl', () => {
 		expect((await scene()).equals(sceneBefore), 'the wheel dollied nothing').toBe(false);
 	});
 
+	test('labels the horizon with localized compass points', async () => {
+		// The German page: the shot faces the setting Sun (~west), so W must be on screen — and in this
+		// locale east would be O, so a hardcoded ASCII compass would fail here by design.
+		const visible = page.locator(`${B3} .b3-compass span:not(.hidden)`);
+		await expect(visible.filter({ hasText: /^W$/ })).toHaveCount(1);
+		// A ~100° horizontal field of view shows a handful of the eight points, never all of them.
+		const n = await visible.count();
+		expect(n).toBeGreaterThanOrEqual(2);
+		expect(n).toBeLessThan(8);
+	});
+
+	test('sweeps the compass with the orbit and restores it on reset', async () => {
+		const west = page.locator(`${B3} .b3-compass span`, { hasText: /^W$/ });
+		const xOf = async () => Number((await west.evaluate((el) => el.style.transform)).match(/-?[\d.]+/)![0]);
+		const before = await xOf();
+
+		const { x, y } = await stageCentre(page);
+		await page.mouse.move(x, y);
+		await page.mouse.down();
+		await page.mouse.move(x + 120, y, { steps: 10 }); // drag right → the camera turns left → labels sweep right
+		await page.mouse.up();
+		await page.waitForTimeout(400);
+		expect(await xOf()).toBeGreaterThan(before + 40);
+
+		await page.locator(`${B3} .maplibregl-ctrl-group`).last().locator('button').last().click();
+		await page.waitForTimeout(400);
+		expect(Math.abs((await xOf()) - before)).toBeLessThan(2);
+	});
+
+	test('keeps the compass still while dollying, like the rest of the sky', async () => {
+		// The ruler is camera-anchored (compassLayer.ts) — the same no-parallax property the Sun has.
+		const west = page.locator(`${B3} .b3-compass span`, { hasText: /^W$/ });
+		const posOf = async () =>
+			(await west.evaluate((el) => el.style.transform))
+				.match(/-?[\d.]+/g)!
+				.slice(0, 2)
+				.map(Number);
+		const [x0, y0] = await posOf();
+		await page.locator(`${B3} .maplibregl-ctrl-zoom-out`).click();
+		await page.locator(`${B3} .maplibregl-ctrl-zoom-out`).click();
+		await page.waitForTimeout(900);
+		const [x1, y1] = await posOf();
+		expect(Math.hypot(x1 - x0, y1 - y0)).toBeLessThan(2);
+	});
+
+	test('carries the compass point in the azimuth readout', async () => {
+		// The textual counterpart of the ruler — and the only orientation assistive tech gets, since the
+		// on-canvas labels are aria-hidden.
+		await expect(page.locator(`${B3} .readout`)).toContainText(/\(\w{1,2}\)/);
+	});
+
 	test('restores the framing from the recentre button', async () => {
 		const before = await locatorState(page);
 		expect(before.visible).toBe(true);

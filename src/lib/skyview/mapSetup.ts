@@ -7,6 +7,7 @@ import { sunMoonHorizon } from '$lib/eclipse';
 import { createSunLayer, type SunState } from '$lib/skyview/sunLayer';
 import { createStarLayer, type StarState } from '$lib/skyview/starLayer';
 import { createVeilLayer, type VeilState } from '$lib/skyview/veilLayer';
+import { createCompassLayer, type CompassState } from '$lib/skyview/compassLayer';
 import { SKY_PALETTE } from '$lib/config';
 import { hexToRgb } from '$lib/brand';
 
@@ -31,7 +32,7 @@ export function buildMapStyle(colorful: (typeof import('@versatiles/style'))['co
 // Terrain, sky, hillshade, 3D buildings and the Sun billboard — added once the map has loaded.
 export function addSceneLayers(
 	m: MlMap,
-	opts: { sun: SunState; stars: StarState; veil: VeilState; landColor: string }
+	opts: { sun: SunState; stars: StarState; veil: VeilState; compass: CompassState; landColor: string }
 ) {
 	m.setTerrain({ source: 'dem', exaggeration: 1.0 });
 	// Pin the camera to the sea-level-referenced altitude we compute in the controller, instead of clamping
@@ -82,8 +83,11 @@ export function addSceneLayers(
 		firstSymbol
 	);
 	// Order matters and is the whole reason the veil is a layer rather than a DOM overlay: the veil dims
-	// the map, terrain and buildings beneath it, then the stars and the Sun draw over it at full contrast.
+	// the map, terrain and buildings beneath it, then the compass ruler, the stars and the Sun draw over
+	// it at full contrast. The ruler goes under the stars and the Sun — it is reference chrome, they are
+	// the content.
 	m.addLayer(createVeilLayer(opts.veil));
+	m.addLayer(createCompassLayer(opts.compass, hexToRgb(SKY_PALETTE.star)));
 	m.addLayer(createStarLayer(opts.stars, hexToRgb(SKY_PALETTE.star)));
 	m.addLayer(createSunLayer(opts.sun, hexToRgb(SKY_PALETTE.sun)));
 }

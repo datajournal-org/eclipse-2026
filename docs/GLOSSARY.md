@@ -54,6 +54,7 @@ precisely in discussion. Terms use the exact names found in the code where one e
 - **`aimEl` / `camDep`** — where the shot points (elevation of the view centre; + = above the horizon) and how far the marker sits below the camera's horizontal. A high Sun drives `aimEl` positive — pitch past 90° — and `camDep` towards zero.
 - **Envelope** — the Sun's azimuth span + peak altitude sampled over the eclipse window, fed to `computeFraming`.
 - **Orbit** — horizontal drag on B3 rotates the camera around the marker (bearing only; height stays constant).
+- **Compass ruler** — B3's horizon orientation: camera-anchored tick lines along the true horizon (`compassLayer`, every 5°/15°/45°) with localized cardinal labels (`CompassLabels`, DOM) and the cardinal in the azimuth chip; shared azimuth logic in `skyview/compass.ts`.
 - **Hillshade** — terrain relief-shading layer; its illumination direction tracks the Sun's azimuth.
 - **3D buildings** — extruded building layer (`fill-extrusion`), lit by a constant directional light.
 - **Environment** — `environment(obsc)`: the eclipse-driven veil opacity + directional light for the scene.

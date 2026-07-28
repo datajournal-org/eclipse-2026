@@ -21,6 +21,9 @@
 	import { placeSun, placeSkyObjects, syncMapLighting } from '$lib/skyview/frameSync';
 	import { emptyStarState } from '$lib/skyview/starLayer';
 	import { emptyVeilState } from '$lib/skyview/veilLayer';
+	import { emptyCompassState } from '$lib/skyview/compassLayer';
+	import { cardinalKey } from '$lib/skyview/compass';
+	import CompassLabels from '$lib/components/CompassLabels.svelte';
 	import { visibleSkyObjects } from '$lib/skyview/skyObjects';
 	import { environment, duskVeil } from '$lib/skyview/environment';
 	import { computeFraming } from '$lib/skyview/framing';
@@ -46,6 +49,7 @@
 	let horizonY = $state(999); // loupe horizon offset (SVG units, +y down); off-frame until the Sun sets
 	let loupeGround = $state<string>('#15110d'); // ground silhouette below the loupe horizon
 	let loupe = $state<{ place: (screen: [number, number] | null) => void }>();
+	let compassLabels = $state<{ place: (screens: ([number, number] | null)[]) => void }>();
 	let setFrame: (i: number) => void = () => {};
 
 	let clockCh = $state('0'); // widest clock string in this window, so the chips beside it never shift
@@ -89,6 +93,8 @@
 			const stars = emptyStarState();
 			// The twilight wash they are drawn ON TOP of — see veilLayer.ts for why it is not a DOM overlay.
 			const veil = emptyVeilState();
+			// The horizon ruler's label positions, projected by the compass layer each rendered frame.
+			const compass = emptyCompassState();
 
 			const sun: SunState = {
 				dir: [0, 0, 1],
@@ -136,7 +142,7 @@
 
 			m.on('load', () => {
 				try {
-					addSceneLayers(m, { sun, stars, veil, landColor });
+					addSceneLayers(m, { sun, stars, veil, compass, landColor });
 
 					// ---- orientation framing: one fixed shot showing the whole Sun arc + the location marker ----
 					const { azMin, azMax, altMax } = sunArcEnvelope(LAT, LON, times, N, 8);
@@ -207,7 +213,9 @@
 
 						clock = get(fmt).time(date);
 						altTxt = s.alt.toFixed(1) + '°';
-						azTxt = s.az.toFixed(0) + '°';
+						// Azimuth with its compass point — the textual counterpart of the horizon ruler, and the
+						// only orientation assistive tech gets (the ruler and its labels are aria-hidden).
+						azTxt = `${s.az.toFixed(0)}° (${get(t)('b3.compass.' + cardinalKey(s.az))})`;
 						obscTxt = (geo.obsc * 100).toFixed(0) + '%';
 						// loupe crescent (changes only with time): Moon-disc offset/size in Sun-radius units × R
 						crescent = { x: sun.moon[0] * LOUPE_R, y: -sun.moon[1] * LOUPE_R, r: sun.moonR * LOUPE_R };
@@ -240,12 +248,21 @@
 
 					// keep the loupe overlay glued to the tiny real Sun each rendered frame (the camera can move
 					// without a scrub); SkyLoupe.place() positions the locator + tangent lines from the screen point.
+					// The compass labels ride the same event: their positions come out of the compass layer's
+					// render pass, and a small margin keeps a label from blinking off while half its glyph is
+					// still visible at the frame's edge.
 					m.on('render', () => {
 						const s = sun.screen;
 						const w = mapContainer.clientWidth,
 							h = mapContainer.clientHeight;
 						const onScreen = !!s && sun.visible && s[0] >= 0 && s[0] <= w && s[1] >= 0 && s[1] <= h;
 						loupe?.place(onScreen ? s : null);
+						const MARGIN = 16;
+						compassLabels?.place(
+							compass.labels.map((p) =>
+								p && p[0] >= -MARGIN && p[0] <= w + MARGIN && p[1] >= -MARGIN && p[1] <= h + MARGIN ? p : null
+							)
+						);
 					});
 
 					// NOTE: no re-framing on 'idle' — the camera is set once here and never moves on its own
@@ -283,6 +300,9 @@
 
 	<div class="stage bleed">
 		<div class="stage-canvas" bind:this={mapContainer}></div>
+
+		<!-- Compass-point labels over the horizon ruler (compassLayer.ts projects, this places) -->
+		<CompassLabels bind:this={compassLabels} />
 
 		<!-- A) loupe inset + B) Sun locator square & tangent leaders; bound so the render loop can drive it -->
 		<SkyLoupe

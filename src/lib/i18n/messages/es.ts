@@ -86,7 +86,9 @@ const messages: Messages = {
 		phase_start: 'Inicio',
 		phase_max: 'Máximo',
 		phase_end: 'Fin',
-		sunset: 'Puesta de sol'
+		sunset: 'Puesta de sol',
+		// Compass points for the horizon ruler and the azimuth chip (cardinal initials are locale-specific)
+		compass: { n: 'N', ne: 'NE', e: 'E', se: 'SE', s: 'S', sw: 'SO', w: 'O', nw: 'NO' }
 	},
 	b6: {
 		title: 'Tu lista',
