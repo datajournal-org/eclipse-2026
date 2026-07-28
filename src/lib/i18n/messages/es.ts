@@ -42,6 +42,7 @@ const messages: Messages = {
 		choose: 'Elegir ubicación',
 		close: 'Cerrar',
 		geo: 'Usar mi ubicación',
+		geo_busy: 'Determinando ubicación …',
 		search: 'Buscar ciudad o dirección',
 		searching: 'Buscando …',
 		no_results: 'Nada encontrado',

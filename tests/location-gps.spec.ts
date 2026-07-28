@@ -68,10 +68,37 @@ test.describe('use my location', () => {
 		await expect(page.locator('.results li button')).toHaveCount(0);
 	});
 
-	test('is labelled for pointer and screen-reader users', async ({ page, stubGeocoder }) => {
+	test('labels itself with visible text, not a tooltip', async ({ page, stubGeocoder }) => {
+		// The old control was an icon-only button whose label lived in title/aria-label — invisible on
+		// touch, and the crosshair glyph alone is map-app vocabulary. The label IS the button now.
 		await stubGeocoder();
 		const gps = await open(page);
-		await expect(gps).toHaveAttribute('title', 'Meinen Standort verwenden');
-		await expect(gps).toHaveAttribute('aria-label', 'Meinen Standort verwenden');
+		await expect(gps).toHaveText(/Meinen Standort verwenden/);
+		await expect(gps).toBeVisible();
+	});
+
+	test('sits outside the search field, as its own action', async ({ page, stubGeocoder }) => {
+		// Inside the input it read as part of searching (clear/submit); as a separate chip it reads as
+		// the alternative to typing. Pin the structure: not a descendant of the search bar, below it.
+		await stubGeocoder();
+		const gps = await open(page);
+		expect(await page.locator('dialog.picker-dlg .searchbar button').count()).toBe(0);
+		const bar = (await page.locator('dialog.picker-dlg .searchbar').boundingBox())!;
+		const chip = (await gps.boundingBox())!;
+		expect(chip.y).toBeGreaterThan(bar.y + bar.height - 1);
+	});
+
+	test('reports progress in its own label while locating', async ({ page, context, stubGeocoder }) => {
+		await context.grantPermissions(['geolocation']);
+		await stubGeocoder(PHOTON.oviedo);
+		// A geolocation fix that never resolves, so the busy state holds still long enough to read.
+		await page.addInitScript(() => {
+			navigator.geolocation.getCurrentPosition = () => {};
+		});
+		const gps = await open(page);
+		await gps.click();
+		const busy = page.locator('dialog.picker-dlg .geo-chip');
+		await expect(busy).toHaveText(/Standort wird ermittelt/);
+		await expect(busy).toBeDisabled();
 	});
 });

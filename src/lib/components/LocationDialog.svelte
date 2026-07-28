@@ -149,17 +149,23 @@
 				<LocationPicker lat={pending.lat} lon={pending.lon} onmove={onPinMove} />
 			{/if}
 
-			<div class="searchbar">
-				<span class="s-ico" aria-hidden="true">🔍</span>
-				<input
-					type="search"
-					bind:value={query}
-					oninput={onSearchInput}
-					placeholder={$t('a4.search')}
-					aria-label={$t('a4.search')}
-					autocomplete="off"
-				/>
-				<button class="gps" onclick={useGeo} disabled={geoBusy} title={$t('a4.geo')} aria-label={$t('a4.geo')}>
+			<div class="search-overlay">
+				<div class="searchbar">
+					<span class="s-ico" aria-hidden="true">🔍</span>
+					<input
+						type="search"
+						bind:value={query}
+						oninput={onSearchInput}
+						placeholder={$t('a4.search')}
+						aria-label={$t('a4.search')}
+						autocomplete="off"
+					/>
+				</div>
+
+				<!-- The "fast path": a labelled chip rather than an icon in the search bar. The crosshair glyph
+				     alone is map-app vocabulary; the visible sentence is what tells a general reader that NOT
+				     typing is an option. While the device is locating, the label says so. -->
+				<button class="geo-chip" onclick={useGeo} disabled={geoBusy}>
 					<svg
 						viewBox="0 0 24 24"
 						fill="none"
@@ -171,34 +177,35 @@
 						<circle cx="12" cy="12" r="6" />
 						<path d="M12 1v4M12 19v4M1 12h4M19 12h4" />
 					</svg>
+					{geoBusy ? $t('a4.geo_busy') : $t('a4.geo')}
 				</button>
-			</div>
 
-			{#if geoErr || $searchState.status !== 'idle'}
-				<ul class="results">
-					{#if geoErr}
-						<li class="hint">{$t('a4.geo_error')}</li>
-					{:else if $searchState.status === 'searching'}
-						<li class="hint">{$t('a4.searching')}</li>
-					{:else if $searchState.status === 'error'}
-						<li class="hint">{$t('a4.search_error')}</li>
-					{:else if $searchState.status === 'empty'}
-						<li class="hint">{$t('a4.no_results')}</li>
-					{:else if $searchState.status === 'results'}
-						{#each $searchState.hits as h (h.lat + ',' + h.lon)}
-							<li>
-								<button type="button" onclick={() => pick(h)}>
-									<span class="ico" aria-hidden="true">📍</span>
-									<span class="txt">
-										<span class="lbl">{h.label}</span>
-										{#if h.sub}<span class="sub">{h.sub}</span>{/if}
-									</span>
-								</button>
-							</li>
-						{/each}
-					{/if}
-				</ul>
-			{/if}
+				{#if geoErr || $searchState.status !== 'idle'}
+					<ul class="results">
+						{#if geoErr}
+							<li class="hint">{$t('a4.geo_error')}</li>
+						{:else if $searchState.status === 'searching'}
+							<li class="hint">{$t('a4.searching')}</li>
+						{:else if $searchState.status === 'error'}
+							<li class="hint">{$t('a4.search_error')}</li>
+						{:else if $searchState.status === 'empty'}
+							<li class="hint">{$t('a4.no_results')}</li>
+						{:else if $searchState.status === 'results'}
+							{#each $searchState.hits as h (h.lat + ',' + h.lon)}
+								<li>
+									<button type="button" onclick={() => pick(h)}>
+										<span class="ico" aria-hidden="true">📍</span>
+										<span class="txt">
+											<span class="lbl">{h.label}</span>
+											{#if h.sub}<span class="sub">{h.sub}</span>{/if}
+										</span>
+									</button>
+								</li>
+							{/each}
+						{/if}
+					</ul>
+				{/if}
+			</div>
 		</div>
 
 		<p class="adjust">{$t('a4.adjust_hint')}</p>
@@ -307,12 +314,25 @@
 		min-height: 0;
 		background: var(--bg);
 	}
-	.searchbar {
+	/* search + fast-path chip + results, stacked over the map's top edge. The container itself must not
+	   swallow map gestures in the empty space between its children, hence the pointer-events split. */
+	.search-overlay {
 		position: absolute;
 		z-index: 2;
 		top: 10px;
 		left: 10px;
 		right: 10px;
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+		pointer-events: none;
+
+		> * {
+			pointer-events: auto;
+		}
+	}
+	.searchbar {
 		display: flex;
 		align-items: center;
 		gap: 6px;
@@ -337,27 +357,32 @@
 			outline: none;
 		}
 	}
-	.gps {
-		display: grid;
-		place-items: center;
-		width: 32px;
-		height: 32px;
-		border-radius: 8px;
+	.geo-chip {
+		align-self: flex-start; /* a chip, not a bar — it should read as one tappable phrase */
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		padding: 0.5rem 0.9rem;
+		border-radius: 999px;
 		border: 1px solid var(--accent);
 		background: var(--accent);
 		color: var(--bg);
+		font: inherit;
+		font-size: 0.88rem;
+		font-weight: 600;
+		white-space: nowrap;
 		cursor: pointer;
-		padding: 0;
-		line-height: 1;
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 
 		svg {
-			width: 18px;
-			height: 18px;
+			width: 16px;
+			height: 16px;
+			flex: none;
 		}
 
 		&:disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
+			opacity: 0.7; /* still readable: while disabled it is SAYING something ("locating …") */
+			cursor: progress;
 		}
 		&:focus-visible {
 			outline: 2px solid var(--accent);
@@ -366,11 +391,6 @@
 	}
 
 	.results {
-		position: absolute;
-		z-index: 2;
-		top: 56px;
-		left: 10px;
-		right: 10px;
 		margin: 0;
 		padding: 5px;
 		list-style: none;
@@ -378,7 +398,8 @@
 		border: 1px solid var(--border);
 		border-radius: var(--radius-sm);
 		box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
-		max-height: 62%;
+		/* below the chip in the column, so a device-location error never covers the button to retry it */
+		max-height: min(310px, 46dvh);
 		overflow-y: auto;
 
 		.hint {
