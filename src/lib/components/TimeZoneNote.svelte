@@ -27,7 +27,6 @@
 
 {#if zone}
 	<p class="tz-note" title={$t('tz.note')}>
-		<span class="ico" aria-hidden="true">🌐</span>
 		<span>{$t('tz.all_in', { zone })}</span>
 	</p>
 {/if}
@@ -42,9 +41,5 @@
 		font-size: 0.82rem;
 		text-align: center;
 		text-wrap: balance;
-
-		.ico {
-			font-size: 0.9em;
-		}
 	}
 </style>
