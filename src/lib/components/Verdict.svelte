@@ -88,16 +88,27 @@
 			font-weight: 600;
 			color: var(--muted);
 		}
+		/* A filled accent pill like the app's other primary buttons (dialog confirm, location CTA):
+		   it reads as a button at a glance and clears the 24 px target the old underlined link missed. */
 		.change {
 			font: inherit;
-			font-size: 0.82rem;
-			padding: 0;
-			border: 0;
-			background: none;
-			color: var(--accent);
+			font-size: 0.86rem;
+			font-weight: 600;
+			margin-left: 6px;
+			padding: 4px 12px;
+			border: 1px solid var(--accent);
+			border-radius: 8px;
+			background: var(--accent);
+			color: var(--bg);
 			cursor: pointer;
-			text-decoration: underline;
-			text-underline-offset: 2px;
+
+			&:hover {
+				background: color-mix(in oklab, var(--accent) 85%, white);
+			}
+			&:focus-visible {
+				outline: 2px solid var(--accent);
+				outline-offset: 2px;
+			}
 		}
 	}
 	.headline {
