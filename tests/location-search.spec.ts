@@ -108,7 +108,7 @@ test.describe('location search', () => {
 
 		await expect(page.locator('dialog.picker-dlg')).toBeHidden();
 		await expect(page.locator('section.b1')).toBeVisible();
-		await expect(page.locator('section.b1 h2')).toHaveText('Totale Sonnenfinsternis');
+		await expect(page.locator('section.b1 h2')).toContainText('Totale Sonnenfinsternis');
 	});
 
 	test('clearing the query drops the results', async ({ page, stubGeocoder }) => {

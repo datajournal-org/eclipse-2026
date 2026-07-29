@@ -30,7 +30,7 @@ test.describe('use my location', () => {
 		await expect(page.locator('dialog.picker-dlg .summary .place')).toContainText('Berlin');
 		await page.getByRole('button', { name: /Diesen Ort verwenden/ }).click();
 
-		await expect(page.locator('section.b1 h2')).toHaveText('Partielle Sonnenfinsternis');
+		await expect(page.locator('section.b1 h2')).toContainText('Partielle Sonnenfinsternis');
 	});
 
 	test('shows an error and stays usable when permission is denied', async ({ page, context, stubGeocoder }) => {

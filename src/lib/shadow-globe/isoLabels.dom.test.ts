@@ -125,6 +125,18 @@ describe('update', () => {
 		expect(opacities[2]).toBeCloseTo(0.5, 6); // full zoom fade × the 100 % ring's opacity
 	});
 
+	it('skips the zoom fade in screenshot mode (?og), keeping each ring at full opacity', () => {
+		// The OG card is captured at the wide opening zoom, exactly where the fade would ghost the
+		// labels — scripts/build-og-image.ts relies on this override.
+		const labels = attached();
+		labels.zoomFadeDisabled = true;
+		map.getZoom = () => 0; // far out: the fade would be 0 and hide the labels entirely
+		labels.update(map as unknown as MlMap, model, true);
+		const opacities = FakeMarker.instances.map((m) => Number(m.element.querySelector('span')!.style.opacity));
+		expect(opacities[0]).toBeCloseTo(0.1, 6); // the 20 % ring's own opacity, unfaded
+		expect(opacities[2]).toBeCloseTo(0.5, 6); // the 100 % ring's own opacity, unfaded
+	});
+
 	it('hides everything when the overlay is switched off', () => {
 		const labels = attached();
 		labels.update(map as unknown as MlMap, model, true);

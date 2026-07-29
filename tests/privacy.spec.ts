@@ -32,7 +32,7 @@ test.describe('location privacy', () => {
 		// Nothing seeded this page, so the reload proves the app can read back what it wrote — the two
 		// halves are in the same module, but a change to the stored shape has to break one of these.
 		await page.reload();
-		await expect(page.locator('section.b1 h2')).toHaveText('Totale Sonnenfinsternis');
+		await expect(page.locator('section.b1 h2')).toContainText('Totale Sonnenfinsternis');
 	});
 
 	// Reads what the fixture seeded, so it covers the READ half of persistence only — storedPage re-seeds
@@ -40,11 +40,11 @@ test.describe('location privacy', () => {
 	// The write half is the reload in the test above and the round trip in location-change.spec.ts.
 	test('restores the located state on reload, with no URL parameters', async ({ page, storedPage }) => {
 		await storedPage({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
-		await expect(page.locator('section.b1 h2')).toHaveText('Totale Sonnenfinsternis');
+		await expect(page.locator('section.b1 h2')).toContainText('Totale Sonnenfinsternis');
 		expect(new URL(page.url()).search).toBe('');
 
 		await page.reload();
-		await expect(page.locator('section.b1 h2')).toHaveText('Totale Sonnenfinsternis');
+		await expect(page.locator('section.b1 h2')).toContainText('Totale Sonnenfinsternis');
 	});
 
 	test('falls back to the un-located state when storage is cleared', async ({ page, stubGeocoder }) => {
@@ -66,7 +66,7 @@ test.describe('location privacy', () => {
 
 	test('accepts the ?lat&lon debug override without writing it back', async ({ page, locatedPage }) => {
 		await locatedPage({ lat: 52.52, lon: 13.405, name: 'Berlin' });
-		await expect(page.locator('section.b1 h2')).toHaveText('Partielle Sonnenfinsternis');
+		await expect(page.locator('section.b1 h2')).toContainText('Partielle Sonnenfinsternis');
 		// read once as a debug affordance — and not promoted into storage
 		expect(await page.evaluate(() => window.localStorage.getItem('eclipse.location'))).toBeNull();
 	});

@@ -14,6 +14,13 @@ type Entry = { marker: Marker; span: HTMLSpanElement };
 export class IsoLabels {
 	private markers: Entry[] = [];
 
+	/**
+	 * Screenshot mode (the `?og` URL flag): labels keep each ring's full opacity regardless of zoom.
+	 * The zoom fade exists for interactive readers zooming far out; the OG image is captured exactly
+	 * there, and a social card with ghost labels defeats the overlay's purpose.
+	 */
+	zoomFadeDisabled = false;
+
 	constructor(private rings: Ring[]) {}
 
 	/** Create one marker per ring and add them to the map (hidden until the first `update`). */
@@ -45,7 +52,7 @@ export class IsoLabels {
 		const down = umbra && model ? viewportDownDir(map, umbra) : null;
 		// Shrink + fade the labels out when zoomed far out (unreadable clutter otherwise).
 		const size = Math.min(12, Math.pow(2, map.getZoom()) * 2.5);
-		const zoomFade = Math.max(0, Math.min(1, (size - 5) / 2));
+		const zoomFade = this.zoomFadeDisabled ? 1 : Math.max(0, Math.min(1, (size - 5) / 2));
 		this.rings.forEach((ring, i) => {
 			const { marker, span } = this.markers[i];
 			const radius = model ? radiusForCoverage(model, ring.level) : null;

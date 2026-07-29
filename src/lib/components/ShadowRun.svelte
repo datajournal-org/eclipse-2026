@@ -259,6 +259,9 @@
 			else m.once('style.load', applyFit);
 
 			if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { __map: m });
+			// ?og — screenshot mode for scripts/build-og-image.ts: the iso labels skip their zoom fade,
+			// so the geometry overlay is fully readable in the captured card.
+			if (new URLSearchParams(location.search).has('og')) isoLabels.zoomFadeDisabled = true;
 			// Surface style/tile/WebGL errors that would otherwise be swallowed (and can stall loading).
 			m.on('error', (e) => console.error('[A2] map error:', (e as { error?: unknown }).error ?? e));
 			// Test hook: the end-to-end suite waits on this instead of guessing at a timeout or watching

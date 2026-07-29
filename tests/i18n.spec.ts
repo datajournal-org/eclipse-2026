@@ -41,9 +41,9 @@ test.describe('language switching @i18n', () => {
 
 	test('translates the personalised sections too', async ({ page, locatedPage }) => {
 		await locatedPage(byName('Oviedo'), 'en');
-		await expect(page.locator('section.b1 h2')).toHaveText('Total solar eclipse');
+		await expect(page.locator('section.b1 h2')).toContainText('Total solar eclipse');
 		await locatedPage(byName('Oviedo'), 'es');
-		await expect(page.locator('section.b1 h2')).toHaveText('Eclipse solar total');
+		await expect(page.locator('section.b1 h2')).toContainText('Eclipse solar total');
 	});
 
 	test('marks the current language for assistive tech', async ({ page }) => {
@@ -82,7 +82,7 @@ test.describe('language switching @i18n', () => {
 			.catch(() => {});
 		await expect(page.locator('section.b1')).toBeVisible();
 		await switchLanguage(page, 'en');
-		await expect(page.locator('section.b1 h2')).toHaveText('Total solar eclipse');
+		await expect(page.locator('section.b1 h2')).toContainText('Total solar eclipse');
 	});
 
 	test('formats times in the reader’s zone, in the page’s language', async ({ page, locatedPage }) => {

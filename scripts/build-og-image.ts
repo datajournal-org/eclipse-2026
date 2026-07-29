@@ -33,7 +33,9 @@ const kill = () => {
 };
 process.on('exit', kill);
 
-const url = `http://localhost:${PORT}${BASE}/de/`;
+// ?og: screenshot mode — the iso labels skip their zoom fade (ShadowRun/IsoLabels), so the coverage
+// geometry reads at full strength in the card instead of ghosting at the wide opening zoom.
+const url = `http://localhost:${PORT}${BASE}/de/?og`;
 for (let tries = 0; ; tries++) {
 	try {
 		const res = await fetch(url);
@@ -91,7 +93,7 @@ if (box.width < w || box.height < h) {
 	console.error(`[og] A2 canvas ${box.width}×${box.height} is smaller than the ${w}×${h} CSS clip`);
 	process.exit(1);
 }
-await page.screenshot({ path: OUT, type: 'jpeg', quality: 90, clip });
+await page.screenshot({ path: OUT, type: 'jpeg', quality: 95, clip });
 await browser.close();
 kill();
 console.log(`[og] ${OUT} written (${WIDTH}×${HEIGHT}, greatest eclipse at ${GREATEST.utc})`);
