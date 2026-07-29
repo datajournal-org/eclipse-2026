@@ -127,6 +127,8 @@
 	onMount(() => {
 		let map: MlMap | undefined;
 		let disposed = false;
+		let scrubRaf = 0; // pending rAF of the coalesced scrub (see showFrame below)
+		let scrubIndex = 0;
 		const brand = readBrandColors();
 		// ?og — screenshot mode for scripts/build-og-image.ts: the whole geometry overlay (iso labels,
 		// iso lines, corridor band) renders at its hardcoded card opacities and the labels skip their
@@ -316,7 +318,19 @@
 					for (const layer of CITY_LABEL_LAYERS) m.addLayer(layer);
 					isoLabels.attach(m, maplibregl.Marker, INITIAL_VIEW.center);
 					m.on('move', () => isoLabels.update(m, currentModel, labelsVisible)); // labels track viewport-down
-					showFrame = (index) => renderFrame(m, index);
+					// Coalesced to one renderFrame per animation frame, latest index wins — the same pattern
+					// as B3's setFrame. A 120 Hz pointer fires more `input` events than frames are drawn, and
+					// renderFrame rebuilds the whole reference overlay per call; without this the scrub paid
+					// that cost per EVENT. The slider and clock are reactive and stay glued to the finger —
+					// only the scene render is capped at display rate.
+					showFrame = (index) => {
+						scrubIndex = index;
+						if (scrubRaf) return;
+						scrubRaf = requestAnimationFrame(() => {
+							scrubRaf = 0;
+							if (!disposed) renderFrame(m, scrubIndex);
+						});
+					};
 					showFrame(frameIndex);
 				} catch (err) {
 					console.error('[A2] reference overlay setup failed', err);
@@ -329,6 +343,7 @@
 
 		return () => {
 			disposed = true;
+			cancelAnimationFrame(scrubRaf);
 			isoLabels.destroy();
 			userMarker?.remove();
 			userMarker = null;
