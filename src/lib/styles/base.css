@@ -199,13 +199,13 @@ button {
 .stage {
 	position: relative;
 	overflow: hidden;
-	background: var(--bg);
+	background: transparent;
 }
 .stage-canvas {
 	/* Phones: never more than half the viewport, so the map cannot swallow the screen and the content
 	   under it stays discoverable. */
 	height: var(--stage-h, 50vh);
-	background: var(--bg);
+	background: transparent;
 }
 /* From the width at which .block.wide starts to open up (--maxw + two gutters), the stage gets taller
    too — a wider map with the old height would just be a letterbox. */
