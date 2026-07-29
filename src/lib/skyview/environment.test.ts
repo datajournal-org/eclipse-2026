@@ -56,14 +56,23 @@ describe('environment', () => {
 		expect(environment(Number.NEGATIVE_INFINITY).veil).toBe(0);
 	});
 
-	it('holds the directional light constant', () => {
-		// Documented decision: the veil owns all eclipse dimming, so buildings and terrain darken at the
-		// same rate. A light that tracked the eclipse would make buildings run ahead of the ground.
-		const light = environment(0);
+	it('holds the light colour constant but raises its intensity toward totality', () => {
+		// Documented decision: the veil owns all eclipse DIMMING (a light that dimmed with the eclipse
+		// would make buildings run ahead of the ground) — but intensity is facade CONTRAST, and it rises
+		// on the veil's own curve so buildings keep their shape as the veil crushes the scene's range.
+		const day = environment(0);
+		let prev = day.intensity;
 		for (const o of [0.25, 0.5, 0.9, 1]) {
-			expect(environment(o).light).toBe(light.light);
-			expect(environment(o).intensity).toBe(light.intensity);
+			expect(environment(o).light).toBe(day.light);
+			expect(environment(o).intensity).toBeGreaterThanOrEqual(prev);
+			prev = environment(o).intensity;
 		}
+		// meaningfully stronger at totality, not a token nudge...
+		expect(environment(1).intensity).toBeGreaterThan(day.intensity + 0.2);
+		// ...on a gentler curve than the veil: a deep-partial maximum (Innsbruck, ~0.91) must already
+		// get most of the boost, while a half-covered Sun stays close to the daylight look.
+		expect(environment(0.91).intensity).toBeGreaterThan(day.intensity + 0.15);
+		expect(environment(0.5).intensity).toBeLessThan(day.intensity + 0.05);
 	});
 
 	it('exports the dusk colour as a hex triple', () => {

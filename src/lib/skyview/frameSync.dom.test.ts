@@ -122,7 +122,7 @@ describe('placeSun', () => {
 });
 
 describe('syncMapLighting', () => {
-	const env = { light: '#fff2dc', intensity: 0.25 };
+	const env = { light: '#fff2dc', intensity: 0.25 }; // any values — syncMapLighting passes them through
 
 	it('anchors the light to the map and encodes azimuth and altitude', () => {
 		const m = createFakeMap();

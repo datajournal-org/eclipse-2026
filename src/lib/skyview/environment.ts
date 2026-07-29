@@ -4,9 +4,12 @@
 //
 // MapLibre has no global exposure, and setLight only shades the 3D BUILDINGS (fill-extrusion) — NOT the
 // terrain, hillshade or flat vector fills. So a single DOM overlay (`veil`, DUSK_HEX) owns ALL eclipse
-// dimming and covers buildings AND terrain uniformly. The directional light is kept CONSTANT — a fixed
-// warm sun-side cue that only gives the buildings their 3D shape. If it dimmed/cooled with the eclipse
-// too (as it used to), the buildings would darken faster than the flat terrain the veil alone dims.
+// dimming and covers buildings AND terrain uniformly. The directional light's COLOUR is kept constant —
+// a fixed warm sun-side cue that only gives the buildings their 3D shape; if it dimmed/cooled with the
+// eclipse too (as it used to), the buildings would darken faster than the flat terrain the veil alone
+// dims. Its INTENSITY, however, rises toward totality: intensity is facade contrast (lit vs shaded
+// walls, and the vertical gradient), and the veil crushes exactly that contrast as it approaches
+// MAX_VEIL — without the boost, an Innsbruck at maximum was one grey building blob.
 
 /** The blue-grey the scene fades toward near totality (the DOM veil colour). */
 export const DUSK_HEX = '#20263a';
@@ -20,26 +23,33 @@ const MAX_VEIL = 0.93;
 const VEIL_STEEP = 9; // higher → gentle dimming through the partial phase, then a sharp plunge near totality
 
 const LIGHT_COLOR = '#fff2dc'; // constant warm white of the directional building light
-const LIGHT_INTENSITY = 0.25; // constant contrast — the veil owns all eclipse dimming
+const LIGHT_INTENSITY = 0.25; // facade contrast in daylight
+const LIGHT_INTENSITY_TOTALITY = 0.55; // ...and at totality, countering the veil's contrast crush
+// The intensity rises on a GENTLER curve than the veil (cube, not VEIL_STEEP): a deep-partial place
+// like Innsbruck tops out near 0.9 obscuration, where the veil curve delivers almost none of the
+// boost — but its maximum is dim enough to blob, so the contrast must arrive earlier.
+const INTENSITY_STEEP = 3;
 
 export type Environment = {
 	brightness: number; // 1 = full daylight, 0 at totality
 	veil: number; // dusk-overlay opacity (0 → MAX_VEIL) — the single, uniform eclipse dimmer
 	light: string; // directional building-light colour (constant)
-	intensity: number; // directional building-light intensity (constant)
+	intensity: number; // directional building-light intensity (rises with the veil — see header note)
 };
 
 /** Map appearance for a given eclipse obscuration (0..1). The veil is the one eclipse dimmer; the
- *  directional light stays constant so buildings and terrain dim together at the same rate. */
+ *  directional light keeps its colour, and its intensity rises on the veil's own curve so facade
+ *  contrast arrives exactly when the veil would otherwise crush it. */
 export function environment(obsc: number): Environment {
 	const o = Math.max(0, Math.min(1, obsc));
 	// veil rises steeply only as totality approaches: gentle through the partial phase, near-total at o→1.
-	const veil = MAX_VEIL * Math.pow(o, VEIL_STEEP);
+	const rise = Math.pow(o, VEIL_STEEP);
+	const veil = MAX_VEIL * rise;
 	return {
-		brightness: 1 - Math.pow(o, VEIL_STEEP),
+		brightness: 1 - rise,
 		veil,
 		light: LIGHT_COLOR,
-		intensity: LIGHT_INTENSITY
+		intensity: LIGHT_INTENSITY + (LIGHT_INTENSITY_TOTALITY - LIGHT_INTENSITY) * Math.pow(o, INTENSITY_STEEP)
 	};
 }
 
