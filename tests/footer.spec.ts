@@ -1,13 +1,13 @@
 import { test, expect, localeUrl, ALL_LANGS, switchLanguage } from './fixtures';
-import { REPO_URL, translationFileUrl } from '../src/lib/config';
+import { REPO_URL, IMPRINT_URL, translationFileUrl } from '../src/lib/config';
 
 const LABELS = {
-	de: { source: 'Quelltext auf GitHub', translation: 'Diese Übersetzung verbessern' },
-	en: { source: 'Source code on GitHub', translation: 'Improve this translation' },
-	es: { source: 'Código fuente en GitHub', translation: 'Mejorar esta traducción' },
-	fr: { source: 'Code source sur GitHub', translation: 'Améliorer cette traduction' },
-	nl: { source: 'Broncode op GitHub', translation: 'Deze vertaling verbeteren' },
-	pt: { source: 'Código-fonte no GitHub', translation: 'Melhorar esta tradução' }
+	de: { source: 'Quelltext auf GitHub', translation: 'Diese Übersetzung verbessern', imprint: 'Impressum' },
+	en: { source: 'Source code on GitHub', translation: 'Improve this translation', imprint: 'Imprint' },
+	es: { source: 'Código fuente en GitHub', translation: 'Mejorar esta traducción', imprint: 'Aviso legal' },
+	fr: { source: 'Code source sur GitHub', translation: 'Améliorer cette traduction', imprint: 'Mentions légales' },
+	nl: { source: 'Broncode op GitHub', translation: 'Deze vertaling verbeteren', imprint: 'Colofon' },
+	pt: { source: 'Código-fonte no GitHub', translation: 'Melhorar esta tradução', imprint: 'Aviso legal' }
 } as const;
 
 test.describe('colophon footer', () => {
@@ -27,6 +27,17 @@ test.describe('colophon footer', () => {
 			await expect(link).toBeVisible();
 			await expect(link).toHaveAttribute('href', translationFileUrl(lang));
 			expect(translationFileUrl(lang)).toContain(`/messages/${lang}.ts`);
+		});
+	}
+
+	// The imprint is a legal requirement for a site published in Germany, so its presence is pinned in
+	// every language — a locale whose footer lost the link would be a compliance bug, not a style one.
+	for (const lang of ALL_LANGS) {
+		test(`links to the datajournal.org imprint in ${lang}`, async ({ page }) => {
+			await page.goto(localeUrl(lang));
+			const link = page.getByRole('link', { name: LABELS[lang].imprint, exact: true });
+			await expect(link).toBeVisible();
+			await expect(link).toHaveAttribute('href', IMPRINT_URL);
 		});
 	}
 

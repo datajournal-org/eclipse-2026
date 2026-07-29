@@ -122,7 +122,8 @@ const messages: Messages = {
 	},
 	footer: {
 		source: 'Broncode op GitHub',
-		translation: 'Deze vertaling verbeteren'
+		translation: 'Deze vertaling verbeteren',
+		imprint: 'Colofon'
 	},
 	safety: 'Kijk nooit zonder gecertificeerde eclipsbril (ISO 12312-2) naar de zon.'
 };

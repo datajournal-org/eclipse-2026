@@ -121,7 +121,8 @@ const messages: Messages = {
 	},
 	footer: {
 		source: 'Código-fonte no GitHub',
-		translation: 'Melhorar esta tradução'
+		translation: 'Melhorar esta tradução',
+		imprint: 'Aviso legal'
 	},
 	safety: 'Nunca olhes para o Sol sem óculos de eclipse certificados (ISO 12312-2).'
 };

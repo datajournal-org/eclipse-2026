@@ -122,7 +122,8 @@ const messages = {
 	},
 	footer: {
 		source: 'Quelltext auf GitHub',
-		translation: 'Diese Übersetzung verbessern'
+		translation: 'Diese Übersetzung verbessern',
+		imprint: 'Impressum'
 	},
 	safety: 'Nie ohne geprüfte Finsternisbrille (ISO 12312-2) in die Sonne schauen.'
 };

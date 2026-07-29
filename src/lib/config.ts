@@ -18,6 +18,9 @@ export const SITE_URL: string = import.meta.env?.VITE_SITE_URL ?? 'https://dataj
  */
 export const REPO_URL = 'https://github.com/datajournal-org/eclipse-2026';
 
+/** Imprint (Impressum) of datajournal.org, the site this app is published under — legally required. */
+export const IMPRINT_URL = 'https://datajournal.org/impressum';
+
 /**
  * The tip jar (Stripe LIVE payment link) behind the donate box at the end of the page.
  * Mirrored in tests/donate.spec.ts, which pins the exact URL the page ships.

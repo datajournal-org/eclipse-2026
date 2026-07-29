@@ -4,15 +4,16 @@
 
      The page's one <footer>/contentinfo landmark (it used to be a plain div while the eye-safety bar
      held that role; the bar is gone — safety now lives in context: the verdict's accent line, the
-     checklist's why-line, the calendar entry). Two utility links do not warrant a <nav> of their own —
-     reading order reaches them fine. -->
+     checklist's why-line, the calendar entry). Three utility links do not warrant a <nav> of their own —
+     reading order reaches them fine. The imprint (Impressum) link is legally required and points at the
+     publishing site's own page. -->
 <script lang="ts">
 	import { t, locale } from '$lib/i18n';
-	import { REPO_URL, translationFileUrl } from '$lib/config';
+	import { REPO_URL, IMPRINT_URL, translationFileUrl } from '$lib/config';
 </script>
 
 <!-- eslint-disable svelte/no-navigation-without-resolve --
-     Both links leave the site entirely (absolute github.com URLs from config.ts), so `resolve` and the
+     All three links leave the site entirely (absolute URLs from config.ts), so `resolve` and the
      `base` path do not apply. The rule cannot tell that through the constant and the helper. -->
 <footer class="colophon">
 	<div class="inner">
@@ -20,6 +21,8 @@
 		<span class="sep" aria-hidden="true">·</span>
 		<!-- The file for the language currently being read, not a fixed one. -->
 		<a href={translationFileUrl($locale)}>{$t('footer.translation')}</a>
+		<span class="sep" aria-hidden="true">·</span>
+		<a href={IMPRINT_URL}>{$t('footer.imprint')}</a>
 	</div>
 </footer>
 

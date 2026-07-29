@@ -123,7 +123,8 @@ const messages: Messages = {
 	},
 	footer: {
 		source: 'Source code on GitHub',
-		translation: 'Improve this translation'
+		translation: 'Improve this translation',
+		imprint: 'Imprint'
 	},
 	safety: 'Never look at the Sun without certified eclipse glasses (ISO 12312-2).'
 };
