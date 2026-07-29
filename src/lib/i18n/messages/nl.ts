@@ -97,14 +97,15 @@ const messages: Messages = {
 		title: 'Jouw checklist',
 		until_max: 'tot het maximum',
 		past: 'Het maximum is voorbij.',
-		glasses: 'Gecertificeerde eclipsbril (ISO 12312-2)',
-		glasses_why: 'Gewone zonnebrillen volstaan niet — zonder bescherming dreigt blijvende oogschade.',
-		view: 'Vrij zicht naar het westen (azimut {az}°)',
-		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
-		view_generic: 'Vrij zicht naar het westen',
-		view_why: 'Controleer vooraf of gebouwen of bomen de zon op dat moment verbergen.',
-		weather: 'Weersverwachting checken',
-		weather_why: 'Bij dicht wolkendek helpt alleen een andere plek — houd een alternatief achter de hand.',
+		glasses: 'Bescherm je ogen met een gecertificeerde eclipsbril (ISO 12312-2).',
+		glasses_why:
+			'Een gewone zonnebril is hiervoor niet genoeg. Wie zonder gecertificeerde eclipsbril naar de zon kijkt, riskeert blijvende oogschade.',
+		view: 'Heb je vrij zicht naar het westen?',
+		view_why:
+			'Controleer van tevoren of bomen, gebouwen, bergen of andere obstakels de zon op dat moment verbergen. Zoek zo nodig een andere plek.',
+		weather: 'Bekijk een paar dagen van tevoren de weersvoorspelling.',
+		weather_why:
+			'Bij dichte bewolking helpt alleen een andere locatie. Bekijk de voorspelling op tijd, zodat je zo nodig kunt uitwijken.',
 		add_calendar: '📅 Aan agenda toevoegen',
 		event_title: 'Zonsverduistering 2026'
 	},

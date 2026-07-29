@@ -97,15 +97,15 @@ const messages: Messages = {
 		title: 'Ta checklist',
 		until_max: 'avant le maximum',
 		past: 'Le maximum est passé.',
-		glasses: 'Lunettes d’éclipse certifiées (ISO 12312-2)',
+		glasses: 'Protège tes yeux avec des lunettes d’éclipse certifiées (ISO 12312-2).',
 		glasses_why:
-			'Les lunettes de soleil ordinaires ne suffisent pas — sans protection, tu risques des lésions oculaires durables.',
-		view: 'Vue dégagée vers l’ouest (azimut {az}°)',
-		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
-		view_generic: 'Vue dégagée vers l’ouest',
-		view_why: 'Vérifie à l’avance si des bâtiments ou des arbres masquent le Soleil à cette heure.',
-		weather: 'Vérifier la météo',
-		weather_why: 'Sous une couverture nuageuse épaisse, seul un changement de lieu aide — prévois une alternative.',
+			'Les lunettes de soleil ordinaires ne suffisent pas. Regarder le Soleil sans lunettes d’éclipse certifiées expose à des lésions oculaires irréversibles.',
+		view: 'As-tu une vue dégagée vers l’ouest ?',
+		view_why:
+			'Vérifie à l’avance si des arbres, des bâtiments, des montagnes ou d’autres obstacles cachent le Soleil à ce moment-là. Au besoin, choisis un autre endroit.',
+		weather: 'Vérifie les prévisions météo quelques jours avant.',
+		weather_why:
+			'Sous une couverture nuageuse épaisse, seul un changement de lieu aide. Vérifie les prévisions à temps pour pouvoir te déplacer si nécessaire.',
 		add_calendar: '📅 Ajouter au calendrier',
 		event_title: 'Éclipse solaire 2026'
 	},

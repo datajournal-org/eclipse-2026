@@ -98,14 +98,15 @@ const messages: Messages = {
 		title: 'Tu lista',
 		until_max: 'hasta el máximo',
 		past: 'El máximo ya ha pasado.',
-		glasses: 'Gafas de eclipse certificadas (ISO 12312-2)',
-		glasses_why: 'Las gafas de sol normales no bastan — sin protección hay riesgo de daño ocular permanente.',
-		view: 'Vista despejada al oeste (acimut {az}°)',
-		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
-		view_generic: 'Vista despejada hacia el oeste',
-		view_why: 'Comprueba antes si edificios o árboles tapan el Sol a esa hora.',
-		weather: 'Consulta la previsión del tiempo',
-		weather_why: 'Con nubes densas solo ayuda cambiar de lugar — ten una alternativa prevista.',
+		glasses: 'Protege tus ojos con gafas de eclipse certificadas (ISO 12312-2).',
+		glasses_why:
+			'Las gafas de sol normales no bastan para esto. Mirar al Sol sin gafas de eclipse certificadas supone riesgo de daños oculares permanentes.',
+		view: '¿Tienes vista despejada hacia el oeste?',
+		view_why:
+			'Comprueba con antelación si árboles, edificios, montañas u otros obstáculos tapan el Sol a esa hora. Si hace falta, busca otro lugar.',
+		weather: 'Consulta la previsión del tiempo unos días antes.',
+		weather_why:
+			'Con nubes densas solo ayuda cambiar de lugar. Consulta la previsión a tiempo para poder desplazarte a otro sitio si es necesario.',
 		add_calendar: '📅 Añadir al calendario',
 		event_title: 'Eclipse solar 2026'
 	},

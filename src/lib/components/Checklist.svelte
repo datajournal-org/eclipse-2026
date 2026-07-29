@@ -1,6 +1,6 @@
-<!-- B6 — Personal checklist & countdown: a live countdown to this location's maximum, a tick-off list
-     (glasses, clear view to the Sun's azimuth, weather) and a one-tap calendar export (.ics, built
-     client-side so nothing leaves the device). Times/azimuth from the shared localEclipse store.
+<!-- B6 — Personal checklist & countdown: a live countdown to this location's maximum, a tick-off
+     list (glasses, clear view west, weather) and a one-tap calendar export (.ics, built client-side
+     so nothing leaves the device). Times from the shared localEclipse store.
 
      Also serves state A: before a location is chosen, only the tick-off list renders — no countdown
      and no calendar export, since both would have to point at a maximum that is nowhere in particular —
@@ -11,22 +11,18 @@
 	import { t, fmt } from '$lib/i18n';
 	import { localEclipse } from '$lib/stores/localEclipse';
 	import { userLocation } from '$lib/stores/location';
-	import { sunMoonHorizon } from '$lib/eclipse';
 	import { now, splitDuration, pad2 } from '$lib/stores/now';
 
 	const lc = $derived($localEclipse);
 	const loc = $derived($userLocation);
 	const peak = $derived(lc?.peak ?? null);
 
-	// Sun azimuth at maximum → "look toward the west (azimuth N°)".
-	const az = $derived(peak && loc ? Math.round(sunMoonHorizon(loc.lat, loc.lon, peak.time).sun.az) : null);
-
 	const remaining = $derived(peak ? peak.time.getTime() - $now : 0);
 	const parts = $derived(splitDuration(remaining));
 
 	const items = $derived([
 		{ key: 'glasses', text: $t('b6.glasses'), why: $t('b6.glasses_why') },
-		{ key: 'view', text: az == null ? $t('b6.view_generic') : $t('b6.view', { az }), why: $t('b6.view_why') },
+		{ key: 'view', text: $t('b6.view'), why: $t('b6.view_why') },
 		{ key: 'weather', text: $t('b6.weather'), why: $t('b6.weather_why') }
 	]);
 

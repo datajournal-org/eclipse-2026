@@ -15,7 +15,7 @@ precisely in discussion. Terms use the exact names found in the code where one e
   (**A3**, the three side-by-side reference locations in WIREFRAMES.md, was never built.)
 - **B-sections** — per-location blocks: **B1** `Verdict` (`.b1`), **B3** `SkyView` (`.b3`), **B6**
   `Checklist` (`.b6`). B6 alone also renders in state A, reduced to its tick-off list (no
-  countdown, calendar export, or azimuth) — but not for a chosen location the eclipse misses. There is **no B2**: the phase timeline lives inside B3's scrubber (ticks, totality
+  countdown or calendar export) — but not for a chosen location the eclipse misses. There is **no B2**: the phase timeline lives inside B3's scrubber (ticks, totality
   band, phase labels) rather than as its own section — see TESTING.md §7.
 - **Eyebrow** — the small `.eyebrow` tag in a block header; today only A2 uses one, showing the date.
 - **`userLocation`** — the chosen place (`{lat, lon, name}`); kept in `localStorage` only, never written to

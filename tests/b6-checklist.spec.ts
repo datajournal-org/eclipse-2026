@@ -31,14 +31,6 @@ test.describe('B6 checklist', () => {
 		await expect(seconds).not.toHaveText(before, { timeout: 3000 });
 	});
 
-	test('tailors the advice to a total versus a partial location', async ({ page, locatedPage }) => {
-		await locatedPage(OVIEDO);
-		const total = (await page.locator('section.b6 .checks li').allInnerTexts()).join('\n');
-		await locatedPage(byName('Berlin'));
-		const partial = (await page.locator('section.b6 .checks li').allInnerTexts()).join('\n');
-		expect(total).not.toBe(partial);
-	});
-
 	test('downloads a calendar entry for the local maximum', async ({ page, locatedPage }) => {
 		await locatedPage(OVIEDO);
 		const [download] = await Promise.all([
@@ -82,13 +74,11 @@ test.describe('B6 checklist', () => {
 
 	test('serves state A as a bare list before a location is chosen', async ({ page }) => {
 		// The safety and preparation advice must reach readers who never pick a place — but nothing may
-		// pretend to be local: no azimuth in the view item, and no countdown or calendar export, since
-		// both would point at a maximum that is nowhere in particular.
+		// pretend to be local: no countdown and no calendar export, since both would point at a maximum
+		// that is nowhere in particular. The items themselves are the same for everyone.
 		await page.goto(localeUrl());
 		await expect(page.locator('section.b6')).toBeVisible();
-		const view = page.locator('section.b6 .checks li').nth(1);
-		await expect(view).toContainText('Freie Sicht nach Westen');
-		await expect(view).not.toContainText('Azimut');
+		await expect(page.locator('section.b6 .checks li').nth(1)).toContainText('Hast du freie Sicht nach Westen?');
 		await expect(page.locator('section.b6 .count')).toHaveCount(0);
 		await expect(page.locator('section.b6 .cal')).toHaveCount(0);
 	});

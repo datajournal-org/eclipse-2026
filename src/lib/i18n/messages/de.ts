@@ -97,14 +97,15 @@ const messages = {
 		title: 'Deine Checkliste',
 		until_max: 'bis zum Maximum',
 		past: 'Das Maximum ist vorüber.',
-		glasses: 'Zertifizierte Sonnenfinsternisbrille (ISO 12312-2)',
-		glasses_why: 'Normale Sonnenbrillen reichen nicht — ohne Schutz drohen bleibende Augenschäden.',
-		view: 'Freie Sicht nach Westen (Azimut {az}°)',
-		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
-		view_generic: 'Freie Sicht nach Westen',
-		view_why: 'Prüfe vorher, ob Gebäude oder Bäume die Sonne zu dieser Zeit verdecken.',
-		weather: 'Wettervorhersage prüfen',
-		weather_why: 'Bei dichter Bewölkung hilft nur ein Ortswechsel — plane eine Alternative ein.',
+		glasses: 'Schütze deine Augen mit einer zertifizierten Sonnenfinsternisbrille (ISO 12312-2).',
+		glasses_why:
+			'Normale Sonnenbrillen reichen dafür nicht aus. Wer ohne zertifizierte Sonnenfinsternisbrille in die Sonne blickt, riskiert bleibende Augenschäden.',
+		view: 'Hast du freie Sicht nach Westen?',
+		view_why:
+			'Prüfe im Voraus, ob Bäume, Gebäude, Berge oder andere Hindernisse die Sonne zu dieser Zeit verdecken. Suche dir notfalls einen anderen Standort aus.',
+		weather: 'Prüfe ein paar Tage vorher die Wettervorhersage.',
+		weather_why:
+			'Bei dichter Bewölkung hilft nur ein Ortswechsel. Prüfe daher rechtzeitig die Wettervorhersage, um notfalls auf einen anderen Ort auszuweichen.',
 		add_calendar: '📅 Zum Kalender hinzufügen',
 		event_title: 'Sonnenfinsternis 2026'
 	},

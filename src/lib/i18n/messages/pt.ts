@@ -96,14 +96,15 @@ const messages: Messages = {
 		title: 'A tua checklist',
 		until_max: 'até ao máximo',
 		past: 'O máximo já passou.',
-		glasses: 'Óculos de eclipse certificados (ISO 12312-2)',
-		glasses_why: 'Óculos de sol comuns não bastam — sem proteção há risco de danos oculares permanentes.',
-		view: 'Vista desimpedida para oeste (azimute {az}°)',
-		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
-		view_generic: 'Vista desimpedida para oeste',
-		view_why: 'Verifica antes se edifícios ou árvores tapam o Sol a essa hora.',
-		weather: 'Verificar a previsão do tempo',
-		weather_why: 'Com nuvens densas só ajuda mudar de lugar — tem uma alternativa preparada.',
+		glasses: 'Protege os teus olhos com óculos de eclipse certificados (ISO 12312-2).',
+		glasses_why:
+			'Óculos de sol comuns não chegam para isto. Olhar para o Sol sem óculos de eclipse certificados arrisca danos oculares permanentes.',
+		view: 'Tens vista desimpedida para oeste?',
+		view_why:
+			'Verifica com antecedência se árvores, edifícios, montanhas ou outros obstáculos tapam o Sol a essa hora. Se for preciso, procura outro lugar.',
+		weather: 'Consulta a previsão do tempo uns dias antes.',
+		weather_why:
+			'Com nuvens densas, só ajuda mudar de lugar. Consulta a previsão a tempo para poderes ir para outro sítio se necessário.',
 		add_calendar: '📅 Adicionar ao calendário',
 		event_title: 'Eclipse solar 2026'
 	},

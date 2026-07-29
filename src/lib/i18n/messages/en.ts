@@ -98,14 +98,15 @@ const messages: Messages = {
 		title: 'Your checklist',
 		until_max: 'until maximum',
 		past: 'Maximum has passed.',
-		glasses: 'Certified eclipse glasses (ISO 12312-2)',
-		glasses_why: 'Ordinary sunglasses are not enough — without protection you risk lasting eye damage.',
-		view: 'Clear view to the west (azimuth {az}°)',
-		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
-		view_generic: 'Clear view to the west',
-		view_why: 'Check in advance whether buildings or trees block the Sun at that time.',
-		weather: 'Check the weather forecast',
-		weather_why: 'Under thick clouds only a change of place helps — have an alternative ready.',
+		glasses: 'Protect your eyes with certified eclipse glasses (ISO 12312-2).',
+		glasses_why:
+			'Ordinary sunglasses are not enough for this. Looking at the Sun without certified eclipse glasses risks lasting eye damage.',
+		view: 'Do you have a clear view to the west?',
+		view_why:
+			'Check in advance whether trees, buildings, mountains or other obstacles hide the Sun at that time. If need be, pick a different spot.',
+		weather: 'Check the weather forecast a few days ahead.',
+		weather_why:
+			'Under thick clouds only a change of place helps. Check the forecast in time so you can move somewhere else if necessary.',
 		add_calendar: '📅 Add to calendar',
 		event_title: 'Solar eclipse 2026'
 	},

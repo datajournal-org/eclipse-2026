@@ -102,9 +102,10 @@ test.describe('changing the location @webgl', () => {
 		for (const section of ['section.b1', 'section.b3']) {
 			await expect(page.locator(section)).toHaveCount(0);
 		}
-		// B6 remains, but in its generic state-A form: no azimuth, nothing local left over.
+		// B6 remains, but in its state-A form: nothing local left over (no countdown, no calendar).
 		await expect(page.locator('section.b6')).toBeVisible();
-		await expect(page.locator('section.b6')).not.toContainText('Azimut');
+		await expect(page.locator('section.b6 .count')).toHaveCount(0);
+		await expect(page.locator('section.b6 .cal')).toHaveCount(0);
 		await expect(page.getByRole('button', { name: /Standort wählen/ })).toBeVisible();
 	});
 
