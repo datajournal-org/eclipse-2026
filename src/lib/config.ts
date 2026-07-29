@@ -13,7 +13,7 @@ export const SITE_URL: string = import.meta.env?.VITE_SITE_URL ?? 'https://dataj
 
 /**
  * The public source repository. Unlike SITE_URL this is NOT build-overridable: it names where the code
- * lives, which does not change with the deployment target — a GitHub Pages preview and the CDN copy are
+ * lives, which does not change with the deployment target — any alternate host and the CDN copy are
  * built from the same repo and should both credit it.
  */
 export const REPO_URL = 'https://github.com/datajournal-org/eclipse-2026';

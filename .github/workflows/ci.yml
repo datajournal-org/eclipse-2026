@@ -6,11 +6,9 @@ on:
    pull_request:
    workflow_dispatch:
 
-# Pages deployment needs these; nothing else in the workflow writes to the repo.
+# Read-only by default; the release job raises `contents` for itself (gh release upload).
 permissions:
    contents: read
-   pages: write
-   id-token: write
 
 # A newer push supersedes an in-flight run, but never cancel a deployment half-way.
 concurrency:
@@ -186,7 +184,7 @@ jobs:
            run: npm ci
 
          # No VITE_SITE_URL override: the default IS https://datajournal.org, so canonical, hreflang and
-         # og:url point at the copy this job publishes. (The Pages job below overrides it for its mirror.)
+         # og:url point at the copy this job publishes.
          - name: Build the site for datajournal.org
            run: npm run build
 
@@ -239,53 +237,3 @@ jobs:
                 exit 0
               fi
               curl -fsS "${WEBHOOK_URL}/update_pages"
-
-   build:
-      name: Build the static site (GitHub Pages mirror)
-      needs: [checks, e2e]
-      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-      runs-on: ubuntu-latest
-      timeout-minutes: 15
-
-      steps:
-         - name: Check out the repository
-           uses: actions/checkout@v7
-
-         - name: Set up Node.js
-           uses: actions/setup-node@v7
-           with:
-              node-version: ${{ env.NODE_VERSION }}
-              cache: npm
-
-         - name: Install dependencies
-           run: npm ci
-
-         # The MIRROR: canonical, hreflang and og:url are absolute, so this copy has to advertise its
-         # own host — without the override it would tell crawlers the real copy is the primary
-         # (datajournal.org), which is true but makes the mirror useless as a standalone fallback.
-         # `paths.base` is '/eclipse-2026' and must match the repository name for a project Pages site.
-         - name: Prerender the site with absolute URLs
-           run: npm run build
-           env:
-              VITE_SITE_URL: ${{ format('https://{0}.github.io', github.repository_owner) }}
-
-         - name: Configure GitHub Pages
-           uses: actions/configure-pages@v6
-
-         - name: Upload the site as a Pages artifact
-           uses: actions/upload-pages-artifact@v5
-           with:
-              path: build
-
-   deploy:
-      name: Deploy to GitHub Pages
-      needs: build
-      runs-on: ubuntu-latest
-      timeout-minutes: 10
-      environment:
-         name: github-pages
-         url: ${{ steps.deployment.outputs.page_url }}
-      steps:
-         - name: Publish to GitHub Pages
-           id: deployment
-           uses: actions/deploy-pages@v5

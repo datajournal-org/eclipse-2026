@@ -74,7 +74,7 @@ precisely in discussion. Terms use the exact names found in the code where one e
 ## Libraries & tooling
 
 - **SvelteKit** — app framework; **adapter-static** + **prerender** ship the site as static files
-  (bunny.net in production, plus a GitHub Pages copy from CI).
+  (bunny.net in production).
 - **Svelte 5 runes** — reactivity API (`$state`, `$derived`, `$effect`, `$props`) plus `onMount`.
 - **MapLibre GL JS** (v6) — the map/globe engine; hosts the terrain, buildings, hillshade, and custom WebGL layers.
 - **VersaTiles** — tile provider: `@versatiles/style` (the `colorful` base style) + hosted vector tiles and the elevation DEM.

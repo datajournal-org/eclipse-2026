@@ -357,14 +357,13 @@ not the arithmetic. Keeping this line is what stops the E2E suite from becoming 
 
 ## 4. CI
 
-_(Planned as a single job; what shipped is below.)_ `.github/workflows/ci.yml` has four:
+_(Planned as a single job; what shipped is below.)_ `.github/workflows/ci.yml` has three:
 
-| Job      | Runner             | Does                                                                   |
-| -------- | ------------------ | ---------------------------------------------------------------------- |
-| `checks` | `ubuntu-latest`    | Prettier, `tsc`, ESLint, `svelte-check`, Vitest — seconds, no browsers |
-| `e2e`    | `macos-latest` × 4 | every Playwright test, `--shard=N/4`                                   |
-| `build`  | `ubuntu-latest`    | prerender with `VITE_SITE_URL` (main only)                             |
-| `deploy` | `ubuntu-latest`    | GitHub Pages (main only)                                               |
+| Job       | Runner             | Does                                                                            |
+| --------- | ------------------ | ------------------------------------------------------------------------------- |
+| `checks`  | `ubuntu-latest`    | Prettier, `tsc`, ESLint, `svelte-check`, Vitest — seconds, no browsers          |
+| `e2e`     | `macos-latest` × 4 | every Playwright test, `--shard=N/4`                                            |
+| `release` | `ubuntu-latest`    | pack + verify the `.tar.zst`, publish the release, ping the webhook (main only) |
 
 Three things the plan got wrong:
 

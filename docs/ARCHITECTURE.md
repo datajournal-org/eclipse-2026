@@ -12,8 +12,8 @@ Complements [`CONCEPT.md`](./CONCEPT.md) and [`WIREFRAMES.md`](./WIREFRAMES.md).
 - **Offline-capable (PWA)** — _planned, not built._ There is no service worker yet, so the app currently
   needs the network on every visit.
 - **Hosting:** static build, served via **bunny.net** (CDN) at `https://datajournal.org/eclipse-2026/`.
-  CI additionally builds and deploys a copy to **GitHub Pages** (`.github/workflows/ci.yml`), which
-  overrides `VITE_SITE_URL` so that copy's canonicals point at itself rather than at the CDN.
+  (A GitHub Pages mirror existed earlier and was retired; `VITE_SITE_URL` remains build-overridable
+  for any future alternate host.)
 
 ---
 
@@ -28,7 +28,7 @@ Complements [`CONCEPT.md`](./CONCEPT.md) and [`WIREFRAMES.md`](./WIREFRAMES.md).
 | Map data    | **VersaTiles** tiles (satellite, OSM vector, elevation)                  |
 | i18n        | from the start, initial set DE / EN / ES; formats via native `Intl`      |
 | Offline     | _planned:_ service worker (PWA) caching the location's tiles — not built |
-| Hosting/CDN | static via **bunny.net**; CI also deploys a copy to GitHub Pages         |
+| Hosting/CDN | static via **bunny.net**                                                 |
 | Backend     | **none**                                                                 |
 
 ---
