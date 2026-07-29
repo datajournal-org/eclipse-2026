@@ -23,8 +23,8 @@
 	<ShadowRun />
 
 	{#if $userLocation}
-		<!-- B — the personal briefing, opened by a clear section break. The chosen place lives in the
-		     verdict's own header now (segment grammar: header meta, not a floating row of its own). -->
+		<!-- B — the personal briefing, opened by a clear section break. The chosen place lives inside
+		     the verdict (as the eyebrow line above its headline, not a floating row of its own). -->
 		<SectionDivider label={$t('b.your_sky')} />
 		<Verdict onchange={() => (pickerOpen = true)} />
 		<!-- B3 only where there is something in the sky to show: at a location the eclipse misses, or where

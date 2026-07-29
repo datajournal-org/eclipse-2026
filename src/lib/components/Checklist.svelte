@@ -81,21 +81,6 @@
 			<h2>{$t('b6.title')}</h2>
 		</div>
 
-		<!-- Countdown and calendar export are LOCAL promises — state A gets only the list below. -->
-		{#if peak}
-			{#if remaining > 0}
-				<div class="count tnum" aria-live="off">
-					{#if parts.d > 0}<span class="seg"><b class="stat">{parts.d}</b>{$t('countdown.d')}</span>{/if}
-					<span class="seg"><b class="stat">{pad2(parts.h)}</b>{$t('countdown.h')}</span>
-					<span class="seg"><b class="stat">{pad2(parts.m)}</b>{$t('countdown.m')}</span>
-					<span class="seg"><b class="stat">{pad2(parts.s)}</b>{$t('countdown.s')}</span>
-					<span class="note">{$t('b6.until_max')}</span>
-				</div>
-			{:else}
-				<p class="past">{$t('b6.past')}</p>
-			{/if}
-		{/if}
-
 		<ul class="checks">
 			{#each items as it (it.key)}
 				<li>
@@ -103,6 +88,21 @@
 					<span class="why">{it.why}</span>
 				</li>
 			{/each}
+			{#if peak}
+				{#if remaining > 0}
+					<!-- .count: the hook the specs (and any future styling) address the countdown row by. -->
+					<li class="count" aria-live="off">
+						{#if parts.d > 0}
+							<b class="stat tnum">{parts.d}</b><span class="unit">{$t('countdown.d')}</span>{/if}
+						<b class="stat tnum">{pad2(parts.h)}</b><span class="unit">{$t('countdown.h')}</span>
+						<b class="stat tnum">{pad2(parts.m)}</b><span class="unit">{$t('countdown.m')}</span>
+						<b class="stat tnum">{pad2(parts.s)}</b><span class="unit">{$t('countdown.s')}</span>
+						{$t('b6.until_max')}
+					</li>
+				{:else}
+					<li>{$t('b6.past')}</li>
+				{/if}
+			{/if}
 		</ul>
 
 		{#if peak}
@@ -118,25 +118,7 @@
 		font-size: var(--text-caption);
 		color: var(--muted);
 	}
-
-	.count {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		gap: 10px;
-		margin-bottom: 4px;
-	}
-	.seg {
-		font-size: 0.8rem;
-		color: var(--muted);
-
-		b {
-			font-size: 1.6rem;
-			margin-right: 2px;
-		}
-	}
-	.past {
-		font-weight: 600;
+	.unit {
 		color: var(--muted);
 	}
 	.checks {

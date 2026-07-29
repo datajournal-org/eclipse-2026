@@ -33,11 +33,12 @@ test.describe('B1 verdict card', () => {
 			const card = page.locator('section.b1');
 			await expect(card).toBeVisible();
 
-			await expect(card.locator('h2')).toHaveText(
+			// Kind and coverage are ONE centered headline now — both must be in the h2.
+			await expect(card.locator('h2')).toContainText(
 				site.kind === 'total' ? 'Totale Sonnenfinsternis' : 'Partielle Sonnenfinsternis'
 			);
 			// obscuration, rounded to a whole percent
-			await expect(card.locator('.obsc')).toContainText(String(Math.round(site.obsc * 100)));
+			await expect(card.locator('h2')).toContainText(String(Math.round(site.obsc * 100)));
 			// local maximum, ±1 min for the rounding between the table and Intl
 			await expect(card.locator('.note')).toContainText(new RegExp(berlinTime(site.maxUtc).replace(':', ':')));
 			await expect(card.locator('.note')).toContainText(`${Math.round(site.sunAlt)}°`);
@@ -83,7 +84,7 @@ test.describe('B1 verdict card', () => {
 		const card = page.locator('section.b1');
 		await expect(card.locator('h2')).toHaveText('Von hier aus nicht sichtbar');
 		await expect(card.locator('.note')).toContainText('unter dem Horizont');
-		await expect(card.locator('.obsc')).toHaveCount(0);
+		await expect(card.locator('h2')).not.toContainText('%');
 		await expect(card.locator('.next')).toHaveCount(0);
 		// ...and no sky view either: a 3D scene of an untouched Sun would contradict the headline.
 		await expect(page.locator('section.b3')).toHaveCount(0);
@@ -97,7 +98,7 @@ test.describe('B1 verdict card', () => {
 			test(`tells a visitor in ${name} it is not visible`, async () => {
 				const card = get().locator('section.b1');
 				await expect(card.locator('h2')).toHaveText('Von hier aus nicht sichtbar');
-				await expect(card.locator('.obsc')).toHaveCount(0);
+				await expect(card.locator('h2')).not.toContainText('%');
 				// and nothing anywhere claims a coverage figure or a contact time
 				await expect(get().locator('section.b6')).toHaveCount(0);
 				// nor is there a sky view of an eclipse that never arrives
@@ -147,7 +148,7 @@ test.describe('B1 verdict card', () => {
 			await locatedPage({ lat: -34.6037, lon: -58.3816, name: 'Buenos Aires' });
 			const card = page.locator('section.b1');
 			await expect(card.locator('h2')).toHaveText('Von hier aus nicht sichtbar');
-			await expect(card.locator('.obsc')).toHaveCount(0);
+			await expect(card.locator('h2')).not.toContainText('%');
 			await expect(page.locator('section.b6')).toHaveCount(0);
 			await expect(page.locator('section.b3')).toHaveCount(0);
 		});

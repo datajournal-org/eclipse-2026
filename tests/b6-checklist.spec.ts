@@ -25,7 +25,8 @@ test.describe('B6 checklist', () => {
 		// "Certified glasses" alone reads as bureaucracy; "ordinary sunglasses are not enough — lasting
 		// eye damage" is a reason to comply. Every item carries its why as a sub-line.
 		const whys = page.locator('section.b6 .checks li .why');
-		expect(await whys.count()).toBe(await page.locator('section.b6 .checks li').count());
+		// every item except the countdown row (.count, which is a readout, not advice) carries a why
+		expect(await whys.count()).toBe(await page.locator('section.b6 .checks li:not(.count)').count());
 		for (const text of await whys.allInnerTexts()) expect(text.trim().length).toBeGreaterThan(20);
 	});
 
@@ -34,7 +35,7 @@ test.describe('B6 checklist', () => {
 		await expect(count).toBeVisible();
 		await expect(count).toContainText(/\d/);
 
-		const seconds = count.locator('.seg').last();
+		const seconds = count.locator('b').last();
 		const before = await seconds.innerText();
 		await expect(seconds).not.toHaveText(before, { timeout: 3000 });
 	});

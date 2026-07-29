@@ -37,21 +37,22 @@
 </script>
 
 <section class="block b1" class:total={isTotal}>
-	<div class="block-head">
-		<h2>{visible ? (isTotal ? $t('b1.total') : $t('b1.partial')) : $t('b1.not_visible')}</h2>
-		{#if $userLocation}
-			<div class="place">
-				<span class="pname"
-					>📍 {placeLabel($userLocation)}
-					{#if onchange}<button class="change" onclick={onchange}>{$t('b.change')}</button>{/if}</span
-				>
-			</div>
-		{/if}
-	</div>
+	{#if $userLocation}
+		<div class="place">
+			<span class="pname"
+				>📍 {placeLabel($userLocation)}
+				{#if onchange}<button class="change" onclick={onchange}>{$t('b.change')}</button>{/if}</span
+			>
+		</div>
+	{/if}
 
 	{#if lc && peak && visible}
-		<p class="obsc stat">{$t('b1.obscured', { pct })}</p>
-		<p class="note tnum">
+		<!-- Kind and coverage as ONE centered headline — the section's h2 (segment grammar) sits in the
+		     content here rather than in a .block-head, with the place line above it as the eyebrow. -->
+		<h2 class="headline stat">
+			{isTotal ? $t('b1.total') : $t('b1.partial')}:<br />{$t('b1.obscured', { pct })}
+		</h2>
+		<p class="when note tnum">
 			{$t('b1.max_at', { time: $fmt.time(peak.time) })} ·
 			{peakAlt > 0 ? $t('b1.sun_alt', { alt: Math.round(peakAlt) }) : $t('b1.sun_below')}
 		</p>
@@ -63,6 +64,8 @@
 			{/if}
 		</p>
 	{:else}
+		<!-- The verdict is a verdict here too: the headline must say "not visible", not fall silent. -->
+		<h2 class="headline">{$t('b1.not_visible')}</h2>
 		<p class="note">{missed ? $t('b1.not_reached') : $t('b1.not_visible_note')}</p>
 		{#if next}
 			<p class="next note tnum">
@@ -78,10 +81,7 @@
 
 <style>
 	.place {
-		display: flex;
-		flex-wrap: wrap; /* a long place name wraps; the change link stays attached to its end */
-		align-items: baseline;
-		gap: 4px 10px;
+		text-align: center;
 
 		.pname {
 			font-size: 0.9rem;
@@ -100,14 +100,13 @@
 			text-underline-offset: 2px;
 		}
 	}
-	.obsc {
-		font-size: clamp(1.6rem, 7vw, 2.2rem);
-		line-height: 1.1;
-		margin: 4px 0 2px;
-
-		.b1.total & {
-			color: var(--accent-2, var(--accent));
-		}
+	.headline {
+		margin-top: var(--space-lg);
+		text-align: center;
+	}
+	.when {
+		margin-bottom: var(--space-lg);
+		text-align: center;
 	}
 	.next {
 		margin-block-start: 0.5rem;

@@ -75,7 +75,7 @@
 	--text-caption: var(--font-size-0); /* 12px */
 	--text-body: var(--font-size-1); /* 16px */
 	--text-h3: var(--font-size-1); /* 16px */
-	--text-h2: var(--font-size-3); /* 20px */
+	--text-h2: clamp(1.6rem, 7vw, 2.2rem); /* ~26px on a phone up to 35px on desktop */
 	--text-h1: var(--font-size-4); /* 24px */
 	--text-display: var(--font-size-6); /* 40px */
 

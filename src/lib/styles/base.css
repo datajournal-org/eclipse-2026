@@ -57,6 +57,12 @@ h2 {
 	font-size: var(--text-h2);
 	font-weight: 700;
 }
+/* Section titles get generous air above and a clear gap below — scoped to .block so overlay chrome
+   (the location dialog's title) keeps its own tight layout. */
+.block h2 {
+	margin-top: var(--space-xl);
+	margin-bottom: var(--space-md);
+}
 h3 {
 	font-size: var(--text-h3);
 	font-weight: 700;
@@ -123,7 +129,8 @@ button {
    vertical rhythm comes from the .content gap.
 
    SEGMENT GRAMMAR (docs/WIREFRAMES.md § Segment grammar): every section is at most four slots —
-     1. header   `.block-head` — one h2, optionally one meta on the right (B1's `.place` name);
+     1. header   `.block-head` — one h2, centered (B1 instead titles from its content: place line
+                  as eyebrow, then the verdict headline);
      2. intro    `.sub`        — optional, ONE line, muted;
      3. content  the stage/list/graphic, with its controls (sliders, readouts) inside it;
      4. footer   `.seg-foot`   — optional, one caption line (provenance/context).
@@ -133,11 +140,7 @@ button {
 	padding-inline: var(--edge);
 
 	> .block-head {
-		display: flex;
-		flex-wrap: wrap; /* a long title + header meta (B1's place) stack on a phone instead of colliding */
-		align-items: baseline;
-		justify-content: space-between;
-		gap: var(--space-2xs);
+		text-align: center;
 		margin-bottom: var(--space-2xs);
 	}
 	.eyebrow {
@@ -172,6 +175,7 @@ button {
 	color: var(--muted);
 	font-size: 0.9rem;
 	margin: 2px 0 12px;
+	text-align: center;
 }
 
 /* Segment footer (slot 4): one caption line under a section's content. */

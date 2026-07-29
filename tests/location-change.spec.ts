@@ -21,8 +21,8 @@ async function snapshot(page: import('@playwright/test').Page) {
 		// back with the old place. Storage is simply one more thing that must stop saying "Oviedo".
 		stored: (await page.evaluate(() => window.localStorage.getItem('eclipse.location'))) ?? '',
 		place: (await page.locator('.place .pname').innerText()).trim(),
+		// the headline carries kind AND coverage in one h2, so `verdict` covers the percentage too
 		verdict: await page.locator('section.b1 h2').innerText(),
-		coverage: await page.locator('section.b1 .obsc').innerText(),
 		safety: await page.locator('section.b1 .safety').innerText(),
 		skyReadout: (await page.locator('section.b3 .readout').innerText()).replace(/\s+/g, ' '),
 		skyPhases: (await page.locator('section.b3 .labels .lab').allInnerTexts()).join('|').replace(/\s+/g, ' '),
@@ -71,7 +71,9 @@ test.describe('changing the location @webgl', () => {
 		// Berlin's numbers, and none of Oviedo's.
 		expect(JSON.parse(after.stored)).toMatchObject({ lat: 52.52, lon: 13.405 });
 		expect(after.place).toContain('Berlin');
-		expect(after.verdict).toBe('Partielle Sonnenfinsternis');
+		// the combined headline: Berlin's kind AND Berlin's coverage, none of Oviedo's 100 %
+		expect(after.verdict).toContain('Partielle Sonnenfinsternis');
+		expect(after.verdict).toContain('85');
 		expect(after.skyReadout).toContain('20:08'); // Berlin's maximum, not Oviedo's 20:27
 		expect(after.skyPhases).toContain('20:08');
 		expect(after.skyReadout).not.toContain('20:27');
@@ -117,11 +119,11 @@ test.describe('changing the location @webgl', () => {
 
 		await stubGeocoder(PHOTON.oviedo);
 		await changeTo(page, 'Oviedo');
-		await expect(page.locator('section.b1 h2')).toHaveText('Totale Sonnenfinsternis');
+		await expect(page.locator('section.b1 h2')).toContainText('Totale Sonnenfinsternis');
 
 		await stubGeocoder(PHOTON.bare);
 		await changeTo(page, 'Berlin');
-		await expect(page.locator('section.b1 h2')).toHaveText('Partielle Sonnenfinsternis');
+		await expect(page.locator('section.b1 h2')).toContainText('Partielle Sonnenfinsternis');
 		await expect(page.locator('section.b3 .readout')).toContainText('20:08');
 
 		// The only place in the suite where storage is written twice: the second write must replace the
@@ -143,7 +145,7 @@ test.describe('changing the location @webgl', () => {
 		// Leaving ?lat&lon behind matters: it seeded Oviedo and takes precedence over storage, so on this
 		// load the only thing that can produce Berlin is what the app itself wrote.
 		await page.goto(localeUrl());
-		await expect(page.locator('section.b1 h2')).toHaveText('Partielle Sonnenfinsternis');
+		await expect(page.locator('section.b1 h2')).toContainText('Partielle Sonnenfinsternis');
 		await expect(page.locator('.place .pname')).toContainText('Berlin');
 	});
 });
