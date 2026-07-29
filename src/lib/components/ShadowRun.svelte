@@ -59,14 +59,18 @@
 	];
 
 	// Coverage rings drawn live around the current shadow. `level` = obscuration threshold (0..1);
-	// `percent` drives both the ring opacity and the label text.
+	// `percent` drives both the ring opacity and the label text. `opacity` is the interactive page's
+	// quiet ramp; `ogOpacity` the hardcoded, punchier ramp of the ?og screenshot card (build-og-image).
 	const ISO_RINGS = [
-		{ percent: 20, level: 0.2, opacity: 0.1 },
-		{ percent: 40, level: 0.4, opacity: 0.2 },
-		{ percent: 60, level: 0.6, opacity: 0.3 },
-		{ percent: 80, level: 0.8, opacity: 0.4 },
-		{ percent: 100, level: 0.999, opacity: 0.5 }
+		{ percent: 20, level: 0.2, opacity: 0.1, ogOpacity: 0.6 },
+		{ percent: 40, level: 0.4, opacity: 0.2, ogOpacity: 0.7 },
+		{ percent: 60, level: 0.6, opacity: 0.3, ogOpacity: 0.8 },
+		{ percent: 80, level: 0.8, opacity: 0.4, ogOpacity: 0.9 },
+		{ percent: 100, level: 0.999, opacity: 0.5, ogOpacity: 1 }
 	];
+	// The totality corridor band, interactive vs ?og screenshot card (same split as the rings above).
+	const CORRIDOR_OPACITY = 0.1;
+	const CORRIDOR_OG_OPACITY = 0.2;
 
 	// Shared state the WebGL shadow layer reads each frame: the shadow axis + the 1D coverage profile
 	// (a float LUT). `profileVersion` bumps so the texture re-uploads.
@@ -124,6 +128,11 @@
 		let map: MlMap | undefined;
 		let disposed = false;
 		const brand = readBrandColors();
+		// ?og — screenshot mode for scripts/build-og-image.ts: the whole geometry overlay (iso labels,
+		// iso lines, corridor band) renders at its hardcoded card opacities and the labels skip their
+		// zoom fade, so the captured card reads at a glance.
+		const ogMode = new URLSearchParams(location.search).has('og');
+		isoLabels.screenshotMode = ogMode;
 
 		/** Advance everything to the timeline frame at `index`. */
 		function renderFrame(m: MlMap, index: number) {
@@ -155,7 +164,11 @@
 				const radius = radiusForCoverage(model, ring.level);
 				if (radius == null) continue;
 				lines.push(
-					linePrimitiveFromSegments(isoRing(model, radius).geometry.coordinates, brand.accent.rgb, ring.opacity)
+					linePrimitiveFromSegments(
+						isoRing(model, radius).geometry.coordinates,
+						brand.accent.rgb,
+						ogMode ? ring.ogOpacity : ring.opacity
+					)
 				);
 			}
 			isoLinesState.lines = lines;
@@ -174,7 +187,12 @@
 			});
 			if (!maplibregl || disposed) return;
 
-			corridorBand = fillStripPrimitive(corridorEdges.north, corridorEdges.south, brand.accent.rgb, 0.1);
+			corridorBand = fillStripPrimitive(
+				corridorEdges.north,
+				corridorEdges.south,
+				brand.accent.rgb,
+				ogMode ? CORRIDOR_OG_OPACITY : CORRIDOR_OPACITY
+			);
 			// Cooperative gestures, on EVERY pointer: casual input belongs to the PAGE (scrolling past a
 			// tall globe must neither rotate it by touch nor trap the wheel), deliberate input moves the
 			// globe — two fingers on touch, Ctrl/⌘ + wheel on desktop — announced by MapLibre's built-in
@@ -259,9 +277,6 @@
 			else m.once('style.load', applyFit);
 
 			if (new URLSearchParams(location.search).has('debug')) Object.assign(window, { __map: m });
-			// ?og — screenshot mode for scripts/build-og-image.ts: the iso labels skip their zoom fade,
-			// so the geometry overlay is fully readable in the captured card.
-			if (new URLSearchParams(location.search).has('og')) isoLabels.zoomFadeDisabled = true;
 			// Surface style/tile/WebGL errors that would otherwise be swallowed (and can stall loading).
 			m.on('error', (e) => console.error('[A2] map error:', (e as { error?: unknown }).error ?? e));
 			// Test hook: the end-to-end suite waits on this instead of guessing at a timeout or watching

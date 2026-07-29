@@ -7,9 +7,9 @@ import { GREATEST } from '$lib/testing/reference';
 import { createFakeMap, type FakeMap } from '$lib/testing/fakes';
 
 const RINGS = [
-	{ percent: 20, level: 0.2, opacity: 0.1 },
-	{ percent: 60, level: 0.6, opacity: 0.3 },
-	{ percent: 100, level: 0.999, opacity: 0.5 }
+	{ percent: 20, level: 0.2, opacity: 0.1, ogOpacity: 0.35 },
+	{ percent: 60, level: 0.6, opacity: 0.3, ogOpacity: 0.6 },
+	{ percent: 100, level: 0.999, opacity: 0.5, ogOpacity: 1 }
 ];
 
 const model = computeShadowModel(sunMoonECEF(new Date(GREATEST.utc)));
@@ -125,16 +125,17 @@ describe('update', () => {
 		expect(opacities[2]).toBeCloseTo(0.5, 6); // full zoom fade × the 100 % ring's opacity
 	});
 
-	it('skips the zoom fade in screenshot mode (?og), keeping each ring at full opacity', () => {
+	it('boosts everything in screenshot mode (?og): no fade, full size, each ring’s ogOpacity', () => {
 		// The OG card is captured at the wide opening zoom, exactly where the fade would ghost the
 		// labels — scripts/build-og-image.ts relies on this override.
 		const labels = attached();
-		labels.zoomFadeDisabled = true;
+		labels.screenshotMode = true;
 		map.getZoom = () => 0; // far out: the fade would be 0 and hide the labels entirely
 		labels.update(map as unknown as MlMap, model, true);
 		const opacities = FakeMarker.instances.map((m) => Number(m.element.querySelector('span')!.style.opacity));
-		expect(opacities[0]).toBeCloseTo(0.1, 6); // the 20 % ring's own opacity, unfaded
-		expect(opacities[2]).toBeCloseTo(0.5, 6); // the 100 % ring's own opacity, unfaded
+		expect(opacities[0]).toBeCloseTo(0.35, 6); // the 20 % ring's hardcoded card opacity
+		expect(opacities[2]).toBeCloseTo(1, 6); // the 100 % ring at full strength
+		for (const m of FakeMarker.instances) expect(m.element.style.fontSize).toBe('12px'); // no size ramp
 	});
 
 	it('hides everything when the overlay is switched off', () => {

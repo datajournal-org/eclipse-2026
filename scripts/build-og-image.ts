@@ -33,8 +33,9 @@ const kill = () => {
 };
 process.on('exit', kill);
 
-// ?og: screenshot mode — the iso labels skip their zoom fade (ShadowRun/IsoLabels), so the coverage
-// geometry reads at full strength in the card instead of ghosting at the wide opening zoom.
+// ?og: screenshot mode — the geometry overlay (iso labels, iso lines, corridor band) renders at its
+// hardcoded card opacities (`ogOpacity` per ring, ShadowRun/IsoLabels) and the labels skip their zoom
+// fade, so the card reads at a glance instead of ghosting at the wide opening zoom.
 const url = `http://localhost:${PORT}${BASE}/de/?og`;
 for (let tries = 0; ; tries++) {
 	try {

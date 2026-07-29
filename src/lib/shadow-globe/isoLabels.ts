@@ -8,18 +8,23 @@ import { radiusForCoverage } from './shadowProfile';
 import { labelPoint, umbraGroundPoint } from './isoRing';
 import { latLonToUnitVector } from './vec3';
 
-type Ring = { percent: number; level: number; opacity: number };
+/**
+ * `opacity` is the interactive page's quiet depth ramp; `ogOpacity` is the same ring on the `?og`
+ * screenshot (scripts/build-og-image.ts) — hardcoded per ring, since a social card is glanced at and
+ * every element must clear legibility while the ordering stays.
+ */
+type Ring = { percent: number; level: number; opacity: number; ogOpacity: number };
 type Entry = { marker: Marker; span: HTMLSpanElement };
 
 export class IsoLabels {
 	private markers: Entry[] = [];
 
 	/**
-	 * Screenshot mode (the `?og` URL flag): labels keep each ring's full opacity regardless of zoom.
-	 * The zoom fade exists for interactive readers zooming far out; the OG image is captured exactly
-	 * there, and a social card with ghost labels defeats the overlay's purpose.
+	 * Screenshot mode (the `?og` URL flag): no zoom fade, full 12 px size, each ring's `ogOpacity`.
+	 * The fade and the size ramp exist for interactive readers zooming far out; the OG image is
+	 * captured exactly there, and a social card with ghost labels defeats the overlay's purpose.
 	 */
-	zoomFadeDisabled = false;
+	screenshotMode = false;
 
 	constructor(private rings: Ring[]) {}
 
@@ -51,8 +56,8 @@ export class IsoLabels {
 		const umbra = model ? umbraGroundPoint(model) : null;
 		const down = umbra && model ? viewportDownDir(map, umbra) : null;
 		// Shrink + fade the labels out when zoomed far out (unreadable clutter otherwise).
-		const size = Math.min(12, Math.pow(2, map.getZoom()) * 2.5);
-		const zoomFade = this.zoomFadeDisabled ? 1 : Math.max(0, Math.min(1, (size - 5) / 2));
+		const size = this.screenshotMode ? 12 : Math.min(12, Math.pow(2, map.getZoom()) * 2.5);
+		const zoomFade = this.screenshotMode ? 1 : Math.max(0, Math.min(1, (size - 5) / 2));
 		this.rings.forEach((ring, i) => {
 			const { marker, span } = this.markers[i];
 			const radius = model ? radiusForCoverage(model, ring.level) : null;
@@ -62,7 +67,7 @@ export class IsoLabels {
 				marker.setLngLat(at);
 				el.style.display = '';
 				el.style.fontSize = size + 'px';
-				span.style.opacity = (zoomFade * ring.opacity).toString();
+				span.style.opacity = (this.screenshotMode ? ring.ogOpacity : zoomFade * ring.opacity).toString();
 			} else {
 				el.style.display = 'none';
 			}
