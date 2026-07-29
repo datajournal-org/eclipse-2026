@@ -56,7 +56,7 @@ const messages = {
 		verdict_partial: 'partiell',
 		verdict_none: 'nicht sichtbar'
 	},
-	b: { your_sky: 'Dein Himmel', change: 'ändern', clear: 'Ort entfernen', prep: 'Deine Vorbereitung' },
+	b: { your_sky: 'Dein Himmel', change: 'Ort ändern', clear: 'Ort entfernen', prep: 'Deine Vorbereitung' },
 
 	b1: {
 		total: 'Totale Sonnenfinsternis',

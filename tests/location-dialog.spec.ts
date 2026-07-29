@@ -141,7 +141,7 @@ test.describe('location dialog', () => {
 		await stubGeocoder(PHOTON.oviedo, 200, 1500);
 		await page.goto(localeUrl(LANG, '?lat=43.3603&lon=-5.8448'));
 		await expect(page.locator('.place .pname')).toContainText('43.360'); // no name yet
-		await page.getByRole('button', { name: 'ändern' }).click();
+		await page.getByRole('button', { name: 'Ort ändern' }).click();
 		await page.getByRole('button', { name: /Diesen Ort verwenden/ }).click(); // outrun the geocoder
 		await expect(page.locator('dialog.picker-dlg')).not.toBeVisible();
 		// …and once the slow answer lands, the page header trades coordinates for the name

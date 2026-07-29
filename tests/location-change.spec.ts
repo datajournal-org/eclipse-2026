@@ -31,7 +31,7 @@ async function snapshot(page: import('@playwright/test').Page) {
 }
 
 async function changeTo(page: import('@playwright/test').Page, query: string) {
-	await page.getByRole('button', { name: 'ändern' }).click();
+	await page.getByRole('button', { name: 'Ort ändern' }).click();
 	await page.getByRole('searchbox', { name: 'Stadt oder Adresse suchen' }).fill(query);
 	await page.locator('.results li button').first().click();
 	await page.getByRole('button', { name: /Diesen Ort verwenden/ }).click();

@@ -56,7 +56,7 @@ const messages: Messages = {
 		verdict_partial: 'gedeeltelijk',
 		verdict_none: 'niet zichtbaar'
 	},
-	b: { your_sky: 'Jouw hemel', change: 'wijzigen', clear: 'Locatie verwijderen', prep: 'Jouw voorbereiding' },
+	b: { your_sky: 'Jouw hemel', change: 'Locatie wijzigen', clear: 'Locatie verwijderen', prep: 'Jouw voorbereiding' },
 
 	b1: {
 		total: 'Totale zonsverduistering',
