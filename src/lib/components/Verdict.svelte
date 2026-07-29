@@ -114,6 +114,13 @@
 	.headline {
 		margin-top: var(--space-lg);
 		text-align: center;
+
+		/* The verdict headline speaks in the Moon's blue (--accent-2), not the Sun's amber: it is the
+		   Moon doing the covering, and the blue sets the verdict apart from every amber control. The
+		   not-visible headline carries no .stat and stays in the plain foreground colour. */
+		&.stat {
+			color: var(--accent-2, var(--accent));
+		}
 	}
 	.when {
 		margin-bottom: var(--space-lg);
