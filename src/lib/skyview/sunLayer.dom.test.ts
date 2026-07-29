@@ -215,12 +215,15 @@ describe('render', () => {
 		expect(sun.screen).toBeNull();
 	});
 
-	it('draws on top with blending and no depth test', () => {
-		// Documented decision: terrain occlusion is ignored because the observer's height is unknown.
+	it('depth-tests the disc read-only, with blending', () => {
+		// Documented decision (header note): terrain silhouettes occlude the far-plane Sun — a ridge
+		// above the Sun's altitude hides it — but the disc never writes depth itself.
 		const layer = add(visibleSun());
 		gl.reset();
 		layer.render(gl, identityInput());
-		expect(gl.callsTo('disable').map((c) => c.args[0])).toContain(gl.DEPTH_TEST);
+		expect(gl.callsTo('enable').map((c) => c.args[0])).toContain(gl.DEPTH_TEST);
+		expect(gl.callsTo('depthFunc')[0].args).toEqual([gl.LESS]);
+		expect(gl.callsTo('depthMask').map((c) => c.args[0])).toEqual([false, true]); // off to draw, restored after
 		expect(gl.callsTo('enable').map((c) => c.args[0])).toContain(gl.BLEND);
 		expect(gl.callsTo('blendFunc')[0].args).toEqual([gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA]);
 	});

@@ -51,7 +51,7 @@ precisely in discussion. Terms use the exact names found in the code where one e
 - **Scrubber / time slider** — the range input under B3 that scans time across the eclipse window.
 - **Chips** — the altitude / azimuth / coverage readout row under the slider.
 - **Reset button** — B3 control that returns the camera to the Sun-facing framing (orbit 0).
-- **Sun billboard** — WebGL disc with the Moon crescent cut out (`sunLayer`), drawn at real angular size, always on top.
+- **Sun billboard** — WebGL disc with the Moon crescent cut out (`sunLayer`), drawn at real angular size at the far plane; terrain and buildings occlude it (the locator still points at it).
 - **Framing** — `computeFraming`: picks vertical FOV, center azimuth and the camera's two angles (`aimEl`, `camDep`) so one fixed B3 shot spans the Sun's arc.
 - **`aimEl` / `camDep`** — where the shot points (elevation of the view centre; + = above the horizon) and how far the marker sits below the camera's horizontal. A high Sun drives `aimEl` positive — pitch past 90° — and `camDep` towards zero.
 - **Envelope** — the Sun's azimuth span + peak altitude sampled over the eclipse window, fed to `computeFraming`.
@@ -68,7 +68,7 @@ precisely in discussion. Terms use the exact names found in the code where one e
 - **`centerClampedToGround`** — when off, the camera keeps a fixed sea-level altitude instead of riding terrain (stops the B3 bob).
 - **`queryTerrainElevation([lng,lat])`** — terrain height at a point; **`MercatorCoordinate`** — mercator XYZ used to place WebGL layers.
 - **Custom layer** — a `CustomLayerInterface` WebGL layer drawn in the map's 3D slot (sun, moon shadow, iso-lines).
-- **Depth test** — kept off for the sun and marker so they're never occluded by terrain (observer height is unknown).
+- **Depth test** — ON (read-only) for the Sun billboard, so ridges and buildings above its altitude hide it — the "is my view west clear?" answer drawn into the scene; OFF for the marker and the sky chrome (stars, compass), which must always be reference-visible.
 - **`destPoint(lat, lon, az, dist)`** — the point a distance/bearing away from an origin (great-circle step).
 
 ## Libraries & tooling

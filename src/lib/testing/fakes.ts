@@ -56,11 +56,13 @@ export function createFakeGl() {
 		UNSIGNED_INT: 5125,
 		CULL_FACE: 2884,
 		BACK: 1029,
+		LESS: 513,
 		R16F: 33325,
 		UNPACK_ALIGNMENT: 3317,
 		drawingBufferWidth: 800,
 		drawingBufferHeight: 600,
 		cullFace: (...args: unknown[]) => void calls.push({ name: 'cullFace', args }),
+		depthFunc: (...args: unknown[]) => void calls.push({ name: 'depthFunc', args }),
 
 		createShader: record('createShader', {} as WebGLShader),
 		shaderSource: record('shaderSource', undefined),

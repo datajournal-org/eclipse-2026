@@ -2,9 +2,13 @@
 // cut out, drawn at its real angular size along the Sun's current (az, alt) direction. The centre is
 // re-anchored to the CAMERA every rendered frame (camera position + direction x offset), so the disc
 // shows zero parallax however the camera dollies or orbits — the defining property of something at
-// infinity; the offset's magnitude is arbitrary. It is drawn on top (depth test off) — terrain occlusion
-// is intentionally ignored, since we don't know the observer's height. A WebGL layer in MapLibre's 3D
-// custom-layer slot.
+// infinity; the offset's magnitude is arbitrary. It is DEPTH-TESTED against the scene at the far plane:
+// a ridge or building whose silhouette rises above the Sun's altitude hides it, which is the concept's
+// "do houses or mountains block your view west?" question answered by the picture itself (an Innsbruck
+// Sun used to glow through the Nordkette). The camera stands in for the observer, so the silhouette is
+// approximate — but a Sun in front of a mountain is always wrong, a Sun behind one usually right. The
+// DOM locator/loupe still point at it while hidden, saying "it is there, your view is blocked". A WebGL
+// layer in MapLibre's 3D custom-layer slot.
 import type { CustomLayerInterface, CustomRenderMethodInput, Map as MlMap } from 'maplibre-gl';
 
 /**
@@ -166,10 +170,16 @@ export function createSunLayer(sun: SunState, color: [number, number, number]): 
 			gl.uniform2f(u.u_moon, sun.moon[0], sun.moon[1]);
 			gl.uniform1f(u.u_moonR, sun.moonR);
 			gl.uniform3f(u.u_sun, color[0], color[1], color[2]);
-			gl.disable(gl.DEPTH_TEST); // always on top — terrain occlusion is ignored (observer height unknown)
+			// Depth-tested, read-only: the vertex shader clamps the disc to just inside the far plane, so
+			// any terrain or building drawn in front wins — see the header note. depthMask stays off (and
+			// is restored) so the far-plane quad can never punch a hole into the depth buffer.
+			gl.enable(gl.DEPTH_TEST);
+			gl.depthFunc(gl.LESS);
+			gl.depthMask(false);
 			gl.enable(gl.BLEND);
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+			gl.depthMask(true);
 		}
 	};
 }
