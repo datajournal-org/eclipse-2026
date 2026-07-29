@@ -11,33 +11,26 @@ const LABELS = {
 } as const;
 
 test.describe('colophon footer', () => {
-	test('links to the repository', async ({ page }) => {
-		await page.goto(localeUrl());
-		const link = page.getByRole('link', { name: LABELS.de.source });
-		await expect(link).toBeVisible();
-		await expect(link).toHaveAttribute('href', REPO_URL);
-	});
-
-	// The point of the second link: it must name the file holding the words on THIS page, so a reader who
-	// spots a clumsy sentence is not dropped at a repository root to go hunting for it.
+	// One navigation per language, all three links checked on it — the repository link, the translation
+	// link (which must name the file holding the words on THIS page, so a reader who spots a clumsy
+	// sentence is not dropped at a repository root to go hunting), and the imprint (a legal requirement
+	// for a site published in Germany — a locale whose footer lost it would be a compliance bug).
 	for (const lang of ALL_LANGS) {
-		test(`points at the ${lang} catalogue when reading ${lang}`, async ({ page }) => {
+		test(`carries all three links, localized, when reading ${lang}`, async ({ page }) => {
 			await page.goto(localeUrl(lang));
-			const link = page.getByRole('link', { name: LABELS[lang].translation });
-			await expect(link).toBeVisible();
-			await expect(link).toHaveAttribute('href', translationFileUrl(lang));
+
+			const source = page.getByRole('link', { name: LABELS[lang].source });
+			await expect(source).toBeVisible();
+			await expect(source).toHaveAttribute('href', REPO_URL);
+
+			const translation = page.getByRole('link', { name: LABELS[lang].translation });
+			await expect(translation).toBeVisible();
+			await expect(translation).toHaveAttribute('href', translationFileUrl(lang));
 			expect(translationFileUrl(lang)).toContain(`/messages/${lang}.ts`);
-		});
-	}
 
-	// The imprint is a legal requirement for a site published in Germany, so its presence is pinned in
-	// every language — a locale whose footer lost the link would be a compliance bug, not a style one.
-	for (const lang of ALL_LANGS) {
-		test(`links to the datajournal.org imprint in ${lang}`, async ({ page }) => {
-			await page.goto(localeUrl(lang));
-			const link = page.getByRole('link', { name: LABELS[lang].imprint, exact: true });
-			await expect(link).toBeVisible();
-			await expect(link).toHaveAttribute('href', IMPRINT_URL);
+			const imprint = page.getByRole('link', { name: LABELS[lang].imprint, exact: true });
+			await expect(imprint).toBeVisible();
+			await expect(imprint).toHaveAttribute('href', IMPRINT_URL);
 		});
 	}
 

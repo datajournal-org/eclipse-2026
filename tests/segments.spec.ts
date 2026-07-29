@@ -1,4 +1,5 @@
-import { test, expect, byName, localeUrl } from './fixtures';
+import type { Page } from '@playwright/test';
+import { test, expect, byName, localeUrl, openSharedLocatedPage } from './fixtures';
 
 /**
  * The segment grammar (docs/WIREFRAMES.md § Segment grammar), enforced. A component could only check
@@ -7,11 +8,17 @@ import { test, expect, byName, localeUrl } from './fixtures';
  * can. Runs against the located page, where every segment is active and the crowding risk is real.
  */
 test.describe('segment grammar', () => {
-	test.beforeEach(async ({ locatedPage }) => {
-		await locatedPage(byName('Oviedo'));
-	});
+	// Every check below reads the same fully-active located page and mutates nothing, so they share one
+	// page (serial) instead of paying the located-page load five times — the b3-skyview pattern.
+	test.describe.configure({ mode: 'serial' });
+	let page: Page;
 
-	test('the page is sections and dividers only — nothing floats between segments', async ({ page }) => {
+	test.beforeAll(async ({ browser }) => {
+		page = await openSharedLocatedPage(browser, byName('Oviedo'));
+	});
+	test.afterAll(async () => page.context().close());
+
+	test('the page is sections and dividers only — nothing floats between segments', async () => {
 		const strays = await page.evaluate(() =>
 			[...document.querySelectorAll('main.content > *')]
 				.filter((el) => !(el.tagName === 'SECTION' || el.classList.contains('section-divider')))
@@ -20,7 +27,7 @@ test.describe('segment grammar', () => {
 		expect(strays).toEqual([]);
 	});
 
-	test('every segment has exactly one heading — except the hero', async ({ page }) => {
+	test('every segment has exactly one heading — except the hero', async () => {
 		const counts = await page.evaluate(() =>
 			[...document.querySelectorAll('main.content > section')].map((s) => ({
 				id: [...s.classList].join('.'),
@@ -35,7 +42,7 @@ test.describe('segment grammar', () => {
 		}
 	});
 
-	test('intros are single, and a single line', async ({ page }) => {
+	test('intros are single, and a single line', async () => {
 		// The one-line rule is the grammar's teeth: it is what forces the graphic to carry the weight.
 		// Measured, not counted in characters, so every locale is held to it at the default viewport.
 		const intros = await page.evaluate(() =>
@@ -59,7 +66,7 @@ test.describe('segment grammar', () => {
 		}
 	});
 
-	test('segment footers are single captions', async ({ page }) => {
+	test('segment footers are single captions', async () => {
 		const foots = await page.evaluate(() =>
 			[...document.querySelectorAll('main.content > section')].map((s) => ({
 				id: [...s.classList].join('.'),
@@ -69,7 +76,7 @@ test.describe('segment grammar', () => {
 		for (const s of foots) expect(s.count, s.id).toBeLessThanOrEqual(1);
 	});
 
-	test('borders belong to actions — plus the named safety accent', async ({ page }) => {
+	test('borders belong to actions — plus the named safety accent', async () => {
 		// Fewer boxes is the single biggest visual calm-down: content sections separate by whitespace,
 		// and a bordered surface signals "you can act here" (the donate box; the CTA in the unlocated
 		// state). Every border on a section surface or a prose element must appear in the allowlist
@@ -116,10 +123,11 @@ test.describe('segment grammar', () => {
 		}
 	});
 
-	test('holds in the unlocated state too', async ({ page, stubGeocoder }) => {
+	// Its own fresh page (the fixture's), not the shared one: it needs the UN-located state.
+	test('holds in the unlocated state too', async ({ page: freshPage, stubGeocoder }) => {
 		await stubGeocoder();
-		await page.goto(localeUrl());
-		const strays = await page.evaluate(() =>
+		await freshPage.goto(localeUrl());
+		const strays = await freshPage.evaluate(() =>
 			[...document.querySelectorAll('main.content > *')]
 				.filter((el) => !(el.tagName === 'SECTION' || el.classList.contains('section-divider')))
 				.map((el) => `${el.tagName}.${el.className}`)

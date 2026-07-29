@@ -1,4 +1,5 @@
-import { test, expect, REFERENCE, byName, localeUrl } from './fixtures';
+import type { Page } from '@playwright/test';
+import { test, expect, REFERENCE, byName, localeUrl, openSharedLocatedPage } from './fixtures';
 
 // The reference table is the shared oracle: Vitest checks the astronomy produces these numbers, this
 // spec checks they reach the screen. Times are shown in the browser's zone (Europe/Berlin = UTC+2).
@@ -6,6 +7,24 @@ const berlinTime = (utc: string) => {
 	const [h, m] = utc.split(':').map(Number);
 	return `${String((h + 2) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 };
+
+/**
+ * One shared page per location (serial), because every test against a given place only READS its
+ * verdict — the b3 pattern. Locations that appear once keep the plain per-test fixture.
+ */
+function atLocation(site: { lat: number; lon: number; name?: string }, body: (get: () => Page) => void) {
+	test.describe(`at ${site.name}`, () => {
+		test.describe.configure({ mode: 'serial' });
+		let page: Page;
+
+		test.beforeAll(async ({ browser }) => {
+			page = await openSharedLocatedPage(browser, site);
+		});
+		test.afterAll(async () => page.context().close());
+
+		body(() => page);
+	});
+}
 
 test.describe('B1 verdict card', () => {
 	for (const site of REFERENCE) {
@@ -25,27 +44,36 @@ test.describe('B1 verdict card', () => {
 		});
 	}
 
-	test('flags a total eclipse for its unaided-viewing window', async ({ page, locatedPage }) => {
-		await locatedPage(byName('Oviedo'));
-		const safety = page.locator('section.b1 .safety');
-		await expect(safety).toContainText('Totalität');
-		await expect(safety).toContainText('Schutzbrille');
-		// and it names the window, so the reader knows exactly when the glasses come off
-		await expect(safety).toContainText(/\d\d:\d\d[–-]\d\d:\d\d/);
+	atLocation(byName('Oviedo'), (get) => {
+		test('flags a total eclipse for its unaided-viewing window', async () => {
+			const safety = get().locator('section.b1 .safety');
+			await expect(safety).toContainText('Totalität');
+			await expect(safety).toContainText('Schutzbrille');
+			// and it names the window, so the reader knows exactly when the glasses come off
+			await expect(safety).toContainText(/\d\d:\d\d[–-]\d\d:\d\d/);
+		});
+
+		test('marks the card as total', async () => {
+			await expect(get().locator('section.b1')).toHaveClass(/total/);
+		});
+
+		test('shows the sky view wherever it declares the eclipse visible', async () => {
+			// The other half of the shared predicate: visible verdict ⇒ B3 present (its map loads lazily;
+			// the section itself must be there at once).
+			await expect(get().locator('section.b3')).toBeAttached();
+		});
 	});
 
-	test('demands eye protection throughout at a partial location', async ({ page, locatedPage }) => {
-		await locatedPage(byName('Berlin'));
-		const safety = page.locator('section.b1 .safety');
-		await expect(safety).toContainText('ISO 12312-2');
-		await expect(safety).not.toContainText('Totalität');
-	});
+	atLocation(byName('Berlin'), (get) => {
+		test('demands eye protection throughout at a partial location', async () => {
+			const safety = get().locator('section.b1 .safety');
+			await expect(safety).toContainText('ISO 12312-2');
+			await expect(safety).not.toContainText('Totalität');
+		});
 
-	test('marks the card as total only where totality happens', async ({ page, locatedPage }) => {
-		await locatedPage(byName('Oviedo'));
-		await expect(page.locator('section.b1')).toHaveClass(/total/);
-		await locatedPage(byName('Berlin'));
-		await expect(page.locator('section.b1')).not.toHaveClass(/total/);
+		test('does not mark the card as total where totality never happens', async () => {
+			await expect(get().locator('section.b1')).not.toHaveClass(/total/);
+		});
 	});
 
 	test('says so when the eclipse is below the horizon', async ({ page, locatedPage }) => {
@@ -61,66 +89,67 @@ test.describe('B1 verdict card', () => {
 		await expect(page.locator('section.b3')).toHaveCount(0);
 	});
 
-	test('shows the sky view wherever it declares the eclipse visible', async ({ page, locatedPage }) => {
-		// The other half of the shared predicate: visible verdict ⇒ B3 present (its map loads lazily; the
-		// section itself must be there at once).
-		await locatedPage(byName('Oviedo'));
-		await expect(page.locator('section.b3')).toBeAttached();
-	});
-
 	test.describe('a location this eclipse misses', () => {
 		// SearchLocalSolarEclipse scans forward until it finds an eclipse the observer can see, so without
 		// the guard in localCircumstances these places were shown a DIFFERENT eclipse — Sydney the 2028
 		// one — rendered as a confident verdict with a time-only "Maximum um …" that hid the year.
-		for (const [name, lat, lon] of [
-			['Sydney', -33.8688, 151.2093],
-			['Tokyo', 35.6762, 139.6503],
-			['Buenos Aires', -34.6037, -58.3816]
-		] as const) {
-			test(`tells a visitor in ${name} it is not visible`, async ({ page, locatedPage }) => {
-				await locatedPage({ lat, lon, name });
-				const card = page.locator('section.b1');
+		const notVisibleHere = (get: () => Page, name: string) => {
+			test(`tells a visitor in ${name} it is not visible`, async () => {
+				const card = get().locator('section.b1');
 				await expect(card.locator('h2')).toHaveText('Von hier aus nicht sichtbar');
 				await expect(card.locator('.obsc')).toHaveCount(0);
 				// and nothing anywhere claims a coverage figure or a contact time
-				await expect(page.locator('section.b6')).toHaveCount(0);
+				await expect(get().locator('section.b6')).toHaveCount(0);
 				// nor is there a sky view of an eclipse that never arrives
-				await expect(page.locator('section.b3')).toHaveCount(0);
+				await expect(get().locator('section.b3')).toHaveCount(0);
 			});
-		}
+		};
 
-		test('points a Sydney visitor at the eclipse they can actually see', async ({ page, locatedPage }) => {
-			// CONCEPT.md's fourth question — "should I travel for it?" — answered from the other side: the
-			// data is already computed, so a dead end becomes the most useful line on the page.
-			await locatedPage({ lat: -33.8688, lon: 151.2093, name: 'Sydney' });
-			const next = page.locator('section.b1 .next');
-			await expect(next).toBeVisible();
-			await expect(next).toContainText('2028'); // 22 July 2028
-			await expect(next).toContainText('total');
-			await expect(next).toContainText('100');
+		atLocation({ lat: -33.8688, lon: 151.2093, name: 'Sydney' }, (get) => {
+			notVisibleHere(get, 'Sydney');
+
+			test('points a Sydney visitor at the eclipse they can actually see', async () => {
+				// CONCEPT.md's fourth question — "should I travel for it?" — answered from the other side:
+				// the data is already computed, so a dead end becomes the most useful line on the page.
+				const next = get().locator('section.b1 .next');
+				await expect(next).toBeVisible();
+				await expect(next).toContainText('2028'); // 22 July 2028
+				await expect(next).toContainText('total');
+				await expect(next).toContainText('100');
+			});
+
+			test('says the eclipse does not reach here, not that the Sun has set', async () => {
+				// The old copy claimed "at maximum the Sun is already below the horizon" for Sydney, which
+				// is simply false — the eclipse never gets there at all.
+				const note = get().locator('section.b1 .note').first();
+				await expect(note).toHaveText('Diese Finsternis erreicht deinen Ort nicht.');
+			});
+
+			test('offers no calendar entry for the wrong eclipse', async () => {
+				// The .ics used to be written from the found eclipse's peak — a 2028 DTSTART for Sydney.
+				await expect(get().locator('section.b1')).toBeVisible();
+				await expect(get().getByRole('button', { name: /Kalender/ })).toHaveCount(0);
+			});
 		});
 
-		test('names the right kind and coverage for a partial one', async ({ page, locatedPage }) => {
-			await locatedPage({ lat: 35.6762, lon: 139.6503, name: 'Tokio' });
-			const next = page.locator('section.b1 .next');
-			await expect(next).toContainText('2030');
-			await expect(next).toContainText('partiell');
-			await expect(next).toContainText('72');
+		atLocation({ lat: 35.6762, lon: 139.6503, name: 'Tokio' }, (get) => {
+			notVisibleHere(get, 'Tokio');
+
+			test('names the right kind and coverage for a partial one', async () => {
+				const next = get().locator('section.b1 .next');
+				await expect(next).toContainText('2030');
+				await expect(next).toContainText('partiell');
+				await expect(next).toContainText('72');
+			});
 		});
 
-		test('says the eclipse does not reach here, not that the Sun has set', async ({ page, locatedPage }) => {
-			// The old copy claimed "at maximum the Sun is already below the horizon" for Sydney, which is
-			// simply false — the eclipse never gets there at all.
-			await locatedPage({ lat: -33.8688, lon: 151.2093, name: 'Sydney' });
-			const note = page.locator('section.b1 .note').first();
-			await expect(note).toHaveText('Diese Finsternis erreicht deinen Ort nicht.');
-		});
-
-		test('offers no calendar entry for the wrong eclipse', async ({ page, locatedPage }) => {
-			// The .ics used to be written from the found eclipse's peak — a 2028 DTSTART for Sydney.
-			await locatedPage({ lat: -33.8688, lon: 151.2093, name: 'Sydney' });
-			await expect(page.locator('section.b1')).toBeVisible();
-			await expect(page.getByRole('button', { name: /Kalender/ })).toHaveCount(0);
+		test('tells a visitor in Buenos Aires it is not visible', async ({ page, locatedPage }) => {
+			await locatedPage({ lat: -34.6037, lon: -58.3816, name: 'Buenos Aires' });
+			const card = page.locator('section.b1');
+			await expect(card.locator('h2')).toHaveText('Von hier aus nicht sichtbar');
+			await expect(card.locator('.obsc')).toHaveCount(0);
+			await expect(page.locator('section.b6')).toHaveCount(0);
+			await expect(page.locator('section.b3')).toHaveCount(0);
 		});
 	});
 

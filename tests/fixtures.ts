@@ -168,6 +168,22 @@ export async function openSharedPage(browser: Browser, path: string) {
 }
 
 /**
+ * A shared page with a location already chosen — `openSharedPage` through the same `?lat&lon&name`
+ * debug override and hydration wait that the per-test `locatedPage` fixture uses, for serial groups
+ * of READ-ONLY tests that all inspect the same located state (a11y, verdict, checklist, segments).
+ */
+export async function openSharedLocatedPage(
+	browser: Browser,
+	site: { lat: number; lon: number; name?: string },
+	lang = LANG
+) {
+	const name = site.name ? `&name=${encodeURIComponent(site.name)}` : '';
+	const page = await openSharedPage(browser, localeUrl(lang, `?lat=${site.lat}&lon=${site.lon}${name}`));
+	await page.locator('section.b1').waitFor({ state: 'visible' });
+	return page;
+}
+
+/**
  * Wait for a section's MapLibre instance to reach `idle` (the data-map-ready hook in the components).
  *
  * The budget has to be CI-aware. A GPU-less runner rasterises B3's terrain scene on the CPU, and a

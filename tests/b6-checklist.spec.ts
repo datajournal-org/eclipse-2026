@@ -1,27 +1,35 @@
-import { test, expect, byName, localeUrl } from './fixtures';
+import type { Page } from '@playwright/test';
+import { test, expect, byName, localeUrl, openSharedLocatedPage } from './fixtures';
 import { REFERENCE } from './fixtures';
 
 const OVIEDO = byName('Oviedo');
 
 test.describe('B6 checklist', () => {
-	test('lists the preparation items for the chosen place', async ({ page, locatedPage }) => {
-		await locatedPage(OVIEDO);
+	// The Oviedo tests all read (or download from) the same located page without mutating it, so they
+	// share one page (serial) instead of paying the located-page load four times — the b3 pattern.
+	test.describe.configure({ mode: 'serial' });
+	let page: Page;
+
+	test.beforeAll(async ({ browser }) => {
+		page = await openSharedLocatedPage(browser, OVIEDO);
+	});
+	test.afterAll(async () => page.context().close());
+
+	test('lists the preparation items for the chosen place', async () => {
 		const list = page.locator('section.b6 .checks li');
 		expect(await list.count()).toBeGreaterThan(2);
 		for (const text of await list.allInnerTexts()) expect(text.trim()).not.toBe('');
 	});
 
-	test('explains WHY each item matters, not just what to do', async ({ page, locatedPage }) => {
+	test('explains WHY each item matters, not just what to do', async () => {
 		// "Certified glasses" alone reads as bureaucracy; "ordinary sunglasses are not enough — lasting
 		// eye damage" is a reason to comply. Every item carries its why as a sub-line.
-		await locatedPage(OVIEDO);
 		const whys = page.locator('section.b6 .checks li .why');
 		expect(await whys.count()).toBe(await page.locator('section.b6 .checks li').count());
 		for (const text of await whys.allInnerTexts()) expect(text.trim().length).toBeGreaterThan(20);
 	});
 
-	test('counts down to the local maximum', async ({ page, locatedPage }) => {
-		await locatedPage(OVIEDO);
+	test('counts down to the local maximum', async () => {
 		const count = page.locator('section.b6 .count');
 		await expect(count).toBeVisible();
 		await expect(count).toContainText(/\d/);
@@ -31,8 +39,7 @@ test.describe('B6 checklist', () => {
 		await expect(seconds).not.toHaveText(before, { timeout: 3000 });
 	});
 
-	test('downloads a calendar entry for the local maximum', async ({ page, locatedPage }) => {
-		await locatedPage(OVIEDO);
+	test('downloads a calendar entry for the local maximum', async () => {
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
 			page.getByRole('button', { name: /Kalender/ }).click()
@@ -72,21 +79,21 @@ test.describe('B6 checklist', () => {
 		expect(description.split('\\n').length).toBeGreaterThanOrEqual(4);
 	});
 
-	test('serves state A as a bare list before a location is chosen', async ({ page }) => {
+	test('serves state A as a bare list before a location is chosen', async ({ page: freshPage }) => {
 		// The safety and preparation advice must reach readers who never pick a place — but nothing may
 		// pretend to be local: no countdown and no calendar export, since both would point at a maximum
 		// that is nowhere in particular. The items themselves are the same for everyone.
-		await page.goto(localeUrl());
-		await expect(page.locator('section.b6')).toBeVisible();
-		await expect(page.locator('section.b6 .checks li').nth(1)).toContainText('Hast du freie Sicht nach Westen?');
-		await expect(page.locator('section.b6 .count')).toHaveCount(0);
-		await expect(page.locator('section.b6 .cal')).toHaveCount(0);
+		await freshPage.goto(localeUrl());
+		await expect(freshPage.locator('section.b6')).toBeVisible();
+		await expect(freshPage.locator('section.b6 .checks li').nth(1)).toContainText('Hast du freie Sicht nach Westen?');
+		await expect(freshPage.locator('section.b6 .count')).toHaveCount(0);
+		await expect(freshPage.locator('section.b6 .cal')).toHaveCount(0);
 	});
 
-	test('appears for every reference location', async ({ page, locatedPage }) => {
+	test('appears for every reference location', async ({ page: freshPage, locatedPage }) => {
 		for (const site of REFERENCE.slice(0, 3)) {
 			await locatedPage(site);
-			await expect(page.locator('section.b6')).toBeVisible();
+			await expect(freshPage.locator('section.b6')).toBeVisible();
 		}
 	});
 });
