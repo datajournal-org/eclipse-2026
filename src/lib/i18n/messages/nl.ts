@@ -6,14 +6,14 @@ const messages: Messages = {
 		tagline: '12 augustus 2026',
 		page_title: 'Zonsverduistering 12 augustus 2026 — wat jij hiervandaan ziet',
 		page_description:
-			'Hoeveel van de zon wordt op jouw plek bedekt, wanneer is het maximum, en heb je vrij zicht naar het westen? De eerste totale zonsverduistering boven Europa sinds 1999.',
+			'Hoeveel van de zon wordt op jouw plek bedekt, wanneer is het maximum, en heb je vrij zicht naar het westen? De eerste totale zonsverduistering boven het Europese vasteland sinds 1999.',
 		og_image_alt:
 			'De aarde vanuit de ruimte: de schaduw van de verduistering trekt tussen IJsland en Spanje over de Atlantische Oceaan'
 	},
 	nav: { about: 'Over', language: 'Taal' },
 	countdown: {
 		to_totality: 'tot het hoogtepunt van de totale zonsverduistering',
-		since: 'De eerste totale zonsverduistering boven Europa sinds 1999.',
+		since: 'De eerste totale zonsverduistering boven het Europese vasteland sinds 1999.',
 		happening: 'De verduistering is nu bezig.',
 		past: 'De verduistering is voorbij.',
 		d: 'd',
@@ -100,6 +100,8 @@ const messages: Messages = {
 		glasses: 'Gecertificeerde eclipsbril (ISO 12312-2)',
 		glasses_why: 'Gewone zonnebrillen volstaan niet — zonder bescherming dreigt blijvende oogschade.',
 		view: 'Vrij zicht naar het westen (azimut {az}°)',
+		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
+		view_generic: 'Vrij zicht naar het westen',
 		view_why: 'Controleer vooraf of gebouwen of bomen de zon op dat moment verbergen.',
 		weather: 'Weersverwachting checken',
 		weather_why: 'Bij dicht wolkendek helpt alleen een andere plek — houd een alternatief achter de hand.',

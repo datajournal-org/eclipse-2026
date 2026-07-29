@@ -51,7 +51,7 @@ One scrollable screen. Order and content of the blocks:
 - **Header (everywhere):** ☀︎ Eclipse 2026 · 🌐 Language. _(ℹ About is not built; the `nav.about`
   string exists in all three catalogues but nothing renders it.)_
 - **A1 — Countdown:** a large live countdown "20 d : 04 : 12 to the total eclipse", below it the
-  framing sentence "The first total solar eclipse over Europe since 1999."
+  framing sentence "The first total solar eclipse over mainland Europe since 1999."
 - **A2 — Shadow run:** globe with the entire shadow path as a **dashed trace** (Siberia →
   Iceland → Spain); the **current shadow** moves live over a scrubbable timeline (17:30 – 18:30
   UTC) on top, with partiality rings (90 / 50 / 0%).

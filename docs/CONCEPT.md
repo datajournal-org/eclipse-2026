@@ -50,7 +50,7 @@ Goal: spark fascination in 10 seconds, get a location in 60 seconds.
 No permission dialog on the first frame.
 
 - **A1 — Entry:** a large, calm live countdown to totality. One framing sentence:
-  "The first total solar eclipse over Europe since 1999."
+  "The first total solar eclipse over mainland Europe since 1999."
 - **A2 — Shadow run (hero):** globe/map with the moving lunar shadow, scrubbable along a
   timeline: Siberia → Arctic → Greenland → Iceland → Atlantic → northern Spain → Balearics.
   Over it, the partiality zones as soft rings ("90% here, 50% here, nothing here").

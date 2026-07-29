@@ -6,13 +6,13 @@ const messages: Messages = {
 		tagline: '12 de agosto de 2026',
 		page_title: 'Eclipse solar de 12 de agosto de 2026 — o que vês daqui',
 		page_description:
-			'Quanto do Sol fica coberto no teu local, quando é o máximo e tens vista desimpedida para oeste? O primeiro eclipse total sobre a Europa desde 1999.',
+			'Quanto do Sol fica coberto no teu local, quando é o máximo e tens vista desimpedida para oeste? O primeiro eclipse total sobre a Europa continental desde 1999.',
 		og_image_alt: 'A Terra vista do espaço: a sombra do eclipse atravessa o Atlântico entre a Islândia e a Espanha'
 	},
 	nav: { about: 'Sobre', language: 'Idioma' },
 	countdown: {
 		to_totality: 'até ao ponto máximo do eclipse solar total',
-		since: 'O primeiro eclipse solar total sobre a Europa desde 1999.',
+		since: 'O primeiro eclipse solar total sobre a Europa continental desde 1999.',
 		happening: 'O eclipse está a decorrer.',
 		past: 'O eclipse já passou.',
 		d: 'd',
@@ -99,6 +99,8 @@ const messages: Messages = {
 		glasses: 'Óculos de eclipse certificados (ISO 12312-2)',
 		glasses_why: 'Óculos de sol comuns não bastam — sem proteção há risco de danos oculares permanentes.',
 		view: 'Vista desimpedida para oeste (azimute {az}°)',
+		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
+		view_generic: 'Vista desimpedida para oeste',
 		view_why: 'Verifica antes se edifícios ou árvores tapam o Sol a essa hora.',
 		weather: 'Verificar a previsão do tempo',
 		weather_why: 'Com nuvens densas só ajuda mudar de lugar — tem uma alternativa preparada.',

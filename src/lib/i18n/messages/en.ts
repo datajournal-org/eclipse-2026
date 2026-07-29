@@ -7,13 +7,13 @@ const messages: Messages = {
 		tagline: '12 August 2026',
 		page_title: "Solar eclipse 12 August 2026 — what you'll see from here",
 		page_description:
-			'How much gets covered where you are, when the maximum falls, and whether you have a clear view west. The first total eclipse over Europe since 1999.',
+			'How much gets covered where you are, when the maximum falls, and whether you have a clear view west. The first total eclipse over mainland Europe since 1999.',
 		og_image_alt: 'Earth from space: the eclipse shadow sweeping the Atlantic between Iceland and Spain'
 	},
 	nav: { about: 'About', language: 'Language' },
 	countdown: {
 		to_totality: 'until the peak of the total solar eclipse',
-		since: 'The first total solar eclipse over Europe since 1999.',
+		since: 'The first total solar eclipse over mainland Europe since 1999.',
 		happening: 'The eclipse is happening now.',
 		past: 'The eclipse is over.',
 		d: 'd',
@@ -101,6 +101,8 @@ const messages: Messages = {
 		glasses: 'Certified eclipse glasses (ISO 12312-2)',
 		glasses_why: 'Ordinary sunglasses are not enough — without protection you risk lasting eye damage.',
 		view: 'Clear view to the west (azimuth {az}°)',
+		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
+		view_generic: 'Clear view to the west',
 		view_why: 'Check in advance whether buildings or trees block the Sun at that time.',
 		weather: 'Check the weather forecast',
 		weather_why: 'Under thick clouds only a change of place helps — have an alternative ready.',

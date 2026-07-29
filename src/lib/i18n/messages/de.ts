@@ -6,14 +6,14 @@ const messages = {
 		tagline: '12. August 2026',
 		page_title: 'Sonnenfinsternis 12. August 2026 — was du von hier siehst',
 		page_description:
-			'Wie viel wird an deinem Ort bedeckt, wann ist das Maximum, und hast du freie Sicht nach Westen? Die erste totale Finsternis über Europa seit 1999.',
+			'Wie viel wird an deinem Ort bedeckt, wann ist das Maximum, und hast du freie Sicht nach Westen? Die erste totale Finsternis über dem europäischen Festland seit 1999.',
 		og_image_alt:
 			'Die Erdkugel aus dem All: der Schatten der Sonnenfinsternis zieht zwischen Island und Spanien über den Atlantik'
 	},
 	nav: { about: 'Über', language: 'Sprache' },
 	countdown: {
 		to_totality: 'bis zum Höhepunkt der totalen Sonnenfinsternis',
-		since: 'Die erste totale Sonnenfinsternis über Europa seit 1999.',
+		since: 'Die erste totale Sonnenfinsternis über dem europäischen Festland seit 1999.',
 		happening: 'Die Finsternis findet gerade statt.',
 		past: 'Die Finsternis ist vorüber.',
 		d: 'T',
@@ -100,6 +100,8 @@ const messages = {
 		glasses: 'Zertifizierte Sonnenfinsternisbrille (ISO 12312-2)',
 		glasses_why: 'Normale Sonnenbrillen reichen nicht — ohne Schutz drohen bleibende Augenschäden.',
 		view: 'Freie Sicht nach Westen (Azimut {az}°)',
+		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
+		view_generic: 'Freie Sicht nach Westen',
 		view_why: 'Prüfe vorher, ob Gebäude oder Bäume die Sonne zu dieser Zeit verdecken.',
 		weather: 'Wettervorhersage prüfen',
 		weather_why: 'Bei dichter Bewölkung hilft nur ein Ortswechsel — plane eine Alternative ein.',

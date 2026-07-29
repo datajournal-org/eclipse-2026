@@ -6,13 +6,13 @@ const messages: Messages = {
 		tagline: '12 août 2026',
 		page_title: 'Éclipse solaire du 12 août 2026 — ce que tu vois d’ici',
 		page_description:
-			'Quelle part du Soleil sera couverte chez toi, à quelle heure le maximum, et as-tu une vue dégagée vers l’ouest ? La première éclipse totale au-dessus de l’Europe depuis 1999.',
+			'Quelle part du Soleil sera couverte chez toi, à quelle heure le maximum, et as-tu une vue dégagée vers l’ouest ? La première éclipse totale au-dessus de l’Europe continentale depuis 1999.',
 		og_image_alt: 'La Terre vue de l’espace : l’ombre de l’éclipse traverse l’Atlantique entre l’Islande et l’Espagne'
 	},
 	nav: { about: 'À propos', language: 'Langue' },
 	countdown: {
 		to_totality: 'avant le maximum de l’éclipse totale de Soleil',
-		since: 'La première éclipse totale de Soleil au-dessus de l’Europe depuis 1999.',
+		since: 'La première éclipse totale de Soleil au-dessus de l’Europe continentale depuis 1999.',
 		happening: 'L’éclipse est en cours.',
 		past: 'L’éclipse est terminée.',
 		d: 'j',
@@ -101,6 +101,8 @@ const messages: Messages = {
 		glasses_why:
 			'Les lunettes de soleil ordinaires ne suffisent pas — sans protection, tu risques des lésions oculaires durables.',
 		view: 'Vue dégagée vers l’ouest (azimut {az}°)',
+		// The location-less variant of `view`: no azimuth to name yet, but all of Europe looks west.
+		view_generic: 'Vue dégagée vers l’ouest',
 		view_why: 'Vérifie à l’avance si des bâtiments ou des arbres masquent le Soleil à cette heure.',
 		weather: 'Vérifier la météo',
 		weather_why: 'Sous une couverture nuageuse épaisse, seul un changement de lieu aide — prévois une alternative.',
