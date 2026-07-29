@@ -6,11 +6,11 @@
  * sky data): crawlers need a stable asset, CI must not depend on a GPU, and the scene only changes when
  * the globe itself is redesigned — rerun `npm run og:image` then.
  *
- * Needs a production build first (`npm run build`): the screenshot is taken against `vite preview`, so
- * it shows exactly what ships. Satellite tiles come from the live tile server.
+ * Runs against the DEV server (`vite dev`), not a production build: the scene is compiled from the
+ * same source either way, and requiring a fresh `npm run build` first only ever produced stale or
+ * missing-build errors when regenerating the image. Satellite tiles come from the live tile server.
  */
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import { TIMELINE_START, TIMELINE_END } from '../src/lib/config';
 import { GREATEST } from '../src/lib/testing/reference';
@@ -21,13 +21,8 @@ const OUT = 'static/og.jpg';
 const WIDTH = 1200,
 	HEIGHT = 630;
 
-if (!existsSync('build')) {
-	console.error('[og] no build/ directory — run `npm run build` first.');
-	process.exit(1);
-}
-
-// ---- preview server -------------------------------------------------------------------------------
-const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], { stdio: 'ignore' });
+// ---- dev server -----------------------------------------------------------------------------------
+const server = spawn('npx', ['vite', 'dev', '--port', String(PORT), '--strictPort'], { stdio: 'ignore' });
 const kill = () => {
 	if (!server.killed) server.kill();
 };
@@ -44,7 +39,8 @@ for (let tries = 0; ; tries++) {
 	} catch {
 		/* not up yet */
 	}
-	if (tries > 50) {
+	// Dev cold-starts slower than preview (svelte-kit sync + on-demand compile) — allow ~60 s.
+	if (tries > 300) {
 		console.error('[og] preview server did not come up');
 		process.exit(1);
 	}
