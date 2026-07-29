@@ -1,5 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#05070d"/>
-  <circle cx="16" cy="16" r="8" fill="#e8a33d"/>
-  <circle cx="19.5" cy="14" r="7" fill="#05070d"/>
+<!-- The datajournal.org mark (assets/images/icon-blue.svg), recolored for this project: colors
+     inverted (white ground -> the app's near-black), then one hue/sat/lightness transform
+     (+20.8deg, x0.788, x0.783) chosen so the inverted columns land exactly on the accent token
+     (- -amber-500 #e8a33d); the J swoosh was then hand-tuned lighter (#e8c48e) for contrast. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+	<rect width="20" height="20" rx="4.4" fill="#05070d" />
+	<g transform="translate(2,2)" fill="#e8a33d">
+		<path d="M1,9h2v3h-2Z" />
+		<path d="M4,7h2v5h-2Z" />
+		<path d="M7,5h2v7h-2Z" />
+		<path d="M10,3h2v9h-2Z" />
+		<path fill="#e8c48e" d="M11,13h-10v2h10c3,0 4,-1 4,-4v-10h-2v10c0,1.5-0.5,2-2,2Z" />
+	</g>
 </svg>

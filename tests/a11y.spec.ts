@@ -46,7 +46,10 @@ test.describe('accessibility', () => {
 				const label = el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '';
 				return `${el.tagName}:${label.slice(0, 16)}`;
 			});
-		// The switcher comes first in the tab order, before the map: one Tab lands on the disclosure…
+		// The brand-mark link (to datajournal.org) is the first stop — it must be keyboard-reachable,
+		// and a home link leading the tab order is the convention — then the language disclosure…
+		await page.keyboard.press('Tab');
+		expect(await active()).toBe('A:datajournal.org');
 		await page.keyboard.press('Tab');
 		expect(await active()).toMatch(/^SUMMARY:Sprache/);
 		// …Enter opens it, and the language links become the next tab stops (links inside a closed

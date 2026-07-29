@@ -10,6 +10,16 @@ test.describe('app shell', () => {
 		expect(locatedPage).toBeTruthy();
 	});
 
+	test('links the brand mark to datajournal.org, its origin', async ({ page }) => {
+		// The mark IS datajournal.org's icon (recolored — see static/favicon.svg), so it points home.
+		// The SVG inside stays decorative; the link itself must speak its destination.
+		await page.goto(localeUrl());
+		const home = page.locator('header.hdr a.home');
+		await expect(home).toHaveAttribute('href', 'https://datajournal.org/');
+		await expect(home).toHaveAttribute('aria-label', 'datajournal.org');
+		await expect(home.locator('.mark')).toHaveAttribute('aria-hidden', 'true');
+	});
+
 	test('keeps the sections in the order the wireframes define', async ({ page, locatedPage }) => {
 		await locatedPage({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
 		// The B sections only exist once the client has read the location, so wait for hydration rather

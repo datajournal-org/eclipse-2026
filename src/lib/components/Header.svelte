@@ -31,10 +31,26 @@
 
 <!-- eslint-disable svelte/no-navigation-without-resolve --
      The language links go through `resolve` (see `langHref`), so `base` is applied — the rule just
-     cannot see it through the helper. -->
+     cannot see it through the helper. The brand-mark link leaves the site entirely (datajournal.org),
+     so `resolve` does not apply to it either. -->
 <header class="hdr">
 	<div class="brand">
-		<span class="mark" aria-hidden="true">☀︎</span>
+		<!-- The same mark as the favicon (static/favicon.svg, where its derivation is documented), but
+		     without the favicon's dark tile — the header supplies the background itself. Inline so the
+		     columns can take their colour from the accent token; the swoosh keeps the favicon's
+		     hand-tuned lighter amber. It is datajournal.org's mark, so it links there; the SVG stays
+		     decorative (aria-hidden) and the link speaks its destination through the aria-label. -->
+		<a class="home" href="https://datajournal.org/" aria-label="datajournal.org">
+			<svg class="mark" aria-hidden="true" viewBox="0 0 16 16" width="20" height="20">
+				<g fill="var(--accent)">
+					<path d="M1,9h2v3h-2Z" />
+					<path d="M4,7h2v5h-2Z" />
+					<path d="M7,5h2v7h-2Z" />
+					<path d="M10,3h2v9h-2Z" />
+					<path fill="#e8c48e" d="M11,13h-10v2h10c3,0 4,-1 4,-4v-10h-2v10c0,1.5-0.5,2-2,2Z" />
+				</g>
+			</svg>
+		</a>
 		<span class="name">{$t('app.title')}</span>
 	</div>
 	<!-- <details> carries the implicit `group` role, so the accessible shape ("Language" group holding
@@ -83,9 +99,19 @@
 		font-weight: 800;
 		letter-spacing: -0.01em;
 	}
+	.home {
+		display: block;
+		border-radius: 4px;
+
+		&:hover .mark,
+		&:focus-visible .mark {
+			filter: brightness(1.25);
+		}
+	}
 	.mark {
-		color: var(--accent);
-		font-size: 1.15rem;
+		display: block;
+		width: 20px;
+		height: 20px;
 	}
 	.langs {
 		position: relative;
