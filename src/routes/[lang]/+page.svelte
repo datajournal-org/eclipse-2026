@@ -43,11 +43,16 @@
 				<SkyView />
 			{/key}
 		{/if}
-
-		<SectionDivider label={$t('b.prep')} />
-		<Checklist />
 	{:else}
 		<LocationCall onchoose={() => (pickerOpen = true)} />
+	{/if}
+
+	<!-- B6 serves both states: personal (local maximum, azimuth, phase times) once a location is
+	     chosen, generic before one is — but not for a chosen place the eclipse misses, where prep
+	     advice would contradict the verdict's "not visible from here". -->
+	{#if !$userLocation || $localEclipse?.peak}
+		<SectionDivider label={$t('b.prep')} />
+		<Checklist />
 	{/if}
 
 	<Donate />

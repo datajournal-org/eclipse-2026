@@ -101,6 +101,10 @@ given.
 
 ### B6 — Checklist & countdown
 
+Also shown in state A, reduced to the tick-off list alone (no countdown, no calendar export, no
+azimuth in the view item — all local promises). Hidden only where a chosen location sees nothing
+of the eclipse.
+
 Countdown (same as A1) plus a simple checklist:
 
 - [ ] Get eclipse glasses (ISO 12312-2) + check them for scratches

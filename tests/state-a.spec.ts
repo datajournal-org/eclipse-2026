@@ -8,11 +8,13 @@ test.describe('state A — no location', () => {
 		await expect(page.getByRole('button', { name: /Ort wählen|📍/ }).first()).toBeVisible();
 	});
 
-	test('hides every personalised section', async ({ page }) => {
+	test('hides the personalised sections — but not the generic checklist', async ({ page }) => {
 		await page.goto(localeUrl());
-		for (const section of ['section.b1', 'section.b3', 'section.b6']) {
+		for (const section of ['section.b1', 'section.b3']) {
 			await expect(page.locator(section)).toHaveCount(0);
 		}
+		// B6 stays: its prep and safety advice holds without a location (generic form — see b6 spec).
+		await expect(page.locator('section.b6')).toBeVisible();
 	});
 
 	test('names the reader’s time zone', async ({ page }) => {

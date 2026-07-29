@@ -99,9 +99,12 @@ test.describe('changing the location @webgl', () => {
 		await page.evaluate(() => window.localStorage.removeItem('eclipse.location'));
 		await page.goto(localeUrl());
 
-		for (const section of ['section.b1', 'section.b3', 'section.b6']) {
+		for (const section of ['section.b1', 'section.b3']) {
 			await expect(page.locator(section)).toHaveCount(0);
 		}
+		// B6 remains, but in its generic state-A form: no azimuth, nothing local left over.
+		await expect(page.locator('section.b6')).toBeVisible();
+		await expect(page.locator('section.b6')).not.toContainText('Azimut');
 		await expect(page.getByRole('button', { name: /Standort wählen/ })).toBeVisible();
 	});
 

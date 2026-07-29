@@ -1,6 +1,12 @@
 <!-- B6 — Personal checklist & countdown: a live countdown to this location's maximum, a tick-off list
      (glasses, clear view to the Sun's azimuth, weather) and a one-tap calendar export (.ics, built
-     client-side so nothing leaves the device). Times/azimuth from the shared localEclipse store. -->
+     client-side so nothing leaves the device). Times/azimuth from the shared localEclipse store.
+
+     Also serves state A: before a location is chosen, only the tick-off list renders — no countdown
+     and no calendar export, since both would have to point at a maximum that is nowhere in particular —
+     so the safety and preparation advice still reaches readers who never pick a place. A chosen
+     location the eclipse misses still hides it (the page gates on that): generic prep under a verdict
+     that says "not visible from here" would contradict it. -->
 <script lang="ts">
 	import { t, fmt } from '$lib/i18n';
 	import { localEclipse } from '$lib/stores/localEclipse';
@@ -20,7 +26,7 @@
 
 	const items = $derived([
 		{ key: 'glasses', text: $t('b6.glasses'), why: $t('b6.glasses_why') },
-		{ key: 'view', text: $t('b6.view', { az: az ?? '—' }), why: $t('b6.view_why') },
+		{ key: 'view', text: az == null ? $t('b6.view_generic') : $t('b6.view', { az }), why: $t('b6.view_why') },
 		{ key: 'weather', text: $t('b6.weather'), why: $t('b6.weather_why') }
 	]);
 
@@ -73,22 +79,25 @@
 	}
 </script>
 
-{#if peak}
+{#if peak || !loc}
 	<section class="block b6">
 		<div class="block-head">
 			<h2>{$t('b6.title')}</h2>
 		</div>
 
-		{#if remaining > 0}
-			<div class="count tnum" aria-live="off">
-				{#if parts.d > 0}<span class="seg"><b class="stat">{parts.d}</b>{$t('countdown.d')}</span>{/if}
-				<span class="seg"><b class="stat">{pad2(parts.h)}</b>{$t('countdown.h')}</span>
-				<span class="seg"><b class="stat">{pad2(parts.m)}</b>{$t('countdown.m')}</span>
-				<span class="seg"><b class="stat">{pad2(parts.s)}</b>{$t('countdown.s')}</span>
-				<span class="note">{$t('b6.until_max')}</span>
-			</div>
-		{:else}
-			<p class="past">{$t('b6.past')}</p>
+		<!-- Countdown and calendar export are LOCAL promises — state A gets only the list below. -->
+		{#if peak}
+			{#if remaining > 0}
+				<div class="count tnum" aria-live="off">
+					{#if parts.d > 0}<span class="seg"><b class="stat">{parts.d}</b>{$t('countdown.d')}</span>{/if}
+					<span class="seg"><b class="stat">{pad2(parts.h)}</b>{$t('countdown.h')}</span>
+					<span class="seg"><b class="stat">{pad2(parts.m)}</b>{$t('countdown.m')}</span>
+					<span class="seg"><b class="stat">{pad2(parts.s)}</b>{$t('countdown.s')}</span>
+					<span class="note">{$t('b6.until_max')}</span>
+				</div>
+			{:else}
+				<p class="past">{$t('b6.past')}</p>
+			{/if}
 		{/if}
 
 		<ul class="checks">
@@ -100,7 +109,9 @@
 			{/each}
 		</ul>
 
-		<button class="cal" onclick={downloadIcs}>{$t('b6.add_calendar')}</button>
+		{#if peak}
+			<button class="cal" onclick={downloadIcs}>{$t('b6.add_calendar')}</button>
+		{/if}
 	</section>
 {/if}
 

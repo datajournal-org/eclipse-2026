@@ -80,9 +80,17 @@ test.describe('B6 checklist', () => {
 		expect(description.split('\\n').length).toBeGreaterThanOrEqual(4);
 	});
 
-	test('is absent until a location is chosen', async ({ page }) => {
+	test('serves state A as a bare list before a location is chosen', async ({ page }) => {
+		// The safety and preparation advice must reach readers who never pick a place — but nothing may
+		// pretend to be local: no azimuth in the view item, and no countdown or calendar export, since
+		// both would point at a maximum that is nowhere in particular.
 		await page.goto(localeUrl());
-		await expect(page.locator('section.b6')).toHaveCount(0);
+		await expect(page.locator('section.b6')).toBeVisible();
+		const view = page.locator('section.b6 .checks li').nth(1);
+		await expect(view).toContainText('Freie Sicht nach Westen');
+		await expect(view).not.toContainText('Azimut');
+		await expect(page.locator('section.b6 .count')).toHaveCount(0);
+		await expect(page.locator('section.b6 .cal')).toHaveCount(0);
 	});
 
 	test('appears for every reference location', async ({ page, locatedPage }) => {
