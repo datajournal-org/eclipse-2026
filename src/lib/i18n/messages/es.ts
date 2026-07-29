@@ -5,10 +5,11 @@ const messages: Messages = {
 	app: {
 		title: 'Eclipse 2026',
 		tagline: '12 de agosto de 2026',
-		page_title: 'Eclipse solar total, 12 de agosto de 2026 — ¿cuánto verás tú?',
+		page_title: 'Eclipse solar total, 12 de agosto de 2026 — ¿qué verás tú?',
 		page_description:
-			'El primer eclipse total sobre la Europa continental desde 1999, bajo en el cielo de la tarde. Introduce tu lugar: tu cobertura, tus horas y hacia dónde mirar.',
-		og_image_alt: 'La Tierra desde el espacio: la sombra del eclipse cruza el Atlántico entre Islandia y España'
+			'El primer eclipse solar total sobre la Europa continental desde 1999. Simúlalo ya para tu lugar.',
+		og_image_alt:
+			'La Tierra desde el espacio: la sombra del eclipse recorre el Atlántico desde Islandia hasta España.'
 	},
 	nav: { about: 'Acerca de', language: 'Idioma' },
 	countdown: {

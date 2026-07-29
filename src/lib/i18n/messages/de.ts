@@ -4,11 +4,11 @@ const messages = {
 	app: {
 		title: 'Eclipse 2026',
 		tagline: '12. August 2026',
-		page_title: 'Totale Sonnenfinsternis am 12. August 2026 — wie viel siehst du?',
+		page_title: 'Totale Sonnenfinsternis am 12. August 2026 — was wirst du sehen?',
 		page_description:
-			'Die erste totale Finsternis über dem europäischen Festland seit 1999, tief am Abendhimmel. Gib deinen Ort ein: deine Bedeckung, deine Zeiten, deine Blickrichtung.',
+			'Die erste totale Sonnenfinsternis über dem europäischen Festland seit 1999. Hier kannst du sie jetzt schon für deinen Ort simulieren.',
 		og_image_alt:
-			'Die Erdkugel aus dem All: der Schatten der Sonnenfinsternis zieht zwischen Island und Spanien über den Atlantik'
+			'Die Erdkugel aus dem All: der Schatten der Sonnenfinsternis zieht von Island über den Atlantik nach Spanien.'
 	},
 	nav: { about: 'Über', language: 'Sprache' },
 	countdown: {

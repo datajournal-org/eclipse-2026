@@ -4,11 +4,11 @@ const messages: Messages = {
 	app: {
 		title: 'Eclipse 2026',
 		tagline: '12 augustus 2026',
-		page_title: 'Totale zonsverduistering, 12 augustus 2026 — hoeveel zie jij?',
+		page_title: 'Totale zonsverduistering, 12 augustus 2026 — wat ga jij zien?',
 		page_description:
-			'De eerste totale zonsverduistering boven het Europese vasteland sinds 1999, laag aan de avondhemel. Voer je plaats in: je bedekking, je tijden en waar je moet kijken.',
+			'De eerste totale zonsverduistering boven het Europese vasteland sinds 1999. Simuleer de verduistering nu alvast voor jouw plaats.',
 		og_image_alt:
-			'De aarde vanuit de ruimte: de schaduw van de verduistering trekt tussen IJsland en Spanje over de Atlantische Oceaan'
+			'De aarde vanuit de ruimte: de schaduw van de verduistering trekt van IJsland over de Atlantische Oceaan naar Spanje.'
 	},
 	nav: { about: 'Over', language: 'Taal' },
 	countdown: {

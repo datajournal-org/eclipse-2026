@@ -5,10 +5,10 @@ const messages: Messages = {
 	app: {
 		title: 'Eclipse 2026',
 		tagline: '12 August 2026',
-		page_title: 'Total solar eclipse, 12 August 2026 — how much will you see?',
+		page_title: 'Total solar eclipse, 12 August 2026 — what will you see?',
 		page_description:
-			'The first total eclipse over mainland Europe since 1999, low in the evening sky. Enter your town for your coverage, your times, and where to look.',
-		og_image_alt: 'Earth from space: the eclipse shadow sweeping the Atlantic between Iceland and Spain'
+			'The first total solar eclipse over mainland Europe since 1999. Simulate it for your location right now.',
+		og_image_alt: 'Earth from space: the eclipse shadow sweeping from Iceland across the Atlantic to Spain.'
 	},
 	nav: { about: 'About', language: 'Language' },
 	countdown: {
