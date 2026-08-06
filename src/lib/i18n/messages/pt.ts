@@ -7,7 +7,9 @@ const messages: Messages = {
 		page_title: 'Eclipse solar total, 12 de agosto de 2026 — o que vais ver?',
 		page_description:
 			'O primeiro eclipse solar total sobre a Europa continental desde 1999. Simula-o já para a tua localidade.',
-		og_image_alt: 'A Terra vista do espaço: a sombra do eclipse atravessa o Atlântico da Islândia até Espanha.'
+		og_headline: 'Simula o eclipse para a tua localidade',
+		og_image_alt:
+			'O Sol quase totalmente eclipsado, baixo sobre os telhados de Madrid, simulado na vista 3D do horizonte.'
 	},
 	nav: { about: 'Sobre', language: 'Idioma' },
 	countdown: {

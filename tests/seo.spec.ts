@@ -133,35 +133,59 @@ test.describe('prerendered SEO metadata', () => {
 	});
 
 	test('declares the large social card, with an absolute image URL and dimensions', async ({ request }) => {
-		// summary_large_image is only safe now that a real 1200×630 og.jpg ships (npm run og:image).
+		// summary_large_image is only safe now that real 1200×630 cards ship (npm run og:image).
 		for (const path of PAGES) {
 			const html = await fetchHtml(request, path);
 			expect(attr(html, /name="twitter:card" content="([^"]*)"/g)[0], path).toBe('summary_large_image');
-			expect(attr(html, /property="og:image" content="([^"]*)"/g)[0], path).toBe(`${ORIGIN}${BASE}/og.jpg`);
+			// Each language advertises its OWN card, because the pitch is baked INTO the image — a shared
+			// asset would leave five previews out of six mute. The bare root keeps the unsuffixed name,
+			// which is what static/meta.json advertises to the host (see publish.spec.ts).
+			const lang = path.replaceAll('/', '');
+			expect(attr(html, /property="og:image" content="([^"]*)"/g)[0], path).toBe(
+				`${ORIGIN}${BASE}/${lang ? `og-${lang}.jpg` : 'og.jpg'}`
+			);
 			expect(attr(html, /property="og:image:width" content="([^"]*)"/g)[0], path).toBe('1200');
 			expect(attr(html, /property="og:image:height" content="([^"]*)"/g)[0], path).toBe('630');
 			expect(attr(html, /property="og:image:alt" content="([^"]*)"/g)[0], path).toMatch(/\S/);
 		}
 	});
 
-	test('serves the social image at the advertised size', async ({ page, request }) => {
-		// The meta tags promise 1200×630; a stale or missing static/og.jpg would break every share
-		// preview while all other tests stay green. Decode the actual bytes and measure.
-		const res = await request.get(`${BASE}/og.jpg`);
-		expect(res.status()).toBe(200);
-		expect(res.headers()['content-type']).toContain('image/jpeg');
+	test('serves every social card at the advertised size', async ({ page, request }) => {
+		// The meta tags promise 1200×630; a stale or missing card would break the share preview of a whole
+		// language while every other test stayed green. Decode the actual bytes and measure.
 		await page.goto(`${BASE}/en/`);
-		const size = await page.evaluate(
-			(src) =>
-				new Promise<{ w: number; h: number }>((resolve, reject) => {
-					const img = new Image();
-					img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-					img.onerror = reject;
-					img.src = src;
-				}),
-			`${BASE}/og.jpg`
-		);
-		expect(size).toEqual({ w: 1200, h: 630 });
+		for (const file of ['og.jpg', ...LOCALES.map((l) => `og-${l}.jpg`)]) {
+			const res = await request.get(`${BASE}/${file}`);
+			expect(res.status(), file).toBe(200);
+			expect(res.headers()['content-type'], file).toContain('image/jpeg');
+			const size = await page.evaluate(
+				(src) =>
+					new Promise<{ w: number; h: number }>((resolve, reject) => {
+						const img = new Image();
+						img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+						img.onerror = reject;
+						img.src = src;
+					}),
+				`${BASE}/${file}`
+			);
+			expect(size, file).toEqual({ w: 1200, h: 630 });
+		}
+	});
+
+	test('bakes a different headline into each language’s card', async ({ request }) => {
+		// The one failure the meta tags cannot catch: six correctly-named files that are all the same
+		// picture, because the text swap in build-og-image.ts silently stopped taking.
+		const bytes = await Promise.all(LOCALES.map(async (l) => (await request.get(`${BASE}/og-${l}.jpg`)).body()));
+		const seen = new Map<string, string>();
+		for (const [i, body] of bytes.entries()) {
+			const key = body.toString('base64');
+			expect(seen.get(key), `og-${LOCALES[i]}.jpg duplicates og-${seen.get(key)}.jpg`).toBeUndefined();
+			seen.set(key, LOCALES[i]);
+		}
+		// The root's card is the default language's, byte for byte — not a seventh render.
+		const root = await (await request.get(`${BASE}/og.jpg`)).body();
+		const en = await (await request.get(`${BASE}/og-en.jpg`)).body();
+		expect(root.equals(en)).toBe(true);
 	});
 
 	test('links between languages in the canonical form', async ({ request }) => {

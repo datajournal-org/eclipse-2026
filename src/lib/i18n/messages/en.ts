@@ -8,7 +8,9 @@ const messages: Messages = {
 		page_title: 'Total solar eclipse, 12 August 2026 — what will you see?',
 		page_description:
 			'The first total solar eclipse over mainland Europe since 1999. Simulate it for your location right now.',
-		og_image_alt: 'Earth from space: the eclipse shadow sweeping from Iceland across the Atlantic to Spain.'
+		og_headline: 'Simulate the eclipse for your location',
+		og_image_alt:
+			'The almost fully eclipsed Sun low over the rooftops of Madrid, simulated in the app’s 3D horizon view.'
 	},
 	nav: { about: 'About', language: 'Language' },
 	countdown: {

@@ -34,8 +34,9 @@ npm run preview        # serve the build locally
 ```
 
 `prebuild` regenerates the committed data (`npm run precompute`): the totality corridor and the
-eclipse-day star/planet catalogue. The social image is also a committed artifact — regenerate it
-with `npm run og:image` (self-contained — it runs the dev server itself) whenever the A2 globe's design changes.
+eclipse-day star/planet catalogue. The seven social cards (`static/og.jpg` plus one per language) are
+also committed artifacts — regenerate them with `npm run og:image` (self-contained — it runs the dev
+server itself) whenever the B3 sky view's design or the `app.og_headline` copy changes.
 
 ## Update
 

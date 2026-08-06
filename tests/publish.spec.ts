@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, expect, BASE } from './fixtures';
+import { test, expect, BASE, ALL_LANGS } from './fixtures';
 
 /**
  * The datajournal.org publishing contract, pinned where it can fail loudly on every run instead of only
@@ -41,7 +41,10 @@ test.describe('datajournal.org publishing contract', () => {
 	});
 
 	test('the archive-root files exist in the build output', () => {
-		for (const f of ['index.html', 'meta.json', 'og.jpg']) {
+		// og.jpg is what meta.json advertises; the per-language cards sit beside it because +layout.svelte
+		// points each locale's og:image at its own (see seo.spec.ts).
+		const cards = ALL_LANGS.map((l) => `og-${l}.jpg`);
+		for (const f of ['index.html', 'meta.json', 'og.jpg', ...cards]) {
 			expect(() => statSync(join('build', f)), f).not.toThrow();
 		}
 	});

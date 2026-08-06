@@ -40,10 +40,13 @@ Still outstanding, and not blocking the routing work:
   horizon-event-first framing because it is what distinguishes the page from a generic astronomy table in
   a search result. Unit tests hold the 60/155-character caps that search results and preview cards
   truncate at.
-- **A 1200×630 social image** (`static/og.jpg`): the A2 shadow globe at greatest eclipse, generated from
-  the real scene by `npm run og:image` and committed. It is emitted as an absolute `og:image` with
-  dimensions and a localized `og:image:alt`, and carries `twitter:card` as `summary_large_image`; an e2e
-  test decodes the served bytes and asserts the advertised 1200×630.
+- **Seven 1200×630 social cards** (`static/og-{locale}.jpg`, plus `static/og.jpg` for the bare root): the
+  B3 sky view over Madrid at 20:30 CEST, generated from the real scene by `npm run og:image` and
+  committed. One card per language because the pitch (`app.og_headline`) is baked INTO the image — most
+  clients truncate or drop `og:description`, so a locale-neutral asset would leave the card mute. Each is
+  emitted as an absolute `og:image` with dimensions and a localized `og:image:alt`, and carries
+  `twitter:card` as `summary_large_image`; e2e tests decode the served bytes, assert the advertised
+  1200×630 for all seven, and assert the six language cards differ from each other.
 
 ---
 
@@ -193,6 +196,7 @@ at runtime:
 | ---------------------- | ---------- | ------------------------------------ |
 | `app.page_title`       | ~60 chars  | `<title>`, `og:title`                |
 | `app.page_description` | ~155 chars | `meta description`, `og:description` |
+| `app.og_headline`      | ~45 chars  | baked into the social card image     |
 | `app.og_image_alt`     | —          | `og:image:alt`                       |
 
 ### 3.6 Social image
@@ -292,7 +296,8 @@ Things the plan did not anticipate, all found by building it:
   what the root serves, what `x-default` gives readers whose language we lack, and what every shared root
   link previews as.
 - ~~The 1200×630 social image~~, and with it `og:image`, `og:image:alt` and `twitter:card`'s upgrade to
-  `summary_large_image` — shipped (see §above; regenerate with `npm run og:image`).
+  `summary_large_image` — shipped, and since superseded by a per-language card set (see §above;
+  regenerate with `npm run og:image`).
 - **A base-path trap to watch for.** `paths.base` means a root-absolute asset URL resolves against the
   origin root and 404s. `SkyLoupe` shipped exactly that (`href="/corona_512.webp"`); the fix is `asset()`
   from `$app/paths`. Two things now catch it: the console-error assertion in `shell.spec.ts`, and a

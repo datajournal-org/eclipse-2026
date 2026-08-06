@@ -7,8 +7,11 @@ const messages = {
 		page_title: 'Totale Sonnenfinsternis am 12. August 2026 — was wirst du sehen?',
 		page_description:
 			'Die erste totale Sonnenfinsternis über dem europäischen Festland seit 1999. Hier kannst du sie jetzt schon für deinen Ort simulieren.',
+		// Baked INTO the social card by scripts/build-og-image.ts — it is the only text on the image, and
+		// most clients truncate or drop og:description entirely, so this line has to carry the pitch alone.
+		og_headline: 'Simuliere die Sonnenfinsternis für deinen Ort',
 		og_image_alt:
-			'Die Erdkugel aus dem All: der Schatten der Sonnenfinsternis zieht von Island über den Atlantik nach Spanien.'
+			'Die fast vollständig verfinsterte Sonne tief über den Dächern von Madrid, simuliert in der 3D-Horizontansicht der App.'
 	},
 	nav: { about: 'Über', language: 'Sprache' },
 	countdown: {

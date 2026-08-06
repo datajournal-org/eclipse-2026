@@ -15,7 +15,10 @@
 
 	// The URL owns the language. On the bare root there is no parameter, so the default applies — that is
 	// the page crawlers see, and its metadata has to be the default language's.
-	const routeLocale = $derived(isLocale(page.params.lang) ? page.params.lang : DEFAULT_LOCALE);
+	// `routeLang` keeps the "am I the bare root?" bit that routeLocale throws away by collapsing onto the
+	// default; only the social card needs to tell those two apart (see og:image below).
+	const routeLang = $derived(isLocale(page.params.lang) ? page.params.lang : null);
+	const routeLocale = $derived(routeLang ?? DEFAULT_LOCALE);
 	// Set synchronously as well as reactively: effects do not run during prerendering, and without the
 	// synchronous call every prerendered page would ship the DEFAULT language's metadata — which is the
 	// one thing crawlers read. The effect then covers client-side navigations (the language switcher).
@@ -114,10 +117,13 @@
 	{/each}
 	<link rel="alternate" hreflang="x-default" href={`${SITE_URL}${base}/`} />
 
-	<!-- The 1200×630 card image: the A2 shadow globe at greatest eclipse, generated from the real scene
-	     by `npm run og:image` (scripts/build-og-image.ts) and committed to static/. Locale-neutral, so
-	     every language shares one asset; absolute URL, because crawlers ignore relative ones. -->
-	<meta property="og:image" content={`${SITE_URL}${base}/og.jpg`} />
+	<!-- The 1200×630 card image: the B3 sky view over Madrid at 20:30 CEST, generated from the real scene
+	     by `npm run og:image` (scripts/build-og-image.ts) and committed to static/. One card per language,
+	     because the pitch is baked INTO the image — most clients truncate or drop og:description, so a
+	     locale-neutral asset would leave the card mute. Absolute URL, because crawlers ignore relative ones.
+	     The bare root keeps the unsuffixed `og.jpg` (a copy of the default language's card): static/meta.json
+	     advertises that exact filename to datajournal.org, and publish.spec.ts pins it. -->
+	<meta property="og:image" content={`${SITE_URL}${base}/${routeLang ? `og-${routeLang}.jpg` : 'og.jpg'}`} />
 	<meta property="og:image:width" content="1200" />
 	<meta property="og:image:height" content="630" />
 	<meta property="og:image:alt" content={$t('app.og_image_alt')} />
