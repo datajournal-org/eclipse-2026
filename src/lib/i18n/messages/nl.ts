@@ -58,7 +58,7 @@ const messages: Messages = {
 		verdict_none: 'niet zichtbaar'
 	},
 	b: {
-		sim_for: 'Simulatie van de verduistering voor {place}',
+		sim_title: 'Simulatie van de verduistering',
 		guessed: 'Afgeleid uit jouw tijdzone — tik op ‘Locatie wijzigen’ voor je exacte plek.',
 		showcase: 'Voorbeeldlocatie: vanuit jouw tijdzone is de verduistering niet te zien.',
 		change: 'Locatie wijzigen',

@@ -13,14 +13,16 @@
 
 <section class="block b0">
 	{#if $userLocation}
-		<!-- `.place > .pname` is kept from the old verdict eyebrow: it is the selector the location specs
-		     read the current place from, and they match on substring, so the surrounding sentence is free
-		     to change without touching them. -->
-		<h2 class="place"><span class="pname">{$t('b.sim_for', { place: placeLabel($userLocation) })}</span></h2>
-		<button class="change btn-cta" onclick={onchange}>
-			<span aria-hidden="true">📍</span>
-			{$t('b.change')}
-		</button>
+		<!-- Title and place are two lines, not one sentence. The geocoder's names are as long as it likes
+		     — "Friedliche Revolution, Berlin, Deutschland" — and inside the heading they turned a title
+		     into a paragraph set at 2.2rem. The heading is now a constant, and the place sits under it at
+		     a size that can absorb a long name.
+
+		     `.place > .pname` is kept from the old verdict eyebrow: it is the selector the location specs
+		     read the current place from, and they match on substring. -->
+		<h2 class="title">{$t('b.sim_title')}</h2>
+		<p class="place"><span class="pname"><span aria-hidden="true">📍</span> {placeLabel($userLocation)}</span></p>
+		<button class="change btn-cta" onclick={onchange}>{$t('b.change')}</button>
 		<!-- A place the reader never chose has to say so, right where it is named. Not `.sub`: the segment
 		     grammar caps intros at one element and one rendered line, and this is provenance, not an intro. -->
 		{#if $userLocation.source !== 'user'}
@@ -33,19 +35,24 @@
 	.b0 {
 		text-align: center;
 	}
-	.place {
+	.title {
 		/* Deliberately larger than a normal section h2: this is the line that has to be read first. */
 		font-size: clamp(1.5rem, 4.2vw, 2.2rem);
 		font-weight: 800;
 		text-wrap: balance;
 		line-height: 1.15;
+		margin-bottom: var(--space-2xs);
 	}
-	.change {
-		/* No border of its own beyond .btn-cta's — segments.spec.ts allows borders on controls, not on
-		   section surfaces. */
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
+	.place {
+		margin: 0 auto var(--space-sm);
+		max-width: 30ch;
+		font-size: 1.05rem;
+		font-weight: 600;
+		line-height: 1.35;
+		text-wrap: balance;
+		/* Geocoder names can be a single very long token (a street or an institution). Without this one
+		   of them widens the section past the viewport instead of wrapping. */
+		overflow-wrap: anywhere;
 	}
 	.provenance {
 		margin: var(--space-sm) auto 0;

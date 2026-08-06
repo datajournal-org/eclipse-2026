@@ -59,7 +59,7 @@ const messages: Messages = {
 		verdict_none: 'not visible'
 	},
 	b: {
-		sim_for: 'Eclipse simulation for {place}',
+		sim_title: 'Eclipse simulation',
 		guessed: 'Guessed from your time zone — tap “Change location” for your exact spot.',
 		showcase: 'Example location — the eclipse is not visible from your time zone.',
 		change: 'Change location',

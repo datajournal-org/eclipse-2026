@@ -9,10 +9,21 @@ import { test, expect, byName, localeUrl } from './fixtures';
 test.describe('B0 — the simulation heading', () => {
 	test('names the place the simulation is for', async ({ page, locatedPage }) => {
 		await locatedPage(byName('Berlin'));
-		// Substring, not equality: the surrounding sentence is translated copy and free to change.
 		await expect(page.locator('section.b0 .place')).toContainText('Berlin');
-		// It is the section's heading, not decoration — the outline has to carry it (a11y.spec.ts).
-		await expect(page.locator('section.b0 h2.place')).toBeVisible();
+		// The heading is a CONSTANT and the place sits under it, not inside it: geocoder names run to
+		// "Friedliche Revolution, Berlin, Deutschland", which set at heading size was a paragraph.
+		const title = page.locator('section.b0 h2.title');
+		await expect(title).toBeVisible();
+		await expect(title).not.toContainText('Berlin');
+	});
+
+	test('keeps a long place name from overflowing the viewport', async ({ page, locatedPage }) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		// The kind of label the geocoder actually returns for a landmark, not a tidy city name.
+		await locatedPage({ lat: 52.52, lon: 13.405, name: 'Friedliche Revolution, Berlin, Deutschland' });
+		await expect(page.locator('section.b0 .place')).toContainText('Friedliche Revolution');
+		const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+		expect(overflow, 'the page scrolls sideways').toBeLessThanOrEqual(0);
 	});
 
 	test('offers a change button big enough to hit on a phone', async ({ page, locatedPage }) => {

@@ -60,7 +60,7 @@ const messages = {
 		verdict_none: 'nicht sichtbar'
 	},
 	b: {
-		sim_for: 'Sonnenfinsternis-Simulation für {place}',
+		sim_title: 'Sonnenfinsternis-Simulation',
 		guessed: 'Aus deiner Zeitzone geschätzt — tippe auf „Ort ändern“ für deinen genauen Standort.',
 		showcase: 'Beispielort: Von deiner Zeitzone aus ist die Finsternis nicht zu sehen.',
 		change: 'Ort ändern',
