@@ -131,6 +131,8 @@ const messages: Messages = {
 		translation: 'Deze vertaling verbeteren',
 		imprint: 'Colofon'
 	},
+	event_overview: 'De verduistering wereldwijd',
+
 	safety: 'Kijk nooit zonder gecertificeerde eclipsbril (ISO 12312-2) naar de zon.'
 };
 

@@ -133,6 +133,10 @@ const messages = {
 		translation: 'Diese Übersetzung verbessern',
 		imprint: 'Impressum'
 	},
+	// Divider that opens the world-stage block (countdown + shadow run), now that the reader's own sky
+	// comes first on the page.
+	event_overview: 'Das Ereignis weltweit',
+
 	safety: 'Nie ohne geprüfte Finsternisbrille (ISO 12312-2) in die Sonne schauen.'
 };
 

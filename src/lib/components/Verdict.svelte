@@ -84,7 +84,8 @@
 		}
 	}
 	.when {
-		margin-bottom: var(--space-lg);
+		/* No bottom margin: it used to separate this line from the eye-safety box below it, and with that
+		   gone it only doubled up with the .content gap — costing ~30px of the fold that B3 now wants. */
 		text-align: center;
 	}
 	.next {

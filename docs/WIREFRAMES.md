@@ -139,11 +139,21 @@ place guessed from the time zone, so state A survives only in the prerendered HT
 still needs it, crawlers and readers without JavaScript.
 
 **State B (planned):** Header → 📍 location → B1 verdict → B3 3D horizon → B2 timeline → B6 checklist.
-**State B (built):** Header → A1 countdown → A2 shadow run → TimeZoneNote → **B0 heading** (the place,
-the change button, and — for a guessed or showcase place — where it came from) → B1 verdict → B3 3D
-horizon → divider → B6 checklist. As planned, the A blocks stay and only the A4 location call is
-replaced. B0 took the place of the "your sky" divider that used to open this half: a divider only names
-a section, and what a reader has to notice is that the sky below is theirs to set.
+**State B (built):** Header → **B0 heading** (the place, the change button, and — for a guessed or
+showcase place — where it came from) → B1 verdict → B3 3D horizon → divider → A1 countdown → A2 shadow
+run (TimeZoneNote as its footer) → divider → B6 checklist.
+
+**The B block leads, and that is a deliberate reversal of the plan above.** The A blocks were meant to
+open the page and hand over to B. In practice they buried it: on a 390×844 phone B3 began around 2000px
+down, past a full-height globe and behind a button and a dialog, and the traffic said almost nobody got
+there. B3 now begins at ~500px — inside the first screen. B0 and B1 still lead it rather than the canvas
+itself, because both are instant text: the first paint reads "Sonnenfinsternis-Simulation für Berlin ·
+85 % der Sonne bedeckt" while the WebGL scene builds just below, instead of opening on "Gelände wird
+geladen …". The countdown and globe keep their content and become the second movement — context for the
+reader's own sky rather than the way in to it.
+
+B0 also took the place of the "your sky" divider that used to open this half: a divider only names a
+section, and what a reader has to notice is that the sky below is theirs to set.
 
 ## Segment grammar
 

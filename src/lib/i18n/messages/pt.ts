@@ -131,6 +131,8 @@ const messages: Messages = {
 		translation: 'Melhorar esta tradução',
 		imprint: 'Aviso legal'
 	},
+	event_overview: 'O eclipse no mundo',
+
 	safety: 'Nunca olhes para o Sol sem óculos de eclipse certificados (ISO 12312-2).'
 };
 

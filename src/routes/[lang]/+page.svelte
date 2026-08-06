@@ -19,14 +19,18 @@
 </script>
 
 <main class="content">
-	<!-- A — always visible (event overview) -->
-	<Countdown />
-	<ShadowRun />
-
 	{#if $userLocation}
-		<!-- B — the personal briefing. Its opening is a heading, not a divider: what a visitor has to
-		     notice is not that a new section starts but that everything below is computed for a place
-		     they can change, so B0 says which place and offers the change in the same breath. -->
+		<!-- B FIRST. The personal simulation is what this app has that a corridor map does not, and it used
+		     to sit roughly four screens down — past a full-height globe, behind a button, behind a dialog.
+		     Almost nobody got there. Now the page opens on it.
+
+		     B0 and B1 lead rather than B3 itself, deliberately: both are instant text, so the first paint
+		     says "Sonnenfinsternis-Simulation für Berlin · 85 % der Sonne bedeckt" while B3's WebGL scene
+		     builds just below the fold. Opening ON the canvas would mean opening on "Gelände wird geladen …".
+
+		     Its opening is a heading, not a divider: what a visitor has to notice is not that a section
+		     starts but that everything below is computed for a place they can change, so B0 says which
+		     place and offers the change in the same breath. -->
 		<SkyHeading onchange={() => (pickerOpen = true)} />
 		<Verdict />
 		<!-- B3 only where there is something in the sky to show: at a location the eclipse misses, or where
@@ -50,6 +54,14 @@
 		     back to a time-zone guess, so `$userLocation` is never null there. See LocationCall's header. -->
 		<LocationCall onchoose={() => (pickerOpen = true)} />
 	{/if}
+
+	<!-- A — the world stage, now the SECOND movement: the countdown and the shadow crossing the Earth are
+	     the event in general, which is context for the reader's own sky rather than the way in to it. The
+	     divider marks the handover; without it the giant countdown digits read as a non-sequitur under a
+	     sky view. TimeZoneNote rides along as A2's segment footer, where it has always been. -->
+	<SectionDivider label={$t('event_overview')} />
+	<Countdown />
+	<ShadowRun />
 
 	<!-- B6 serves both states: personal (local maximum, azimuth, phase times) once a location is
 	     chosen, generic before one is — but not for a chosen place the eclipse misses, where prep

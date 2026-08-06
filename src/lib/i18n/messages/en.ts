@@ -132,6 +132,8 @@ const messages: Messages = {
 		translation: 'Improve this translation',
 		imprint: 'Imprint'
 	},
+	event_overview: 'The event worldwide',
+
 	safety: 'Never look at the Sun without certified eclipse glasses (ISO 12312-2).'
 };
 

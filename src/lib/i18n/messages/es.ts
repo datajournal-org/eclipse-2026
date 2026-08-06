@@ -132,6 +132,8 @@ const messages: Messages = {
 		translation: 'Mejorar esta traducción',
 		imprint: 'Aviso legal'
 	},
+	event_overview: 'El eclipse en el mundo',
+
 	safety: 'Nunca mires al Sol sin gafas de eclipse certificadas (ISO 12312-2).'
 };
 

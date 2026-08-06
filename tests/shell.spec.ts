@@ -27,11 +27,13 @@ test.describe('app shell', () => {
 		await expect(page.locator('section.b6')).toBeVisible();
 		const order = await page.evaluate(() =>
 			[...document.querySelectorAll('section')]
-				.map((el) => [...el.classList].find((c) => /^(cd|a2|b1|b3|b6)$/.test(c)))
+				.map((el) => [...el.classList].find((c) => /^(cd|a2|b0|b1|b3|b6)$/.test(c)))
 				.filter(Boolean)
 		);
-		// countdown → shadow run → verdict → sky view → checklist
-		expect(order).toEqual(['cd', 'a2', 'b1', 'b3', 'b6']);
+		// The reader's own sky leads: heading → verdict → sky view, and only THEN the general event
+		// (countdown → shadow run) and the preparation checklist. The globe used to sit between the
+		// reader and their own sky, which is why almost nobody reached the latter.
+		expect(order).toEqual(['b0', 'b1', 'b3', 'cd', 'a2', 'b6']);
 	});
 
 	test('loads without console errors or failed requests @webgl', async ({ page, pageProblems, locatedPage }) => {

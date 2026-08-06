@@ -228,13 +228,24 @@ export async function switchLanguage(page: Page, lang: string) {
 /** The scrubber slider inside a section. */
 export const slider = (page: Page, section: string): Locator => page.locator(`${section} input[type="range"]`);
 
-/** Move a slider to a frame and let the app render it. */
+/**
+ * Move a slider to a frame and let the app render it.
+ *
+ * The wait is two animation frames, not a fixed sleep: SkyView coalesces scrubbing into a
+ * `requestAnimationFrame` (see its `setFrame`), so dispatching `input` only schedules the update. A
+ * flat 80 ms was enough on an idle machine and stopped being enough once nearly every spec started
+ * building a WebGL scene — the readout would still hold the PREVIOUS frame's numbers, which reads as a
+ * wrong value rather than as a race. Two frames: the first is the one the app coalesces into, the second
+ * is after its paint.
+ */
 export async function setFrame(page: Page, section: string, frame: number) {
 	await slider(page, section).evaluate((el, value) => {
 		(el as HTMLInputElement).value = String(value);
 		el.dispatchEvent(new Event('input', { bubbles: true }));
 	}, frame);
-	await page.waitForTimeout(80);
+	await page.evaluate(
+		() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+	);
 }
 
 /** A slider's maximum frame index. */
