@@ -104,15 +104,32 @@ export function placeSkyObjects(state: StarState, placed: PlacedObject[]) {
  */
 const lastHillshadeDir = new WeakMap<MlMap, number>();
 
+/**
+ * Last light pushed to each map, for the same reason as the hillshade direction above — `setLight`
+ * re-evaluates every lit layer (the 3D buildings) and marks the style dirty, and the scrubber asks for
+ * far more distinct lights than the eye can tell apart.
+ *
+ * The quantisation is what makes the guard bite: 0.1° of Sun azimuth or altitude, and 0.001 of light
+ * intensity, are all well below anything visible in the shading of a building face, but they turn a
+ * continuously-varying tuple into one that repeats across neighbouring frames.
+ */
+const lastLight = new WeakMap<MlMap, string>();
+const LIGHT_AZ_ALT_DP = 1;
+const LIGHT_INTENSITY_DP = 3;
+
 // Steer the map's directional light and hillshade to match the simulated Sun's azimuth/altitude and the
 // eclipse's brightness/colour (same numbers that drive the Sun billboard and the twilight veil).
 export function syncMapLighting(m: MlMap, az: number, alt: number, env: { light: string; intensity: number }) {
-	m.setLight({
-		anchor: 'map',
-		position: [1.15, az, 90 - alt] as [number, number, number],
-		color: env.light,
-		intensity: env.intensity
-	});
+	const key = `${az.toFixed(LIGHT_AZ_ALT_DP)}|${alt.toFixed(LIGHT_AZ_ALT_DP)}|${env.intensity.toFixed(LIGHT_INTENSITY_DP)}|${env.light}`;
+	if (lastLight.get(m) !== key) {
+		lastLight.set(m, key);
+		m.setLight({
+			anchor: 'map',
+			position: [1.15, az, 90 - alt] as [number, number, number],
+			color: env.light,
+			intensity: env.intensity
+		});
+	}
 	// Round BEFORE wrapping: wrapping first lets 359.6° round up to 360, which is outside the
 	// property's 0–359 range.
 	const direction = ((Math.round(az) % 360) + 360) % 360;

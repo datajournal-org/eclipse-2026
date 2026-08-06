@@ -118,36 +118,50 @@ export const t: Readable<Translate> = derived(locale, ($l) => {
 	};
 });
 
-/** Reactive Intl formatters bound to the current locale. */
-export const fmt = derived(locale, ($l) => ({
-	// `numeric` hour, not `2-digit`: a padded hour is wrong in English ("07:30 AM" reads as a timetable,
-	// not a clock) and unidiomatic in German and Spanish too. Each locale keeps its own 12/24-hour
-	// convention — only the padding goes. Minutes stay `2-digit`, which every locale wants.
-	time: (d: Date | number, opts?: Intl.DateTimeFormatOptions) =>
-		new Intl.DateTimeFormat($l, { hour: 'numeric', minute: '2-digit', ...opts }).format(d),
-	date: (d: Date | number, opts?: Intl.DateTimeFormatOptions) =>
-		new Intl.DateTimeFormat($l, { dateStyle: 'long', ...opts }).format(d),
-	num: (n: number, opts?: Intl.NumberFormatOptions) => new Intl.NumberFormat($l, opts).format(n),
-	/** Short name of the browser's time zone at the given instant, e.g. "MESZ" / "GMT+2" (summer vs winter aware). */
-	zone: (d: Date | number) =>
-		new Intl.DateTimeFormat($l, { timeZoneName: 'short', hour: '2-digit' })
-			.formatToParts(d)
-			.find((p) => p.type === 'timeZoneName')?.value ?? '',
-	/** The IANA time-zone name resolved from the browser, e.g. "Europe/Berlin". */
-	zoneName: () => Intl.DateTimeFormat().resolvedOptions().timeZone,
-	/**
-	 * Width, in `ch`, of the widest clock string a set of instants can produce — for the `--clock-ch`
-	 * custom property that stops a readout shifting when the hour gains a digit (see `.clock` in
-	 * base.css). Samples rather than formats every frame: the length only changes with the hour's digit
-	 * count and the AM/PM marker, so a dozen probes across the window cannot miss a case.
-	 */
-	clockWidthCh: (instants: readonly (Date | number)[], samples = 12) => {
-		if (instants.length === 0) return '0';
-		const f = new Intl.DateTimeFormat($l, { hour: 'numeric', minute: '2-digit' });
-		let widest = 0;
-		const step = Math.max(1, Math.floor(instants.length / samples));
-		for (let i = 0; i < instants.length; i += step) widest = Math.max(widest, f.format(instants[i]).length);
-		widest = Math.max(widest, f.format(instants[instants.length - 1]).length);
-		return `${widest}ch`;
-	}
-}));
+// `numeric` hour, not `2-digit`: a padded hour is wrong in English ("07:30 AM" reads as a timetable,
+// not a clock) and unidiomatic in German and Spanish too. Each locale keeps its own 12/24-hour
+// convention — only the padding goes. Minutes stay `2-digit`, which every locale wants.
+const TIME_OPTS: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+const DATE_OPTS: Intl.DateTimeFormatOptions = { dateStyle: 'long' };
+
+/**
+ * Reactive Intl formatters bound to the current locale.
+ *
+ * The formatters are built ONCE per locale, not once per call. `time` runs on every animation frame
+ * while B3 is being scrubbed, and `new Intl.DateTimeFormat` is one of the most expensive constructors
+ * the platform has: a profiled scrub on a throttled CPU spent 2.6 % of ALL script time inside it, for
+ * output that only changes once a minute. The `opts` argument still works — it just falls back to a
+ * one-off formatter, which no per-frame path uses.
+ */
+export const fmt = derived(locale, ($l) => {
+	const timeFmt = new Intl.DateTimeFormat($l, TIME_OPTS);
+	const dateFmt = new Intl.DateTimeFormat($l, DATE_OPTS);
+	const numFmt = new Intl.NumberFormat($l);
+	const zoneFmt = new Intl.DateTimeFormat($l, { timeZoneName: 'short', hour: '2-digit' });
+
+	return {
+		time: (d: Date | number, opts?: Intl.DateTimeFormatOptions) =>
+			(opts ? new Intl.DateTimeFormat($l, { ...TIME_OPTS, ...opts }) : timeFmt).format(d),
+		date: (d: Date | number, opts?: Intl.DateTimeFormatOptions) =>
+			(opts ? new Intl.DateTimeFormat($l, { ...DATE_OPTS, ...opts }) : dateFmt).format(d),
+		num: (n: number, opts?: Intl.NumberFormatOptions) => (opts ? new Intl.NumberFormat($l, opts) : numFmt).format(n),
+		/** Short name of the browser's time zone at the given instant, e.g. "MESZ" / "GMT+2" (summer vs winter aware). */
+		zone: (d: Date | number) => zoneFmt.formatToParts(d).find((p) => p.type === 'timeZoneName')?.value ?? '',
+		/** The IANA time-zone name resolved from the browser, e.g. "Europe/Berlin". */
+		zoneName: () => Intl.DateTimeFormat().resolvedOptions().timeZone,
+		/**
+		 * Width, in `ch`, of the widest clock string a set of instants can produce — for the `--clock-ch`
+		 * custom property that stops a readout shifting when the hour gains a digit (see `.clock` in
+		 * base.css). Samples rather than formats every frame: the length only changes with the hour's digit
+		 * count and the AM/PM marker, so a dozen probes across the window cannot miss a case.
+		 */
+		clockWidthCh: (instants: readonly (Date | number)[], samples = 12) => {
+			if (instants.length === 0) return '0';
+			let widest = 0;
+			const step = Math.max(1, Math.floor(instants.length / samples));
+			for (let i = 0; i < instants.length; i += step) widest = Math.max(widest, timeFmt.format(instants[i]).length);
+			widest = Math.max(widest, timeFmt.format(instants[instants.length - 1]).length);
+			return `${widest}ch`;
+		}
+	};
+});
