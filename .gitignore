@@ -6,6 +6,10 @@ node_modules/
 /.vercel/
 /.output/
 
+# the release archive — a build artifact wherever it is made. CI throws its workspace away; a laptop
+# running `npm run release` does not, and this must never be committed.
+/release.tar.zst
+
 # misc
 .DS_Store
 *.log
