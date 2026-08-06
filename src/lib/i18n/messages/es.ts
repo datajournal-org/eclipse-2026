@@ -58,7 +58,12 @@ const messages: Messages = {
 		verdict_partial: 'parcial',
 		verdict_none: 'no visible'
 	},
-	b: { your_sky: 'Tu cielo', change: 'Cambiar ubicación', clear: 'Quitar ubicación', prep: 'Tu preparación' },
+	b: {
+		sim_for: 'Simulación del eclipse para {place}',
+		change: 'Cambiar ubicación',
+		clear: 'Quitar ubicación',
+		prep: 'Tu preparación'
+	},
 
 	b1: {
 		total: 'Eclipse solar total',

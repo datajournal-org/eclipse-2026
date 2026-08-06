@@ -102,6 +102,24 @@ button {
 	}
 }
 
+/* The page's one big next step, as a filled accent pill: choosing a location (A4) and changing it (B0)
+   are the same act at two moments, so they share one style rather than two that drift. 48px clears the
+   touch-target minimum on the smallest phone. */
+.btn-cta {
+	font-size: 1.02rem;
+	font-weight: 700;
+	min-height: 48px;
+	padding: 0.8rem 1.4rem;
+	border-color: var(--accent);
+	background: var(--accent);
+	color: #1a1206;
+
+	&:hover {
+		border-color: var(--accent);
+		background: color-mix(in oklab, var(--accent) 85%, white);
+	}
+}
+
 .tnum {
 	font-variant-numeric: tabular-nums;
 	font-family: var(--font-num);

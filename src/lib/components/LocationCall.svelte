@@ -11,7 +11,7 @@
 		<div class="glyph" aria-hidden="true">🌘</div>
 		<h2>{$t('a4.cta_title')}</h2>
 		<p>{$t('a4.cta_sub')}</p>
-		<button class="choose" onclick={onchoose}>📍 {$t('a4.choose')}</button>
+		<button class="btn-cta" onclick={onchoose}>📍 {$t('a4.choose')}</button>
 	</div>
 </section>
 
@@ -41,21 +41,7 @@
 			max-width: 36ch;
 			margin: 0 auto 18px;
 		}
-		.choose {
-			font: inherit;
-			font-size: 1.02rem;
-			font-weight: 700;
-			cursor: pointer;
-			padding: 0.8rem 1.4rem;
-			border-radius: var(--radius-sm);
-			border: 1px solid var(--accent);
-			background: var(--accent);
-			color: #1a1206;
-
-			&:focus-visible {
-				outline: 2px solid var(--accent);
-				outline-offset: 2px;
-			}
-		}
+		/* The button itself is .btn-cta (base.css) — shared with B0's "change location", because they are
+		   the same act at two moments. */
 	}
 </style>

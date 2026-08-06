@@ -8,6 +8,7 @@
 	import LocationCall from '$lib/components/LocationCall.svelte';
 	import LocationDialog from '$lib/components/LocationDialog.svelte';
 	import SectionDivider from '$lib/components/SectionDivider.svelte';
+	import SkyHeading from '$lib/components/SkyHeading.svelte';
 	import Verdict from '$lib/components/Verdict.svelte';
 	import SkyView from '$lib/components/SkyView.svelte';
 	import Checklist from '$lib/components/Checklist.svelte';
@@ -23,10 +24,11 @@
 	<ShadowRun />
 
 	{#if $userLocation}
-		<!-- B — the personal briefing, opened by a clear section break. The chosen place lives inside
-		     the verdict (as the eyebrow line above its headline, not a floating row of its own). -->
-		<SectionDivider label={$t('b.your_sky')} />
-		<Verdict onchange={() => (pickerOpen = true)} />
+		<!-- B — the personal briefing. Its opening is a heading, not a divider: what a visitor has to
+		     notice is not that a new section starts but that everything below is computed for a place
+		     they can change, so B0 says which place and offers the change in the same breath. -->
+		<SkyHeading onchange={() => (pickerOpen = true)} />
+		<Verdict />
 		<!-- B3 only where there is something in the sky to show: at a location the eclipse misses, or where
 		     the Sun is down at maximum, the verdict above already says "not visible from here" — a sky view
 		     of an untouched (or set) Sun under that headline would only contradict it. Same predicate as the

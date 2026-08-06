@@ -3,17 +3,23 @@
 <script lang="ts">
 	import { t, fmt } from '$lib/i18n';
 	import { localEclipse } from '$lib/stores/localEclipse';
-	import { userLocation, placeLabel } from '$lib/stores/location';
+	import { userLocation } from '$lib/stores/location';
 	import { eclipseVisible, nextEclipseHere } from '$lib/eclipse';
 
-	// The verdict header carries the place it is about (and the way to change it) — segment grammar's
-	// header-meta slot, like A2's date eyebrow, instead of a floating row above the section.
-	let { onchange }: { onchange?: () => void } = $props();
+	// The place this card is about, and the way to change it, live in B0 (SkyHeading) — one heading for
+	// the whole personal section rather than an eyebrow buried in this card.
 
 	const lc = $derived($localEclipse);
 	const peak = $derived(lc?.peak ?? null);
 	const kind = $derived(String(lc?.kind ?? ''));
-	const pct = $derived(lc ? Math.round(lc.obscuration * 100) : 0);
+	// Anything short of totality caps at 99: just outside the corridor the obscuration reaches 99.96 %,
+	// which rounds to the self-contradicting headline "Partial eclipse: 100 % of the Sun covered". Only
+	// a total eclipse gets to say 100.
+	const pct = $derived.by(() => {
+		if (!lc) return 0;
+		const raw = Math.round(lc.obscuration * 100);
+		return kind === 'total' ? raw : Math.min(raw, 99);
+	});
 	const peakAlt = $derived(peak?.alt ?? -99);
 	// The shared predicate (eclipse.ts): the same answer decides whether the page shows B3 at all.
 	const visible = $derived(eclipseVisible(lc));
@@ -37,18 +43,9 @@
 </script>
 
 <section class="block b1" class:total={isTotal}>
-	{#if $userLocation}
-		<div class="place">
-			<span class="pname"
-				>📍 {placeLabel($userLocation)}
-				{#if onchange}<button class="change" onclick={onchange}>{$t('b.change')}</button>{/if}</span
-			>
-		</div>
-	{/if}
-
 	{#if lc && peak && visible}
 		<!-- Kind and coverage as ONE centered headline — the section's h2 (segment grammar) sits in the
-		     content here rather than in a .block-head, with the place line above it as the eyebrow. -->
+		     content here rather than in a .block-head, under B0's heading. -->
 		<h2 class="headline stat">
 			{isTotal ? $t('b1.total') : $t('b1.partial')}:<br />{$t('b1.obscured', { pct })}
 		</h2>
@@ -80,39 +77,10 @@
 </section>
 
 <style>
-	.place {
-		text-align: center;
-
-		.pname {
-			font-size: 0.9rem;
-			font-weight: 600;
-			color: var(--muted);
-		}
-		/* A filled accent pill like the app's other primary buttons (dialog confirm, location CTA):
-		   it reads as a button at a glance and clears the 24 px target the old underlined link missed. */
-		.change {
-			font: inherit;
-			font-size: 0.86rem;
-			font-weight: 600;
-			margin-left: 6px;
-			padding: 4px 12px;
-			border: 1px solid var(--accent);
-			border-radius: 8px;
-			background: var(--accent);
-			color: var(--bg);
-			cursor: pointer;
-
-			&:hover {
-				background: color-mix(in oklab, var(--accent) 85%, white);
-			}
-			&:focus-visible {
-				outline: 2px solid var(--accent);
-				outline-offset: 2px;
-			}
-		}
-	}
 	.headline {
-		margin-top: var(--space-lg);
+		/* Flush to the top: B0's heading and button sit directly above and the two sections have to read
+		   as one unit, so the separation is the .content gap alone. */
+		margin-top: 0;
 		text-align: center;
 
 		/* The verdict headline speaks in the Moon's blue (--accent-2), not the Sun's amber: it is the
