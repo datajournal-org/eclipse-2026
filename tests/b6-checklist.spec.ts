@@ -30,6 +30,13 @@ test.describe('B6 checklist', () => {
 		for (const text of await whys.allInnerTexts()) expect(text.trim().length).toBeGreaterThan(20);
 	});
 
+	test('names the eye-protection standard', async () => {
+		// B1's verdict used to carry an eye-safety line and this claim was pinned there. The line is gone
+		// and the checklist is now the ONLY place the page tells a reader what protects their eyesight —
+		// so the assertion moves here rather than disappearing with the element it used to read.
+		await expect(page.locator('section.b6 .checks')).toContainText('ISO 12312-2');
+	});
+
 	test('counts down to the local maximum', async () => {
 		const count = page.locator('section.b6 .count');
 		await expect(count).toBeVisible();

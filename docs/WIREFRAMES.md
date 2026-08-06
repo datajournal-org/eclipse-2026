@@ -60,8 +60,9 @@ One scrollable screen. Order and content of the blocks:
   (89%) · Rome (40%).
 - **A4 — Location call:** heading "What do you see from where you are?" (not "Allow location"),
   three equal buttons: 📍 Use location · 🔍 Search place · 🗺 Tap on map.
-- **Eye safety:** no global banner — the warning lives in context, where it is read: the verdict's
-  accent line (with the injury reason), the checklist's glasses item, and the calendar entry.
+- **Eye safety:** no global banner — the warning lives in context, where it is read: the checklist's
+  glasses item (with the injury reason) and the calendar entry. The verdict card carried an accent line
+  of its own until it was dropped as one repetition too many; `b6-checklist.spec.ts` now holds the claim.
 
 ---
 
@@ -160,7 +161,6 @@ content sections separate by whitespace alone.
 
 **Sanctioned exceptions:** the countdown is the page's hero and carries no header — a "Countdown"
 heading over giant digits would be noise. The donate card is likewise headerless: it is a personal note,
-not a titled section. And the verdict's eye-safety line keeps its left accent bar — the one piece of
-advice on this page that protects eyesight is allowed to interrupt the calm. All three are named in
-`tests/segments.spec.ts`; a new headerless section or a new border fails there until it is sanctioned
-here.
+not a titled section. Both are named in `tests/segments.spec.ts`; a new headerless section or a new
+border fails there until it is sanctioned here. (The verdict's eye-safety line was a third exception —
+the one border allowed on a content section. It is gone, so the border rule is exceptionless again.)

@@ -77,11 +77,7 @@ const messages: Messages = {
 		obscured: '{pct} % du Soleil couverts',
 		max_at: 'Maximum à {time}',
 		sun_alt: 'Soleil à {alt}° au-dessus de l’horizon',
-		sun_below: 'Soleil sous l’horizon',
-		safe_total:
-			'Sans lunettes uniquement pendant la totalité ({from}–{to}) — sinon toujours des lunettes de protection.',
-		safe_partial:
-			'Lunettes d’éclipse certifiées (ISO 12312-2) indispensables en permanence — même un bref regard vers le Soleil peut abîmer les yeux de façon durable.'
+		sun_below: 'Soleil sous l’horizon'
 	},
 	b3: {
 		title: 'Ta vue vers le Soleil',

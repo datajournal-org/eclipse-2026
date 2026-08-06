@@ -78,11 +78,7 @@ const messages: Messages = {
 		obscured: '{pct}\u2009% of the Sun covered',
 		max_at: 'Maximum at {time}',
 		sun_alt: 'Sun {alt}° above the horizon',
-		sun_below: 'Sun below the horizon',
-		safe_total:
-			'Only during totality ({from}–{to}) may you look without glasses — otherwise always wear eclipse glasses.',
-		safe_partial:
-			'Certified eclipse glasses (ISO 12312-2) required the whole time — even a brief look at the Sun can permanently damage your eyes.'
+		sun_below: 'Sun below the horizon'
 	},
 	b3: {
 		title: 'Your view of the Sun',

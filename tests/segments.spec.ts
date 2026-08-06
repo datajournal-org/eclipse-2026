@@ -76,7 +76,7 @@ test.describe('segment grammar', () => {
 		for (const s of foots) expect(s.count, s.id).toBeLessThanOrEqual(1);
 	});
 
-	test('borders belong to actions — plus the named safety accent', async () => {
+	test('borders belong to actions', async () => {
 		// Fewer boxes is the single biggest visual calm-down: content sections separate by whitespace,
 		// and a bordered surface signals "you can act here" (the donate box; the CTA in the unlocated
 		// state). Every border on a section surface or a prose element must appear in the allowlist
@@ -103,10 +103,9 @@ test.describe('segment grammar', () => {
 		);
 		const allowed = [
 			// the donate card: a bordered surface because it is an action
-			/^block\.donate DIV\.card$/,
-			// the eye-safety line in the verdict: a left accent bar, sanctioned emphasis — this page's one
-			// piece of advice that protects eyesight is allowed to interrupt the calm (WIREFRAMES.md)
-			/^block\.b1(\.total)? P\.safety$/
+			/^block\.donate DIV\.card$/
+			// The verdict's eye-safety line used to be the one sanctioned exception here. It is gone — the
+			// advice lives in B6's checklist now — so the rule is once again exceptionless.
 		];
 		for (const b of bordered) {
 			expect(

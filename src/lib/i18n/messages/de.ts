@@ -79,10 +79,7 @@ const messages = {
 		obscured: '{pct}\u2009% der Sonne bedeckt',
 		max_at: 'Maximum um {time}',
 		sun_alt: 'Sonne {alt}° über dem Horizont',
-		sun_below: 'Sonne unter dem Horizont',
-		safe_total: 'Nur während der Totalität ({from}–{to}) ohne Brille — sonst immer Schutzbrille.',
-		safe_partial:
-			'Durchgehend zertifizierte Finsternisbrille (ISO 12312-2) nötig — schon ein kurzer Blick in die Sonne kann die Augen dauerhaft schädigen.'
+		sun_below: 'Sonne unter dem Horizont'
 	},
 	b3: {
 		title: 'Deine Sicht zur Sonne',

@@ -688,7 +688,7 @@ alone was frozen:
 
 | after Oviedo → Berlin                                          |               |
 | -------------------------------------------------------------- | ------------- |
-| place label, B1 verdict, B1 safety line, B6 countdown          | updated       |
+| place label, B1 verdict, B1 max-time line, B6 countdown        | updated       |
 | **B3 readout** `20:22 · 11.2° · 280° · 91 %`                   | **unchanged** |
 | **B3 phase ticks** `Maximum 20:27 / Beginn 19:31 / Ende 21:20` | **unchanged** |
 

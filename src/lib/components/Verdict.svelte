@@ -53,13 +53,6 @@
 			{$t('b1.max_at', { time: $fmt.time(peak.time) })} ·
 			{peakAlt > 0 ? $t('b1.sun_alt', { alt: Math.round(peakAlt) }) : $t('b1.sun_below')}
 		</p>
-		<p class="safety">
-			{#if isTotal && lc.totalBegin && lc.totalEnd}
-				{$t('b1.safe_total', { from: $fmt.time(lc.totalBegin.time), to: $fmt.time(lc.totalEnd.time) })}
-			{:else}
-				{$t('b1.safe_partial')}
-			{/if}
-		</p>
 	{:else}
 		<!-- The verdict is a verdict here too: the headline must say "not visible", not fall silent. -->
 		<h2 class="headline">{$t('b1.not_visible')}</h2>
@@ -96,17 +89,5 @@
 	}
 	.next {
 		margin-block-start: 0.5rem;
-	}
-	.safety {
-		margin-top: 12px;
-		padding: 10px 12px;
-		border-radius: var(--radius-sm);
-		background: var(--surface);
-		border-left: 3px solid var(--accent);
-		font-size: 0.9rem;
-
-		.b1.total & {
-			border-left-color: var(--accent-2, var(--accent));
-		}
 	}
 </style>

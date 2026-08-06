@@ -23,7 +23,9 @@ async function snapshot(page: import('@playwright/test').Page) {
 		place: (await page.locator('.place .pname').innerText()).trim(),
 		// the headline carries kind AND coverage in one h2, so `verdict` covers the percentage too
 		verdict: await page.locator('section.b1 h2').innerText(),
-		safety: await page.locator('section.b1 .safety').innerText(),
+		// The card's second location-dependent line (local maximum + the Sun's altitude), standing in for
+		// the eye-safety line that used to be read here before it moved out of B1 entirely.
+		when: (await page.locator('section.b1 .when').innerText()).replace(/\s+/g, ' '),
 		skyReadout: (await page.locator('section.b3 .readout').innerText()).replace(/\s+/g, ' '),
 		skyPhases: (await page.locator('section.b3 .labels .lab').allInnerTexts()).join('|').replace(/\s+/g, ' '),
 		checklistCountdown: (await page.locator('section.b6 .count').innerText()).replace(/\s+/g, ' ')

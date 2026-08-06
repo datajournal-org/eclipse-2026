@@ -46,14 +46,6 @@ test.describe('B1 verdict card', () => {
 	}
 
 	atLocation(byName('Oviedo'), (get) => {
-		test('flags a total eclipse for its unaided-viewing window', async () => {
-			const safety = get().locator('section.b1 .safety');
-			await expect(safety).toContainText('Totalität');
-			await expect(safety).toContainText('Schutzbrille');
-			// and it names the window, so the reader knows exactly when the glasses come off
-			await expect(safety).toContainText(/\d\d:\d\d[–-]\d\d:\d\d/);
-		});
-
 		test('marks the card as total', async () => {
 			await expect(get().locator('section.b1')).toHaveClass(/total/);
 		});
@@ -65,13 +57,9 @@ test.describe('B1 verdict card', () => {
 		});
 	});
 
+	// The card no longer carries an eye-safety line of its own — that advice lives in B6's checklist,
+	// where b6-checklist.spec.ts holds it.
 	atLocation(byName('Berlin'), (get) => {
-		test('demands eye protection throughout at a partial location', async () => {
-			const safety = get().locator('section.b1 .safety');
-			await expect(safety).toContainText('ISO 12312-2');
-			await expect(safety).not.toContainText('Totalität');
-		});
-
 		test('does not mark the card as total where totality never happens', async () => {
 			await expect(get().locator('section.b1')).not.toHaveClass(/total/);
 		});

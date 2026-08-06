@@ -77,10 +77,7 @@ const messages: Messages = {
 		obscured: '{pct}\u2009% do Sol coberto',
 		max_at: 'Máximo às {time}',
 		sun_alt: 'Sol a {alt}° acima do horizonte',
-		sun_below: 'Sol abaixo do horizonte',
-		safe_total: 'Sem óculos apenas durante a totalidade ({from}–{to}) — de resto, sempre com óculos de proteção.',
-		safe_partial:
-			'Óculos de eclipse certificados (ISO 12312-2) necessários todo o tempo — até um olhar breve para o Sol pode danificar os olhos de forma permanente.'
+		sun_below: 'Sol abaixo do horizonte'
 	},
 	b3: {
 		title: 'A tua vista para o Sol',

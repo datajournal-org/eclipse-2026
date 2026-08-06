@@ -77,10 +77,7 @@ const messages: Messages = {
 		obscured: '{pct} % van de zon bedekt',
 		max_at: 'Maximum om {time}',
 		sun_alt: 'Zon {alt}° boven de horizon',
-		sun_below: 'Zon onder de horizon',
-		safe_total: 'Alleen tijdens de totaliteit ({from}–{to}) zonder bril — anders altijd een beschermbril.',
-		safe_partial:
-			'Doorlopend een gecertificeerde eclipsbril (ISO 12312-2) nodig — zelfs een korte blik in de zon kan de ogen blijvend beschadigen.'
+		sun_below: 'Zon onder de horizon'
 	},
 	b3: {
 		title: 'Jouw zicht op de zon',
