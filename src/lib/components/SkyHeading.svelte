@@ -21,6 +21,11 @@
 			<span aria-hidden="true">📍</span>
 			{$t('b.change')}
 		</button>
+		<!-- A place the reader never chose has to say so, right where it is named. Not `.sub`: the segment
+		     grammar caps intros at one element and one rendered line, and this is provenance, not an intro. -->
+		{#if $userLocation.source !== 'user'}
+			<p class="provenance">{$t($userLocation.source === 'guess' ? 'b.guessed' : 'b.showcase')}</p>
+		{/if}
 	{/if}
 </section>
 
@@ -41,5 +46,12 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
+	}
+	.provenance {
+		margin: var(--space-sm) auto 0;
+		max-width: 44ch;
+		color: var(--muted);
+		font-size: 0.9rem;
+		text-wrap: balance;
 	}
 </style>

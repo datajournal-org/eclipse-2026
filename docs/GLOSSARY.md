@@ -13,10 +13,16 @@ precisely in discussion. Terms use the exact names found in the code where one e
 - **A-sections** — location-independent overview blocks: **A1** `Countdown` (`.cd`), **A2** `ShadowRun`
   (`.a2`), **A4** `LocationCall`. Plus `TimeZoneNote`, which carries no section number.
   (**A3**, the three side-by-side reference locations in WIREFRAMES.md, was never built.)
-- **B-sections** — per-location blocks: **B1** `Verdict` (`.b1`), **B3** `SkyView` (`.b3`), **B6**
-  `Checklist` (`.b6`). B6 alone also renders in state A, reduced to its tick-off list (no
-  countdown or calendar export) — but not for a chosen location the eclipse misses. There is **no B2**: the phase timeline lives inside B3's scrubber (ticks, totality
-  band, phase labels) rather than as its own section — see TESTING.md §7.
+- **B-sections** — per-location blocks: **B0** `SkyHeading` (`.b0`), **B1** `Verdict` (`.b1`), **B3**
+  `SkyView` (`.b3`), **B6** `Checklist` (`.b6`). B6 renders in a reduced tick-off-list form where there
+  is no local maximum, and not at all for a location the eclipse misses. There is **no B2**: the phase
+  timeline lives inside B3's scrubber (ticks, totality band, phase labels) rather than as its own
+  section — see TESTING.md §7.
+- **Geoguess** — the starting location derived from the browser's time zone (`$lib/geoguess`), so the
+  app opens on a real sky instead of an empty prompt. Carries `source: 'guess'`, is labelled as such in
+  B0, and is never persisted — only a location the reader chose (`source: 'user'`) reaches storage.
+- **Showcase place** — the fixed location (Burgos) shown when the guessed time zone cannot see the
+  eclipse at all. Carries `source: 'showcase'` and says so in B0.
 - **Eyebrow** — the small `.eyebrow` tag in a block header; today only A2 uses one, showing the date.
 - **`userLocation`** — the chosen place (`{lat, lon, name}`); kept in `localStorage` only, never written to
   the URL and never sent to a server. `?lat&lon&name` is read once at load as a debug override.

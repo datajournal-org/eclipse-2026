@@ -1,8 +1,8 @@
-import { test, expect, localeUrl, LANG, PHOTON } from './fixtures';
+import { test, expect, localeUrl, LANG, PHOTON, openLocationDialog } from './fixtures';
 
 const openDialog = async (page: import('@playwright/test').Page) => {
 	await page.goto(localeUrl());
-	await page.getByRole('button', { name: /Standort wählen/ }).click();
+	await openLocationDialog(page);
 	await expect(page.locator('dialog.picker-dlg')).toBeVisible();
 };
 
@@ -78,7 +78,7 @@ test.describe('location dialog', () => {
 		await openDialog(page);
 		await page.keyboard.press('Escape');
 		await expect(page.locator('dialog.picker-dlg')).toBeHidden();
-		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		await openLocationDialog(page);
 		await expect(page.locator('dialog.picker-dlg')).toBeVisible();
 	});
 
@@ -99,7 +99,7 @@ test.describe('location dialog', () => {
 		// and flickered underneath the fullscreen mobile dialog.
 		await stubGeocoder();
 		await page.goto(localeUrl());
-		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		await openLocationDialog(page);
 		await expect(page.locator('dialog.picker-dlg')).toBeVisible();
 
 		// let the click's own smooth scroll settle first, or its tail reads as background scrolling
@@ -127,10 +127,13 @@ test.describe('location dialog', () => {
 		// Reverse geocoding is decoration: with the geocoder failing (or timed out), the footer must fall
 		// back to the coordinates — the real content — instead of an eternal "…" that reads as loading.
 		await stubGeocoder({}, 500);
-		await page.goto(localeUrl());
-		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		// A nameless location, via the debug override: the dialog now opens on the committed place, and
+		// both a chosen and a guessed one carry a name, so the coordinate fallback needs a place that has
+		// none. Inside the corridor, so the verdict below is still "Totalität".
+		await page.goto(localeUrl(LANG, '?lat=43.0&lon=-4.5'));
+		await openLocationDialog(page);
 		const place = page.locator('dialog.picker-dlg .summary .place');
-		await expect(place).toContainText(/43\.000°, -4\.500°/); // the corridor default point
+		await expect(place).toContainText(/43\.000°, -4\.500°/);
 		// the eclipse verdict beside it is computed locally and owes the geocoder nothing
 		await expect(page.locator('dialog.picker-dlg .verdict')).toContainText('Totalität');
 	});

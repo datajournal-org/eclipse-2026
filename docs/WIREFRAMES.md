@@ -102,9 +102,9 @@ given.
 
 ### B6 — Checklist & countdown
 
-Also shown in state A, reduced to the tick-off list alone (no countdown, no calendar export —
-both local promises; the items themselves are the same for everyone). Hidden only where a chosen
-location sees nothing of the eclipse.
+Reduced to the tick-off list alone (no countdown, no calendar export — both local promises) wherever
+there is no local maximum, which since the time-zone guess landed means the prerendered HTML only.
+Hidden entirely where the chosen location sees nothing of the eclipse.
 
 Countdown (same as A1) plus a simple checklist:
 
@@ -134,12 +134,16 @@ Plus "📅 Export to calendar" with the correct local phase times.
 
 **State A (planned):** Header → A1 countdown → A2 shadow run → A3 three locations → A4 location call.
 **State A (built):** Header → A1 countdown → A2 shadow run (time-zone note as its footer) → A4 location
-call → donate → colophon.
+call → donate → colophon. **A reader never sees this**: on the client the location store falls back to a
+place guessed from the time zone, so state A survives only in the prerendered HTML — which is exactly who
+still needs it, crawlers and readers without JavaScript.
 
 **State B (planned):** Header → 📍 location → B1 verdict → B3 3D horizon → B2 timeline → B6 checklist.
-**State B (built):** Header → A1 countdown → A2 shadow run → TimeZoneNote → divider → 📍 location →
-B1 verdict → B3 3D horizon → divider → B6 checklist. As planned, the A blocks stay and only the A4
-location call is replaced — B is appended below it.
+**State B (built):** Header → A1 countdown → A2 shadow run → TimeZoneNote → **B0 heading** (the place,
+the change button, and — for a guessed or showcase place — where it came from) → B1 verdict → B3 3D
+horizon → divider → B6 checklist. As planned, the A blocks stay and only the A4 location call is
+replaced. B0 took the place of the "your sky" divider that used to open this half: a divider only names
+a section, and what a reader has to notice is that the sky below is theirs to set.
 
 ## Segment grammar
 

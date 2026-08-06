@@ -73,7 +73,8 @@ export default defineConfig({
 			exclude: [
 				'src/lib/**/*.test.ts',
 				'src/lib/testing/**', // test-only helpers
-				'src/lib/shadow-globe/corridor.generated.ts' // generated at build time
+				'src/lib/shadow-globe/corridor.generated.ts', // generated at build time
+				'src/lib/data/timezones.generated.ts' // generated at build time
 			],
 			reporter: ['text', 'html'],
 			// Set just under what the suite actually achieves, so a real regression fails but ordinary

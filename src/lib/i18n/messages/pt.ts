@@ -59,6 +59,8 @@ const messages: Messages = {
 	},
 	b: {
 		sim_for: 'Simulação do eclipse para {place}',
+		guessed: 'Deduzido do teu fuso horário — toca em «Alterar local» para o teu sítio exato.',
+		showcase: 'Local de exemplo: do teu fuso horário o eclipse não é visível.',
 		change: 'Alterar local',
 		clear: 'Remover local',
 		prep: 'A tua preparação'

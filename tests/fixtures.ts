@@ -184,6 +184,26 @@ export async function openSharedLocatedPage(
 }
 
 /**
+ * The city the time-zone guess produces under the suite's own zone. `playwright.config.ts` pins
+ * `timezoneId: 'Europe/Berlin'`, so every plain `page.goto` lands here — see `geoguess.spec.ts`.
+ */
+export const GUESSED_CITY = 'Berlin';
+/** The place a reader gets when their zone cannot see the eclipse at all ($lib/geoguess SHOWCASE). */
+export const SHOWCASE_CITY = 'Burgos';
+
+/**
+ * Open the location dialog.
+ *
+ * Specs used to click the state-A call to action to get here. That state is gone — the app always opens
+ * on a located page now — so the one way in is B0's change button. Centralised because a dozen specs
+ * need it and the button's label is translated copy that should be free to change in one place.
+ */
+export async function openLocationDialog(page: Page) {
+	await page.getByRole('button', { name: 'Ort ändern' }).click();
+	await expect(page.locator('dialog.picker-dlg')).toBeVisible();
+}
+
+/**
  * Wait for a section's MapLibre instance to reach `idle` (the data-map-ready hook in the components).
  *
  * The budget has to be CI-aware. A GPU-less runner rasterises B3's terrain scene on the CPU, and a

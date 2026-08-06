@@ -4,6 +4,18 @@ import { get } from 'svelte/store';
 const KEY = 'eclipse.location';
 
 /**
+ * The time-zone guess is stubbed out. Two reasons, and the second one matters: this file is about the
+ * store's PRECEDENCE (URL → storage → guess) and about what may be written to the device, not about
+ * whether a zone resolves — geoguess.test.ts owns that. And every case below re-imports the module to
+ * re-run its load-time initialisation, which with the real geoguess would pull astronomy-engine through
+ * the module graph twenty-odd times and turn a 2 s file into a 30 s one.
+ */
+const { GUESSED } = vi.hoisted(() => ({
+	GUESSED: { lat: 42.3439, lon: -3.6969, name: 'Burgos', source: 'guess' as const }
+}));
+vi.mock('$lib/geoguess', () => ({ guessPlace: () => ({ ...GUESSED }) }));
+
+/**
  * The store reads the URL and localStorage at MODULE LOAD (deliberately — see the comment in
  * location.ts about the post-hydration layout jump), so every case needs a fresh module registry and a
  * fresh document location.
@@ -16,37 +28,41 @@ async function loadWith({ search = '', stored }: { search?: string; stored?: str
 	return await import('./location');
 }
 
+/** What the device is allowed to remember: three fields, never the provenance. */
+const storedValue = () => JSON.parse(localStorage.getItem(KEY)!);
+
 beforeEach(() => {
 	localStorage.clear();
 	window.history.replaceState({}, '', '/');
 });
 
 describe('initial value', () => {
-	it('is null with neither a URL override nor stored data', async () => {
+	it('falls back to the time-zone guess with neither a URL override nor stored data', async () => {
+		// There is no un-located state left in a hydrated browser: the app always opens on some sky.
 		const { userLocation } = await loadWith();
-		expect(get(userLocation)).toBeNull();
+		expect(get(userLocation)).toEqual(GUESSED);
 	});
 
 	it('reads the ?lat&lon debug override', async () => {
 		const { userLocation } = await loadWith({ search: '?lat=43.5465&lon=-6.5321&name=Cudillero' });
-		expect(get(userLocation)).toEqual({ lat: 43.5465, lon: -6.5321, name: 'Cudillero' });
+		expect(get(userLocation)).toEqual({ lat: 43.5465, lon: -6.5321, name: 'Cudillero', source: 'user' });
 	});
 
 	it('leaves the name null when the URL omits it', async () => {
 		const { userLocation } = await loadWith({ search: '?lat=52.52&lon=13.405' });
-		expect(get(userLocation)).toEqual({ lat: 52.52, lon: 13.405, name: null });
+		expect(get(userLocation)).toEqual({ lat: 52.52, lon: 13.405, name: null, source: 'user' });
 	});
 
 	it('accepts negative and zero coordinates', async () => {
 		const { userLocation } = await loadWith({ search: '?lat=0&lon=0' });
-		expect(get(userLocation)).toEqual({ lat: 0, lon: 0, name: null });
+		expect(get(userLocation)).toEqual({ lat: 0, lon: 0, name: null, source: 'user' });
 	});
 
 	it('restores from localStorage', async () => {
 		const { userLocation } = await loadWith({
 			stored: JSON.stringify({ lat: 48.1372, lon: 11.5756, name: 'München' })
 		});
-		expect(get(userLocation)).toEqual({ lat: 48.1372, lon: 11.5756, name: 'München' });
+		expect(get(userLocation)).toEqual({ lat: 48.1372, lon: 11.5756, name: 'München', source: 'user' });
 	});
 
 	it('prefers the URL override over stored data', async () => {
@@ -54,7 +70,17 @@ describe('initial value', () => {
 			search: '?lat=1&lon=2',
 			stored: JSON.stringify({ lat: 48.1372, lon: 11.5756, name: 'München' })
 		});
-		expect(get(userLocation)).toEqual({ lat: 1, lon: 2, name: null });
+		expect(get(userLocation)).toEqual({ lat: 1, lon: 2, name: null, source: 'user' });
+	});
+
+	it('treats anything in storage as a choice, whatever the blob claims', async () => {
+		// The guess is never persisted, so a stored record can only have come from a real choice. Reading
+		// `source` back would let a stale or hand-edited blob produce a PERSISTED guess — the one state
+		// this module exists to prevent.
+		const { userLocation } = await loadWith({
+			stored: JSON.stringify({ lat: 48.1372, lon: 11.5756, name: 'München', source: 'guess' })
+		});
+		expect(get(userLocation)!.source).toBe('user');
 	});
 
 	it.each([
@@ -65,7 +91,7 @@ describe('initial value', () => {
 	])('falls through to storage when the URL has %s', async (_case, search) => {
 		const stored = JSON.stringify({ lat: 48.1372, lon: 11.5756, name: 'München' });
 		const { userLocation } = await loadWith({ search, stored });
-		expect(get(userLocation)).toEqual({ lat: 48.1372, lon: 11.5756, name: 'München' });
+		expect(get(userLocation)).toEqual({ lat: 48.1372, lon: 11.5756, name: 'München', source: 'user' });
 	});
 
 	it.each([
@@ -74,14 +100,20 @@ describe('initial value', () => {
 		['a null lat', '{"lat":null,"lon":13.4}'],
 		['a string lat', '{"lat":"52.52","lon":13.4}'],
 		['JSON null', 'null']
-	])('ignores %s in storage instead of throwing', async (_case, stored) => {
+	])('falls through to the guess when storage holds %s, instead of throwing', async (_case, stored) => {
 		const { userLocation } = await loadWith({ stored });
-		expect(get(userLocation)).toBeNull();
+		expect(get(userLocation)).toEqual(GUESSED);
 	});
 
 	it('defaults a stored place with no name', async () => {
 		const { userLocation } = await loadWith({ stored: '{"lat":52.52,"lon":13.405}' });
-		expect(get(userLocation)).toEqual({ lat: 52.52, lon: 13.405, name: null });
+		expect(get(userLocation)).toEqual({ lat: 52.52, lon: 13.405, name: null, source: 'user' });
+	});
+
+	it('does not persist the guess', async () => {
+		// The whole point of the `source` discriminator: storage means "the reader told us this".
+		await loadWith();
+		expect(localStorage.getItem(KEY)).toBeNull();
 	});
 });
 
@@ -89,8 +121,17 @@ describe('setLocation', () => {
 	it('updates the store and persists', async () => {
 		const { userLocation, setLocation } = await loadWith();
 		setLocation({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
-		expect(get(userLocation)).toEqual({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
-		expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
+		expect(get(userLocation)).toEqual({ lat: 43.3603, lon: -5.8448, name: 'Oviedo', source: 'user' });
+		// The stored shape stays three fields: `source` is always 'user' on the way back in, so writing it
+		// would add a field that can only ever be wrong.
+		expect(storedValue()).toEqual({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
+	});
+
+	it('marks a chosen place as the reader’s own, whatever it replaced', async () => {
+		const { userLocation, setLocation } = await loadWith();
+		expect(get(userLocation)!.source).toBe('guess');
+		setLocation({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
+		expect(get(userLocation)!.source).toBe('user');
 	});
 
 	it('replaces the previous place rather than merging into it', async () => {
@@ -99,13 +140,13 @@ describe('setLocation', () => {
 		const { setLocation } = await loadWith();
 		setLocation({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' });
 		setLocation({ lat: 52.52, lon: 13.405, name: null });
-		expect(JSON.parse(localStorage.getItem(KEY)!)).toEqual({ lat: 52.52, lon: 13.405, name: null });
+		expect(storedValue()).toEqual({ lat: 52.52, lon: 13.405, name: null });
 	});
 
 	it('coerces numeric strings that slipped in from an input field', async () => {
 		const { userLocation, setLocation } = await loadWith();
 		setLocation({ lat: '43.36' as unknown as number, lon: '-5.84' as unknown as number, name: null });
-		expect(get(userLocation)).toEqual({ lat: 43.36, lon: -5.84, name: null });
+		expect(get(userLocation)).toEqual({ lat: 43.36, lon: -5.84, name: null, source: 'user' });
 	});
 
 	it('normalises a missing name to null', async () => {
@@ -121,16 +162,18 @@ describe('setLocation', () => {
 		setLocation({ lat: 1, lon: 2, name: 'x' });
 		unsub();
 		expect(seen).toHaveLength(2);
-		expect(seen[1]).toEqual({ lat: 1, lon: 2, name: 'x' });
+		expect(seen[1]).toEqual({ lat: 1, lon: 2, name: 'x', source: 'user' });
 	});
 });
 
 describe('clearLocation', () => {
-	it('empties the store and the stored value', async () => {
+	it('empties the stored value and falls back to the guess', async () => {
+		// Not back to nothing: the located state must never disappear, or the page would show an empty
+		// prompt where a sky used to be.
 		const { userLocation, clearLocation } = await loadWith({ stored: '{"lat":52.52,"lon":13.405,"name":"Berlin"}' });
-		expect(get(userLocation)).not.toBeNull();
+		expect(get(userLocation)!.source).toBe('user');
 		clearLocation();
-		expect(get(userLocation)).toBeNull();
+		expect(get(userLocation)).toEqual(GUESSED);
 		expect(localStorage.getItem(KEY)).toBeNull();
 	});
 });
@@ -166,7 +209,7 @@ describe('privacy contract', () => {
 		const replace = vi.spyOn(window.history, 'replaceState');
 
 		const { userLocation } = await import('./location');
-		expect(get(userLocation)).toEqual({ lat: 43.3603, lon: -5.8448, name: null });
+		expect(get(userLocation)).toEqual({ lat: 43.3603, lon: -5.8448, name: null, source: 'user' });
 		expect(push).not.toHaveBeenCalled();
 		expect(replace).not.toHaveBeenCalled();
 		expect(window.location.search).toBe('?lat=43.3603&lon=-5.8448'); // left as-is, not rewritten
@@ -187,7 +230,7 @@ describe('hostile storage', () => {
 			throw new DOMException('denied');
 		});
 		const { userLocation } = await loadWith();
-		expect(get(userLocation)).toBeNull();
+		expect(get(userLocation)).toEqual(GUESSED);
 	});
 
 	it('survives a localStorage that throws on write (quota exceeded)', async () => {
@@ -197,6 +240,6 @@ describe('hostile storage', () => {
 		});
 		expect(() => setLocation({ lat: 1, lon: 2, name: null })).not.toThrow();
 		// the in-memory store still updates, so the UI works for this session
-		expect(get(userLocation)).toEqual({ lat: 1, lon: 2, name: null });
+		expect(get(userLocation)).toEqual({ lat: 1, lon: 2, name: null, source: 'user' });
 	});
 });

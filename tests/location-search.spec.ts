@@ -1,8 +1,8 @@
-import { test, expect, PHOTON, localeUrl } from './fixtures';
+import { test, expect, PHOTON, localeUrl, openLocationDialog } from './fixtures';
 
 const open = async (page: import('@playwright/test').Page) => {
 	await page.goto(localeUrl());
-	await page.getByRole('button', { name: /Standort wählen/ }).click();
+	await openLocationDialog(page);
 	await expect(page.locator('dialog.picker-dlg')).toBeVisible();
 	return page.getByRole('searchbox', { name: 'Stadt oder Adresse suchen' });
 };

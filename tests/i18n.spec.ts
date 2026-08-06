@@ -76,10 +76,6 @@ test.describe('language switching @i18n', () => {
 		// The location lives in localStorage, so navigating between languages must not lose it — even
 		// though the language links deliberately carry no query string.
 		await locatedPage(byName('Oviedo'), 'de');
-		await page
-			.getByRole('button', { name: /Standort wählen/ })
-			.isVisible()
-			.catch(() => {});
 		await expect(page.locator('section.b1')).toBeVisible();
 		await switchLanguage(page, 'en');
 		await expect(page.locator('section.b1 h2')).toContainText('Total solar eclipse');

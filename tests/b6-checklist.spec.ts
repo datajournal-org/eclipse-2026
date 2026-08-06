@@ -87,15 +87,22 @@ test.describe('B6 checklist', () => {
 		expect(description.split('\\n').length).toBeGreaterThanOrEqual(4);
 	});
 
-	test('serves state A as a bare list before a location is chosen', async ({ page: freshPage }) => {
-		// The safety and preparation advice must reach readers who never pick a place — but nothing may
-		// pretend to be local: no countdown and no calendar export, since both would point at a maximum
-		// that is nowhere in particular. The items themselves are the same for everyone.
+	test('is already local on a plain load, because the place is guessed', async ({ page: freshPage }) => {
+		// This used to assert the bare "state A" list — no countdown, no calendar — for readers who had
+		// picked no place. That state is gone: the app guesses one, so B6 arrives in its located form.
 		await freshPage.goto(localeUrl());
-		await expect(freshPage.locator('section.b6')).toBeVisible();
 		await expect(freshPage.locator('section.b6 .checks li').nth(1)).toContainText('Hast du freie Sicht nach Westen?');
-		await expect(freshPage.locator('section.b6 .count')).toHaveCount(0);
-		await expect(freshPage.locator('section.b6 .cal')).toHaveCount(0);
+		await expect(freshPage.locator('section.b6 .count')).toBeVisible();
+		await expect(freshPage.locator('section.b6 .cal')).toBeVisible();
+	});
+
+	test('is hidden entirely where the eclipse never arrives', async ({ page: freshPage }) => {
+		// Prep advice under a verdict that says "not visible from here" would contradict it, so the page
+		// gates B6 on there being a local maximum at all. Same place b1-verdict.spec.ts uses for the
+		// not-reached verdict.
+		await freshPage.goto(localeUrl('de', '?lat=-34.6037&lon=-58.3816&name=Buenos%20Aires'));
+		await expect(freshPage.locator('section.b1 h2')).toBeVisible();
+		await expect(freshPage.locator('section.b6')).toHaveCount(0);
 	});
 
 	test('appears for every reference location', async ({ page: freshPage, locatedPage }) => {

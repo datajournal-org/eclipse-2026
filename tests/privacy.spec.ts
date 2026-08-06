@@ -1,4 +1,4 @@
-import { test, expect, PHOTON, localeUrl } from './fixtures';
+import { test, expect, PHOTON, localeUrl, openLocationDialog, GUESSED_CITY } from './fixtures';
 
 // The contract from stores/location.ts: the chosen place lives in localStorage only, so a shared link
 // can never carry someone's address. Vitest checks the store; this checks the whole app honours it.
@@ -6,7 +6,7 @@ test.describe('location privacy', () => {
 	test('keeps the chosen place out of the URL', async ({ page, stubGeocoder }) => {
 		await stubGeocoder(PHOTON.oviedo);
 		await page.goto(localeUrl());
-		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		await openLocationDialog(page);
 		await page.getByRole('searchbox', { name: 'Stadt oder Adresse suchen' }).fill('Oviedo');
 		await page.locator('.results li button').first().click();
 		await page.getByRole('button', { name: /Diesen Ort verwenden/ }).click();
@@ -20,7 +20,7 @@ test.describe('location privacy', () => {
 	test('persists it in localStorage instead', async ({ page, stubGeocoder }) => {
 		await stubGeocoder(PHOTON.oviedo);
 		await page.goto(localeUrl());
-		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		await openLocationDialog(page);
 		await page.getByRole('searchbox', { name: 'Stadt oder Adresse suchen' }).fill('Oviedo');
 		await page.locator('.results li button').first().click();
 		await page.getByRole('button', { name: /Diesen Ort verwenden/ }).click();
@@ -47,7 +47,7 @@ test.describe('location privacy', () => {
 		await expect(page.locator('section.b1 h2')).toContainText('Totale Sonnenfinsternis');
 	});
 
-	test('falls back to the un-located state when storage is cleared', async ({ page, stubGeocoder }) => {
+	test('falls back to the guessed place when storage is cleared', async ({ page, stubGeocoder }) => {
 		// Seeded by hand rather than with the storedPage fixture: that one re-seeds on every navigation
 		// (addInitScript), which would undo the clear this test is about.
 		await stubGeocoder();
@@ -60,8 +60,11 @@ test.describe('location privacy', () => {
 
 		await page.evaluate(() => window.localStorage.clear());
 		await page.reload();
-		await expect(page.locator('section.b1')).toHaveCount(0);
-		await expect(page.getByRole('button', { name: /Standort wählen/ })).toBeVisible();
+		// Oviedo is genuinely forgotten — but the page does not empty out, it drops to the guess, which
+		// is labelled as one and is itself not stored.
+		await expect(page.locator('section.b0 .place')).toContainText(GUESSED_CITY);
+		await expect(page.locator('section.b0 .provenance')).toBeVisible();
+		expect(await page.evaluate(() => window.localStorage.getItem('eclipse.location'))).toBeNull();
 	});
 
 	test('accepts the ?lat&lon debug override without writing it back', async ({ page, locatedPage }) => {

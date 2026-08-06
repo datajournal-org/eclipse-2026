@@ -60,6 +60,8 @@ const messages: Messages = {
 	},
 	b: {
 		sim_for: 'Eclipse simulation for {place}',
+		guessed: 'Guessed from your time zone — tap “Change location” for your exact spot.',
+		showcase: 'Example location — the eclipse is not visible from your time zone.',
 		change: 'Change location',
 		clear: 'Remove location',
 		prep: 'Your preparation'

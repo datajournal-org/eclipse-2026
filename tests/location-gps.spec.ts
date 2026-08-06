@@ -1,8 +1,8 @@
-import { test, expect, PHOTON, localeUrl } from './fixtures';
+import { test, expect, PHOTON, localeUrl, openLocationDialog } from './fixtures';
 
 const open = async (page: import('@playwright/test').Page) => {
 	await page.goto(localeUrl());
-	await page.getByRole('button', { name: /Standort wählen/ }).click();
+	await openLocationDialog(page);
 	await expect(page.locator('dialog.picker-dlg')).toBeVisible();
 	return page.getByRole('button', { name: 'Meinen Standort verwenden' });
 };
@@ -99,7 +99,7 @@ test.describe('use my location', () => {
 			delete (Navigator.prototype as unknown as Record<string, unknown>).geolocation;
 		});
 		await page.goto(localeUrl());
-		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		await openLocationDialog(page);
 		await expect(page.locator('dialog.picker-dlg')).toBeVisible();
 		await expect(page.locator('dialog.picker-dlg .geo-chip')).toHaveCount(0);
 		// the other two paths are untouched

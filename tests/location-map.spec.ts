@@ -1,10 +1,10 @@
-import { test, expect, PHOTON, localeUrl } from './fixtures';
+import { test, expect, PHOTON, localeUrl, openLocationDialog } from './fixtures';
 
 const DIALOG = 'dialog.picker-dlg';
 
 async function openWithPin(page: import('@playwright/test').Page) {
 	await page.goto(localeUrl());
-	await page.getByRole('button', { name: /Standort wählen/ }).click();
+	await openLocationDialog(page);
 	await expect(page.locator(DIALOG)).toBeVisible();
 	// the picker map only mounts once a place is pending
 	await page.getByRole('searchbox', { name: 'Stadt oder Adresse suchen' }).fill('Oviedo');

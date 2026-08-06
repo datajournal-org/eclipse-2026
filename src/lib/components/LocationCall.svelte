@@ -1,5 +1,8 @@
-<!-- A4 — the location call-to-action shown before a location is chosen. Just the prompt; the actual picker
-     lives in the shared LocationDialog, opened via onchoose (and reused by the "change" button later). -->
+<!-- A4 — the location call-to-action, shown when there is no location at all.
+     In a hydrated browser that never happens: the store falls back to a place guessed from the time zone
+     ($lib/geoguess), so this renders only in the PRERENDERED HTML — which is what a crawler indexes and
+     what a reader without JavaScript gets. It has to stay a real, working prompt for exactly them.
+     Just the prompt; the picker lives in the shared LocationDialog, opened via onchoose. -->
 <script lang="ts">
 	import { t } from '$lib/i18n';
 

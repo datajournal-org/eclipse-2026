@@ -19,9 +19,14 @@ beforeEach(() => {
 });
 
 describe('localEclipse', () => {
-	it('is null while no location is set', async () => {
+	it('already describes the guessed place before anything is chosen', async () => {
+		// There is no un-located state in a hydrated browser: location.ts falls back to a place guessed
+		// from the time zone, so this store has something to compute from on the very first frame. The
+		// suite runs under TZ=Europe/Berlin (package.json), which the table resolves to Berlin.
 		const { localEclipse } = await load();
-		expect(get(localEclipse)).toBeNull();
+		const value = get(localEclipse);
+		expect(value).not.toBeNull();
+		expect(value!.obscuration).toBeCloseTo(localCircumstances(52.5, 13.37)!.obscuration, 2);
 	});
 
 	it('matches localCircumstances for the chosen place', async () => {
@@ -50,12 +55,14 @@ describe('localEclipse', () => {
 		expect(second).toBeCloseTo(munich.obsc, 2);
 	});
 
-	it('returns to null when the location is cleared', async () => {
+	it('returns to the guessed place when the location is cleared', async () => {
 		const { setLocation, clearLocation, localEclipse } = await load();
-		setLocation({ lat: 52.52, lon: 13.405, name: 'Berlin' });
-		expect(get(localEclipse)).not.toBeNull();
+		setLocation({ lat: 43.3603, lon: -5.8448, name: 'Oviedo' }); // total
+		expect(get(localEclipse)!.kind).toBe('total');
 		clearLocation();
-		expect(get(localEclipse)).toBeNull();
+		// Not null — clearing drops back to the guess, so the page keeps showing a sky.
+		expect(get(localEclipse)).not.toBeNull();
+		expect(get(localEclipse)!.kind).toBe('partial'); // Berlin, from TZ=Europe/Berlin
 	});
 
 	it('computes once per location change, not once per subscriber', async () => {

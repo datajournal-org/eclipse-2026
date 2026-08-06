@@ -165,6 +165,15 @@ test.describe('A2 opening framing', () => {
 				return m.queryRenderedFeatures(undefined, { layers }).length;
 			}, LABEL_LAYERS);
 
+		/**
+		 * A2 alone on the page. Since the landing place is guessed from the time zone, a plain load also
+		 * mounts B3 — a second MapLibre map at zoom 16 that fetches `/tiles/osm/` for its buildings, which
+		 * is exactly what the request assertion below is looking for. Buenos Aires is a place the 2026
+		 * eclipse never reaches, and the page renders B3 only where it is visible, so this is A2 by itself
+		 * without inventing a state the app does not have. `?debug` exposes `window.__map`.
+		 */
+		const A2_ONLY = '?lat=-34.6037&lon=-58.3816&name=Buenos%20Aires&debug';
+
 		test('stay hidden — and fetch nothing — at the opening framing @webgl', async ({ page }) => {
 			// The zoom gate is the layers' own colorful minzooms (5+). Below them the shortbread source
 			// must not cost a single tile: the globe opens on a continent, not on a city map.
@@ -172,14 +181,14 @@ test.describe('A2 opening framing', () => {
 			page.on('request', (r) => {
 				if (r.url().includes('/tiles/osm/')) osmRequests.push(r.url());
 			});
-			await page.goto(localeUrl('de', '?debug'));
+			await page.goto(localeUrl('de', A2_ONLY));
 			await mapReady(page, A2);
 			expect(await rendered(page)).toBe(0);
 			expect(osmRequests, 'vector tiles fetched before any label could show').toEqual([]);
 		});
 
 		test('appear once the reader zooms into a region @webgl', async ({ page }) => {
-			await page.goto(localeUrl('de', '?debug'));
+			await page.goto(localeUrl('de', A2_ONLY));
 			await mapReady(page, A2);
 			await page.evaluate(() => {
 				const m = (window as unknown as { __map: MlMap }).__map;

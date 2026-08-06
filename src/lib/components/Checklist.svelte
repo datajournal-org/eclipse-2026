@@ -2,11 +2,11 @@
      list (glasses, clear view west, weather) and a one-tap calendar export (.ics, built client-side
      so nothing leaves the device). Times from the shared localEclipse store.
 
-     Also serves state A: before a location is chosen, only the tick-off list renders — no countdown
-     and no calendar export, since both would have to point at a maximum that is nowhere in particular —
-     so the safety and preparation advice still reaches readers who never pick a place. A chosen
-     location the eclipse misses still hides it (the page gates on that): generic prep under a verdict
-     that says "not visible from here" would contradict it. -->
+     Without a local maximum only the tick-off list renders — no countdown and no calendar export, since
+     both would have to point at a maximum that is nowhere in particular. In a hydrated browser that only
+     happens in the prerendered HTML, where no location exists yet; a chosen location the eclipse misses
+     hides B6 entirely (the page gates on that), because generic prep under a verdict that says "not
+     visible from here" would contradict it. -->
 <script lang="ts">
 	import { t, fmt } from '$lib/i18n';
 	import { localEclipse } from '$lib/stores/localEclipse';

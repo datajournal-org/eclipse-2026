@@ -27,12 +27,17 @@ const GPU = {
 
 export default defineConfig({
 	testDir: 'tests',
-	// File-level parallelism only. The worker cap is about GL contention, which now only bites where
-	// there is no GPU: a CI runner falls back to SwiftShader, and concurrent software contexts starve
-	// each other badly enough that B3 never reaches `idle`. Locally the GPU handles the load, so the
-	// default worker count is fine.
+	// File-level parallelism only, and a worker cap on BOTH sides now. The cap is about GL contention.
+	// On CI there is no GPU at all: it falls back to SwiftShader, and concurrent software contexts starve
+	// each other badly enough that B3 never reaches `idle`.
+	//
+	// Locally the default (half the cores — 7 here) used to be fine, because a plain page load carried
+	// one map. It does not any more: the landing place is guessed from the time zone, so almost every
+	// spec now builds A2's globe AND B3's terrain scene, and seven of those at once saturated even a
+	// real GPU — nine specs timed out at 30 s that each pass in 14 s when run alone. Four is measured,
+	// not guessed: it is the point where the full suite goes green again, at 3.4 min against 2.0 before.
 	fullyParallel: false,
-	workers: process.env.CI ? 2 : undefined,
+	workers: process.env.CI ? 2 : 4,
 	// One number for the whole suite — no per-test overrides, which only ever drifted away from reality.
 	// Locally the slowest test is ~8 s (GPU, warm tile cache), so 30 s is ~4x headroom: enough to ride out
 	// a busy machine, tight enough that a genuine hang is reported in seconds rather than minutes.

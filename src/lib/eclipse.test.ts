@@ -304,6 +304,10 @@ describe('localCircumstances', () => {
 		expect(localCircumstances(lat, lon)).toBeNull();
 	});
 
+	// An explicit budget, because the default 5 s is not a statement about this test: it is 108 iterative
+	// contact searches, ~1.6 s with a worker to itself, and it shares the pool with every other node
+	// suite. It went red the day another CPU-bound file joined that pool, having changed nothing itself.
+	// 30 s still catches a genuine hang; it just stops scheduling noise from reading as a failure.
 	it('only ever returns an eclipse on eclipse day', () => {
 		// Sweep the globe: whatever comes back must be THIS event.
 		for (let lat = -80; lat <= 80; lat += 20) {
@@ -313,7 +317,7 @@ describe('localCircumstances', () => {
 				expect(c.peak!.time.toISOString().slice(0, 10), `${lat}/${lon}`).toBe(ECLIPSE_DATE);
 			}
 		}
-	});
+	}, 30_000);
 
 	it('keeps every location the eclipse does reach', () => {
 		// The guard must not be so tight that it drops real viewers — including one where the maximum

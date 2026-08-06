@@ -122,8 +122,9 @@ test.describe('segment grammar', () => {
 		}
 	});
 
-	// Its own fresh page (the fixture's), not the shared one: it needs the UN-located state.
-	test('holds in the unlocated state too', async ({ page: freshPage, stubGeocoder }) => {
+	// Its own fresh page (the fixture's), not the shared one: this is the plain load, where the place is
+	// guessed from the time zone rather than seeded by a `?lat&lon` override.
+	test('holds on a plain, guessed load too', async ({ page: freshPage, stubGeocoder }) => {
 		await stubGeocoder();
 		await freshPage.goto(localeUrl());
 		const strays = await freshPage.evaluate(() =>

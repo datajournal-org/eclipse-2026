@@ -7,6 +7,7 @@
 	import { browser } from '$app/environment';
 	import { t, locale } from '$lib/i18n';
 	import { userLocation, setLocation, placeLabel } from '$lib/stores/location';
+	import { SHOWCASE } from '$lib/geoguess';
 	import { localCircumstances } from '$lib/eclipse';
 	import { reverseGeocode, type GeoHit } from '$lib/geocode';
 	import { createPlaceSearch } from '$lib/placeSearch';
@@ -21,10 +22,11 @@
 	type Pending = { lat: number; lon: number; name: string | null };
 	let pending = $state<Pending | null>(null);
 
-	// A welcoming default over land inside the totality corridor (northern Spain) — the pin lands on a
-	// recognisable place with a "Totalität" verdict, inviting the user to search / GPS / drag from there.
+	// Only reachable where there is no location at all — i.e. without JavaScript, or before hydration has
+	// run the time-zone guess. In a hydrated browser the dialog always opens on the committed or guessed
+	// place. Kept as the showcase point so that edge, if it is ever hit, still lands inside totality.
 	function defaultPoint(): { lat: number; lon: number } {
-		return { lat: 43.0, lon: -4.5 };
+		return { lat: SHOWCASE.lat, lon: SHOWCASE.lon };
 	}
 
 	// ---- open / close plumbing (native <dialog>) ----
@@ -81,8 +83,16 @@
 			// The user may have confirmed before the name arrived — the committed location then carries
 			// name: null and the page shows raw coordinates. If the answer is for exactly that point,
 			// upgrade the committed location in place (same coordinates → SkyView's key won't rebuild).
+			// Only a place the reader actually CHOSE may be upgraded this way: setLocation persists, and a
+			// guessed place must never reach storage on the strength of the dialog merely having opened.
 			const committed = get(userLocation);
-			if (n && committed && committed.name === null && committed.lat === lat && committed.lon === lon) {
+			if (
+				n &&
+				committed?.source === 'user' &&
+				committed.name === null &&
+				committed.lat === lat &&
+				committed.lon === lon
+			) {
 				setLocation({ lat, lon, name: n });
 			}
 		});

@@ -1,4 +1,4 @@
-import { test, expect, localeUrl, mapReady, byName, PHOTON } from './fixtures';
+import { test, expect, localeUrl, mapReady, byName, PHOTON, GUESSED_CITY } from './fixtures';
 
 /**
  * Changing an *existing* location, as opposed to setting one for the first time.
@@ -94,7 +94,7 @@ test.describe('changing the location @webgl', () => {
 		await expect(page.locator('section.b3 .labels .lab').filter({ hasText: 'Maximum' })).toContainText(maxTime);
 	});
 
-	test('drops back to the un-located state when the location is cleared', async ({ page, locatedPage }) => {
+	test('drops back to the guessed place when the location is cleared', async ({ page, locatedPage }) => {
 		await locatedPage(OVIEDO);
 		await expect(page.locator('section.b3')).toBeVisible();
 
@@ -103,14 +103,14 @@ test.describe('changing the location @webgl', () => {
 		await page.evaluate(() => window.localStorage.removeItem('eclipse.location'));
 		await page.goto(localeUrl());
 
-		for (const section of ['section.b1', 'section.b3']) {
-			await expect(page.locator(section)).toHaveCount(0);
-		}
-		// B6 remains, but in its state-A form: nothing local left over (no countdown, no calendar).
-		await expect(page.locator('section.b6')).toBeVisible();
-		await expect(page.locator('section.b6 .count')).toHaveCount(0);
-		await expect(page.locator('section.b6 .cal')).toHaveCount(0);
-		await expect(page.getByRole('button', { name: /Standort wählen/ })).toBeVisible();
+		// Not back to nothing: clearing falls through to the time-zone guess, so the personal sections
+		// stay — they just stop saying Oviedo. The bug this guards is a page that empties out instead.
+		await expect(page.locator('section.b0 .place')).toContainText(GUESSED_CITY);
+		await expect(page.locator('section.b0 .provenance')).toBeVisible();
+		await expect(page.locator('section.b1 h2')).toContainText('Partielle Sonnenfinsternis');
+		await expect(page.locator('section.b3')).toBeVisible();
+		// B6 keeps its located form, because there is still a place to count down to.
+		await expect(page.locator('section.b6 .count')).toBeVisible();
 	});
 
 	test('survives changing location twice in a row', async ({ page, locatedPage, stubGeocoder }) => {

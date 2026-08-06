@@ -60,6 +60,8 @@ const messages: Messages = {
 	},
 	b: {
 		sim_for: 'Simulación del eclipse para {place}',
+		guessed: 'Deducido de tu zona horaria: toca «Cambiar ubicación» para indicar tu sitio exacto.',
+		showcase: 'Lugar de ejemplo: desde tu zona horaria el eclipse no se ve.',
 		change: 'Cambiar ubicación',
 		clear: 'Quitar ubicación',
 		prep: 'Tu preparación'

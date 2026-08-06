@@ -61,6 +61,8 @@ const messages = {
 	},
 	b: {
 		sim_for: 'Sonnenfinsternis-Simulation für {place}',
+		guessed: 'Aus deiner Zeitzone geschätzt — tippe auf „Ort ändern“ für deinen genauen Standort.',
+		showcase: 'Beispielort: Von deiner Zeitzone aus ist die Finsternis nicht zu sehen.',
 		change: 'Ort ändern',
 		clear: 'Ort entfernen',
 		prep: 'Deine Vorbereitung'

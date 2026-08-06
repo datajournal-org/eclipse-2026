@@ -97,7 +97,9 @@ test.describe('accessibility — on the located page', () => {
 	});
 });
 
-test.describe('accessibility — on the un-located page', () => {
+// A plain load, i.e. the place comes from the time-zone guess rather than a `?lat&lon` override. The
+// group used to be "on the un-located page"; that state no longer reaches a browser.
+test.describe('accessibility — on a plainly loaded page', () => {
 	test.describe.configure({ mode: 'serial' });
 	let page: Page;
 
@@ -148,7 +150,8 @@ test.describe('accessibility — on the un-located page', () => {
 	});
 
 	test('shows a visible focus indicator', async () => {
-		const button = page.getByRole('button', { name: /Standort wählen/ });
+		// B0's change button — the page's primary call to action now that there is no un-located CTA.
+		const button = page.getByRole('button', { name: 'Ort ändern' });
 		await button.focus();
 		const style = await button.evaluate((el) => {
 			const s = getComputedStyle(el);

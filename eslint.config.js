@@ -15,7 +15,8 @@ export default ts.config(
 			'coverage/',
 			'test-results/',
 			'playwright-report/',
-			'src/lib/shadow-globe/corridor.generated.ts'
+			'src/lib/shadow-globe/corridor.generated.ts',
+			'src/lib/data/timezones.generated.ts'
 		]
 	},
 

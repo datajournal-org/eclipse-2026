@@ -59,6 +59,8 @@ const messages: Messages = {
 	},
 	b: {
 		sim_for: 'Simulatie van de verduistering voor {place}',
+		guessed: 'Afgeleid uit jouw tijdzone — tik op ‘Locatie wijzigen’ voor je exacte plek.',
+		showcase: 'Voorbeeldlocatie: vanuit jouw tijdzone is de verduistering niet te zien.',
 		change: 'Locatie wijzigen',
 		clear: 'Locatie verwijderen',
 		prep: 'Jouw voorbereiding'

@@ -58,6 +58,9 @@ describe('renderCorridorModule', () => {
 		expect(parsed.south).toEqual(SAMPLE.south.map(([a, b]) => [round5(a), round5(b)]));
 	});
 
+	// Explicit budget: this recomputes the whole corridor (~1.6 s alone) and shares the worker pool with
+	// every other node suite, so the default 5 s leaves it at the mercy of what else is running. Same
+	// reasoning as the globe sweep in eclipse.test.ts.
 	it('renders the real corridor as valid, parseable data', () => {
 		const parsed = parseGenerated(renderCorridorModule(computeCorridor()));
 		expect(parsed.north.length).toBeGreaterThan(100);
@@ -68,7 +71,7 @@ describe('renderCorridorModule', () => {
 				expect(Math.abs(lat)).toBeLessThanOrEqual(90);
 			}
 		}
-	});
+	}, 30_000);
 
 	it('handles empty edges without emitting broken syntax', () => {
 		const parsed = parseGenerated(renderCorridorModule({ north: [], south: [] }));

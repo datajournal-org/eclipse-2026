@@ -46,6 +46,8 @@
 			{/key}
 		{/if}
 	{:else}
+		<!-- Only reachable during prerender and without JavaScript: on the client the location store falls
+		     back to a time-zone guess, so `$userLocation` is never null there. See LocationCall's header. -->
 		<LocationCall onchoose={() => (pickerOpen = true)} />
 	{/if}
 

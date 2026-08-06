@@ -142,8 +142,10 @@ test.describe('B1 verdict card', () => {
 		});
 	});
 
-	test('is absent until a location is chosen', async ({ page }) => {
+	test('is already there on a plain load, for the guessed place', async ({ page }) => {
+		// It used to be absent until a location was chosen. There is no such state any more: the app
+		// guesses one from the time zone, so the verdict is part of the first screen.
 		await page.goto(localeUrl());
-		await expect(page.locator('section.b1')).toHaveCount(0);
+		await expect(page.locator('section.b1 h2')).toContainText('Sonnenfinsternis');
 	});
 });

@@ -1,4 +1,4 @@
-import { test, expect, byName, localeUrl, mapReady, switchLanguage } from './fixtures';
+import { test, expect, byName, localeUrl, mapReady, switchLanguage, openLocationDialog } from './fixtures';
 
 // Runs on the mobile project (Pixel 7) — the phone in someone's hand on eclipse day.
 test.describe('mobile layout @mobile', () => {
@@ -82,7 +82,7 @@ test.describe('mobile layout @mobile', () => {
 		// every control is inside the viewport by construction.
 		await stubGeocoder();
 		await page.goto(localeUrl());
-		await page.getByRole('button', { name: /Standort wählen/ }).click();
+		await openLocationDialog(page);
 
 		const sheet = page.locator('dialog.picker-dlg .sheet');
 		await expect(sheet).toBeVisible();
