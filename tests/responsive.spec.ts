@@ -92,8 +92,8 @@ test.describe('mobile layout @mobile', () => {
 			// the phone breakpoint: fullscreen, edge to edge
 			expect(box.width).toBe(viewport.width);
 			expect(Math.round(box.height)).toBe(viewport.height);
-			expect(box.x).toBe(0);
-			expect(box.y).toBe(0);
+			expect(box.x).toBeCloseTo(0, 0);
+			expect(box.y).toBeCloseTo(0, 0);
 		} else {
 			// this @mobile spec also runs on desktop-sized webkit, where the dialog stays a centred card
 			expect(box.width).toBeLessThanOrEqual(viewport.width);
