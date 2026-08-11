@@ -28,6 +28,80 @@
 	const pct = (f: number) => `${f * 100}%`;
 	// single-line labels (grid ticks, no second line) → a shorter label strip
 	const compact = $derived(!band && ticks.every((t) => !t.sub));
+
+	let input: HTMLInputElement;
+	/** Thumb diameter — must match the ::-webkit-slider-thumb / ::-moz-range-thumb width below. */
+	const THUMB = 24;
+
+	/**
+	 * The frame a finger at `clientX` points at, in the input's own geometry: the thumb CENTRE only
+	 * travels between `THUMB/2` and `width - THUMB/2`, so the usable track is narrower than the element
+	 * and the ends stay reachable.
+	 */
+	function frameAt(clientX: number) {
+		const r = input.getBoundingClientRect();
+		const usable = r.width - THUMB;
+		if (usable <= 0 || max <= 0) return 0;
+		const f = Math.min(1, Math.max(0, (clientX - r.left - THUMB / 2) / usable));
+		return Math.round(f * max);
+	}
+
+	/**
+	 * The touch we are scrubbing with, by identifier, or null between gestures. A slider tracks ONE
+	 * finger: whichever landed first stays in charge until it lifts, so a second finger arriving
+	 * mid-drag cannot yank the time somewhere else.
+	 */
+	let touchId: number | null = null;
+	/** Last frame handed to `onscrub` — dedupes the move stream, which fires far denser than frames. */
+	let sent = -1;
+
+	function scrubTo(clientX: number) {
+		const frame = frameAt(clientX);
+		if (frame === sent) return;
+		sent = frame;
+		onscrub(frame);
+	}
+
+	/** The tracked finger inside a TouchList, or null if it is not in this event. */
+	function tracked(list: TouchList) {
+		for (let i = 0; i < list.length; i++) if (list[i].identifier === touchId) return list[i];
+		return null;
+	}
+
+	/**
+	 * Take the gesture on touchDOWN — the whole track answers the moment it is touched, rather than a
+	 * beat later when the tap completes.
+	 *
+	 * This also means the native control never gets to own the drag: it only starts tracking a touch
+	 * that lands ON the thumb, so a finger landing anywhere else would jump the thumb once and then sit
+	 * still while the finger moved. Hence onTouchMove below — from here the gesture is ours.
+	 */
+	function onTouchStart(e: TouchEvent) {
+		if (touchId !== null || e.touches.length > 1) return; // a second finger — pinching the page, not scrubbing
+		const touch = e.changedTouches[0];
+		if (!touch) return;
+		touchId = touch.identifier;
+		sent = -1; // this gesture has sent nothing yet — its first frame must go through even if unchanged
+		scrubTo(touch.clientX);
+	}
+
+	/**
+	 * Follow the finger. No preventDefault needed (and none possible — Svelte registers touch handlers
+	 * passive): `touch-action: pan-y` on the input already tells the browser that horizontal gestures
+	 * here are ours. A vertical swipe still scrolls the page, and the browser then sends touchcancel,
+	 * which ends the scrub.
+	 *
+	 * Touch events stay retargeted to the element the gesture STARTED on, so this keeps firing while the
+	 * finger drifts off the 24 px-tall input — which is exactly what a drag along a thin slider does.
+	 */
+	function onTouchMove(e: TouchEvent) {
+		const touch = tracked(e.changedTouches);
+		if (touch) scrubTo(touch.clientX);
+	}
+
+	function onTouchEnd(e: TouchEvent) {
+		if (tracked(e.changedTouches)) touchId = null;
+	}
 </script>
 
 <div class="axis">
@@ -49,12 +123,17 @@
 	</div>
 
 	<input
+		bind:this={input}
 		type="range"
 		min="0"
 		{max}
 		step="1"
 		{value}
 		oninput={(e) => onscrub(+e.currentTarget.value)}
+		ontouchstart={onTouchStart}
+		ontouchmove={onTouchMove}
+		ontouchend={onTouchEnd}
+		ontouchcancel={onTouchEnd}
 		aria-label={ariaLabel}
 	/>
 
@@ -189,6 +268,9 @@
 		margin: 0;
 		background: transparent;
 		cursor: pointer;
+		/* horizontal gestures belong to the scrub handlers (no browser pan to compete with, and the
+		   touchmove events keep coming); vertical ones still scroll the page past the slider. */
+		touch-action: pan-y;
 	}
 	input[type='range']::-webkit-slider-runnable-track {
 		height: 24px;
