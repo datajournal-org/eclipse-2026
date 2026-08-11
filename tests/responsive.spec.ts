@@ -154,6 +154,59 @@ test.describe('map sizing', () => {
 		expect(Number(await input.inputValue())).toBeGreaterThan(Number(before));
 	});
 
+	test('takes the thumb to the finger and keeps it there, on both sliders', async ({ page, locatedPage }) => {
+		// Touch-and-drag anywhere on the track: the thumb jumps on touchDOWN (not a beat later, when the
+		// tap completes) and then FOLLOWS the finger. The follow is the part the native control cannot
+		// do — it only tracks a touch that landed on the thumb itself.
+		// Deliberately SYNTHETIC (untrusted) events: real ones are also handled natively — by Chromium,
+		// at least — so a driver-issued touch would pass with or without TimeScrubber's own handlers and
+		// guard nothing. Untrusted events drive no native slider behaviour, so only our listeners can
+		// move the thumb here.
+		test.skip(test.info().project.name === 'webkit', 'no Touch() constructor — the engine cannot build the event');
+		await locatedPage(byName('Oviedo'));
+		for (const section of ['section.a2', 'section.b3']) {
+			const input = page.locator(`${section} input[type="range"]`);
+			await input.scrollIntoViewIfNeeded();
+			const max = Number(await input.getAttribute('max'));
+			const frame = () => input.inputValue().then(Number);
+			const touch = (type: 'touchstart' | 'touchmove' | 'touchend', frac: number) =>
+				input.evaluate(
+					(el, { type, frac }) => {
+						const r = el.getBoundingClientRect();
+						const point = new Touch({
+							identifier: 7, // not 0 — the handler must track by identifier, not by falling back to "the first one"
+							target: el,
+							clientX: r.left + r.width * frac,
+							clientY: r.top + r.height / 2
+						});
+						el.dispatchEvent(
+							new TouchEvent(type, {
+								touches: type === 'touchend' ? [] : [point],
+								changedTouches: [point],
+								bubbles: true
+							})
+						);
+					},
+					{ type, frac }
+				);
+
+			// down at the left end — both ends have to be reachable, which is what frameAt()'s thumb-width
+			// inset buys; without it the extremes sit under the thumb's own overhang.
+			await touch('touchstart', 0);
+			await expect.poll(frame, { message: section }).toBe(0);
+			// ...drag right, and the thumb comes along instead of waiting for the finger to lift
+			await touch('touchmove', 0.5);
+			await expect.poll(frame, { message: section }).toBeGreaterThan(0);
+			expect(await frame(), section).toBeLessThan(max);
+			await touch('touchmove', 1);
+			await expect.poll(frame, { message: section }).toBe(max);
+			// ...and the gesture ends with the finger: a stray move afterwards is not a scrub
+			await touch('touchend', 1);
+			await touch('touchmove', 0);
+			expect(await frame(), section).toBe(max);
+		}
+	});
+
 	test('breaks out of the reading column on a desktop @webgl', async ({ page, locatedPage }) => {
 		await page.setViewportSize({ width: 1440, height: 900 });
 		await locatedPage(byName('Oviedo'));
