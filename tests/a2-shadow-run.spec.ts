@@ -141,19 +141,25 @@ test.describe('A2 opening framing', () => {
 		});
 	}
 
-	test('keeps the wheel cooperative on desktop, with fullscreen for direct control @webgl', async ({ page }) => {
-		// The wheel over a tall globe used to trap the page scroll. Cooperative gestures on every
-		// pointer: plain scrolling passes through, Ctrl/⌘ + wheel zooms — and the localized overlay says
-		// so. Fullscreen (an explicit request for the globe) makes gestures direct again via MapLibre.
+	test('zooms the globe on a plain wheel, with fullscreen alongside @webgl', async ({ page }) => {
+		// Gestures are direct on desktop: no cooperative-gesture gate, so a plain wheel zooms the globe
+		// and no modifier-key overlay sits over it. Fullscreen stays available for a bigger view.
 		await page.goto(localeUrl('de', '?debug'));
 		await mapReady(page, A2);
-		const coop = await page.evaluate(() =>
-			(
-				window as unknown as { __map: { cooperativeGestures: { isEnabled: () => boolean } } }
-			).__map.cooperativeGestures.isEnabled()
-		);
-		expect(coop).toBe(true);
-		await expect(page.locator(`${A2} .maplibregl-cooperative-gesture-screen`)).toContainText(/Zoomen mit/);
+		const [coop, scroll] = await page.evaluate(() => {
+			const m = (
+				window as unknown as {
+					__map: {
+						cooperativeGestures: { isEnabled: () => boolean };
+						scrollZoom: { isEnabled: () => boolean };
+					};
+				}
+			).__map;
+			return [m.cooperativeGestures.isEnabled(), m.scrollZoom.isEnabled()];
+		});
+		expect(coop).toBe(false);
+		expect(scroll).toBe(true);
+		await expect(page.locator(`${A2} .maplibregl-cooperative-gesture-screen`)).toHaveCount(0);
 		await expect(page.locator(`${A2} .maplibregl-ctrl-fullscreen`)).toBeVisible();
 	});
 

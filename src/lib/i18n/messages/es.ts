@@ -31,10 +31,7 @@ const messages: Messages = {
 		core: 'Umbra',
 		loading: 'Cargando globo …',
 		load_error: 'No se pudo cargar el globo. Recarga la página.',
-		toggle_overlay: 'Mostrar/ocultar líneas y corredor',
-		two_fingers: 'Usa dos dedos para mover el mapa',
-		zoom_ctrl: 'Usa Ctrl + rueda para hacer zoom',
-		zoom_cmd: 'Usa ⌘ + rueda para hacer zoom'
+		toggle_overlay: 'Mostrar/ocultar líneas y corredor'
 	},
 	a3: {
 		title: '¿Cómo se ve?',

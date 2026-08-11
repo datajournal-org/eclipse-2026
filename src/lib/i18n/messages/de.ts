@@ -32,10 +32,7 @@ const messages = {
 		core: 'Kernschatten',
 		loading: 'Globus wird geladen …',
 		load_error: 'Globus konnte nicht geladen werden. Bitte Seite neu laden.',
-		toggle_overlay: 'Linien & Korridor ein/aus',
-		two_fingers: 'Karte mit zwei Fingern bewegen',
-		zoom_ctrl: 'Zoomen mit Strg + Scrollen',
-		zoom_cmd: 'Zoomen mit ⌘ + Scrollen'
+		toggle_overlay: 'Linien & Korridor ein/aus'
 	},
 	a3: {
 		title: 'Wie sieht das aus?',

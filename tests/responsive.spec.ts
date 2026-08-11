@@ -40,12 +40,11 @@ test.describe('mobile layout @mobile', () => {
 		expect(wide).toEqual([]);
 	});
 
-	test('moves the globe with two fingers only, so one finger scrolls the page @webgl', async ({ page }) => {
-		// The accidental-rotation trap: a reader scrolling past the tall globe used to grab and spin it.
-		// Cooperative gestures make the interaction deliberate WITHOUT disabling anything — and the
-		// built-in overlay must speak the page's language, or the instruction is chrome noise.
-		// Pointer-dependent: @mobile specs also run on desktop chromium, where a fine pointer rightly
-		// gets direct dragging — only the touch device makes this assertion meaningful.
+	test('moves the globe with one finger, directly @webgl', async ({ page }) => {
+		// Touch gestures are direct: no cooperative-gesture gate, so a single finger drags the globe and
+		// no help overlay ("use two fingers …") is laid over it.
+		// Pointer-dependent: @mobile specs also run on desktop chromium — only the touch device makes
+		// this assertion meaningful.
 		test.skip(test.info().project.name !== 'mobile', 'coarse-pointer behaviour — mobile project only');
 		await page.goto(localeUrl('de', '?debug'));
 		await mapReady(page, 'section.a2');
@@ -54,8 +53,8 @@ test.describe('mobile layout @mobile', () => {
 				window as unknown as { __map: { cooperativeGestures: { isEnabled: () => boolean } } }
 			).__map.cooperativeGestures.isEnabled()
 		);
-		expect(coop).toBe(true);
-		await expect(page.locator('section.a2 .maplibregl-cooperative-gesture-screen')).toContainText('zwei Fingern');
+		expect(coop).toBe(false);
+		await expect(page.locator('section.a2 .maplibregl-cooperative-gesture-screen')).toHaveCount(0);
 	});
 
 	test('offers no fullscreen control on a phone @webgl', async ({ page }) => {

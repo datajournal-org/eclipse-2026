@@ -195,24 +195,15 @@
 				brand.accent.rgb,
 				ogMode ? CORRIDOR_OG_OPACITY : CORRIDOR_OPACITY
 			);
-			// Cooperative gestures, on EVERY pointer: casual input belongs to the PAGE (scrolling past a
-			// tall globe must neither rotate it by touch nor trap the wheel), deliberate input moves the
-			// globe — two fingers on touch, Ctrl/⌘ + wheel on desktop — announced by MapLibre's built-in
-			// overlay in the page's language. Nothing is disabled, and fullscreen (where the reader has
-			// explicitly asked for the globe) turns the gestures direct again, courtesy of MapLibre.
+			// Gestures are direct on every pointer: one finger drags the globe, a plain wheel zooms it. No
+			// cooperative-gesture gate and no help overlay in the way.
 			// `phone`: fullscreen is dropped where it adds nothing — a phone screen IS the full screen.
 			const phone =
 				window.matchMedia('(pointer: coarse)').matches && window.matchMedia('(max-width: 700px)').matches;
 			const m = new maplibregl.Map({
 				container: mapContainer,
 				...INITIAL_VIEW,
-				scrollZoom: true, // Ctrl/⌘ + wheel under cooperativeGestures; direct again in fullscreen
-				cooperativeGestures: true,
-				locale: {
-					'CooperativeGesturesHandler.MobileHelpText': get(t)('a2.two_fingers'),
-					'CooperativeGesturesHandler.WindowsHelpText': get(t)('a2.zoom_ctrl'),
-					'CooperativeGesturesHandler.MacHelpText': get(t)('a2.zoom_cmd')
-				},
+				scrollZoom: true,
 				attributionControl: { compact: false },
 				style: {
 					version: 8,
