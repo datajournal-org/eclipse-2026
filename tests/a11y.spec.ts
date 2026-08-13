@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { test, expect, byName, localeUrl, openSharedLocatedPage, openSharedPage } from './fixtures';
+import { test, expect, byName, localeUrl, openSharedLocatedPage, openSharedPage, pinBeforeEclipse } from './fixtures';
 
 // Every test in these two groups only READS the rendered page (names, outline, roles, geometry), so
 // each group shares one page (serial) instead of paying the page load per test — the b3 pattern. The
@@ -104,7 +104,10 @@ test.describe('accessibility — on a plainly loaded page', () => {
 	let page: Page;
 
 	test.beforeAll(async ({ browser }) => {
-		page = await openSharedPage(browser, localeUrl());
+		// `pinned`: 'keeps text legible against its background' reads `.cap`, which Countdown renders only
+		// while the eclipse is ahead. Pinned rather than frozen — nothing here watches time pass, and
+		// faking rAF would stall the maps this group also inspects.
+		page = await openSharedPage(browser, localeUrl(), 'pinned');
 	});
 	test.afterAll(async () => page.context().close());
 
@@ -181,6 +184,7 @@ test.describe('accessibility — on a plainly loaded page', () => {
 test.describe('accessibility — special contexts', () => {
 	test('honours prefers-reduced-motion', async ({ page, locatedPage }) => {
 		await page.emulateMedia({ reducedMotion: 'reduce' });
+		await pinBeforeEclipse(page); // `.units` is the pre-eclipse countdown — see fixtures
 		await locatedPage(byName('Oviedo'));
 		// The page must still be fully usable with animation suppressed.
 		await expect(page.locator('section.b1')).toBeVisible();

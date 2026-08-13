@@ -158,11 +158,12 @@ export async function stubGeocoderOn(context: BrowserContext) {
  * makes the ones after it harder to read. It is worth it only where setup dominates, which is why the
  * cheap specs still get a fresh page each.
  */
-export async function openSharedPage(browser: Browser, path: string) {
+export async function openSharedPage(browser: Browser, path: string, clock?: ClockMode) {
 	const context = await browser.newContext();
 	await installTileCache(context);
 	await stubGeocoderOn(context);
 	const page = await context.newPage();
+	await applyClock(page, clock); // before navigating — the page reads the clock as it hydrates
 	await page.goto(path);
 	return page;
 }
@@ -175,10 +176,11 @@ export async function openSharedPage(browser: Browser, path: string) {
 export async function openSharedLocatedPage(
 	browser: Browser,
 	site: { lat: number; lon: number; name?: string },
-	lang = LANG
+	lang = LANG,
+	clock?: ClockMode
 ) {
 	const name = site.name ? `&name=${encodeURIComponent(site.name)}` : '';
-	const page = await openSharedPage(browser, localeUrl(lang, `?lat=${site.lat}&lon=${site.lon}${name}`));
+	const page = await openSharedPage(browser, localeUrl(lang, `?lat=${site.lat}&lon=${site.lon}${name}`), clock);
 	await page.locator('section.b1').waitFor({ state: 'visible' });
 	return page;
 }
@@ -254,20 +256,60 @@ export async function maxFrame(page: Page, section: string): Promise<number> {
 }
 
 /**
- * Freeze the clock before navigating. Offsets are relative to GREATEST ECLIPSE, which is what the
- * countdown actually targets (Countdown.svelte reads greatestEclipse().date) — not the local maximum.
+ * Offsets from GREATEST ECLIPSE, which is what the countdown actually targets (Countdown.svelte reads
+ * greatestEclipse().date) — not the local maximum.
+ *
+ * Deliberately round at NO unit: 30 d 5 h 30 m 30 s. An instant that is exact at any granularity makes
+ * that digit flip on a millisecond of drift — first seen as a day-boundary flake, then reintroduced at
+ * the hour boundary when the offset was a whole number of hours.
  */
-export async function freezeClock(page: Page, at: 'T-30d' | 'T-90s' | 'T+1h') {
-	const peak = Date.parse(GREATEST.utc);
-	// Deliberately round at NO unit: 30 d 5 h 30 m 30 s. An instant that is exact at any granularity makes
-	// that digit flip on a millisecond of drift — first seen as a day-boundary flake, then reintroduced at
-	// the hour boundary when the offset was a whole number of hours.
-	const offsets = {
-		'T-30d': -(30 * 86_400 + 5 * 3_600 + 30 * 60 + 30) * 1000,
-		'T-90s': -90_000,
-		'T+1h': 3_600_000
-	};
-	await page.clock.install({ time: new Date(peak + offsets[at]) });
+const CLOCK_OFFSETS = {
+	'T-30d': -(30 * 86_400 + 5 * 3_600 + 30 * 60 + 30) * 1000,
+	'T-90s': -90_000,
+	'T+1h': 3_600_000
+};
+const clockTime = (at: keyof typeof CLOCK_OFFSETS) => new Date(Date.parse(GREATEST.utc) + CLOCK_OFFSETS[at]);
+
+/**
+ * Freeze the clock before navigating — fake timers included, so nothing advances until the test says so
+ * (see `tickSecond`). Use `pinBeforeEclipse` instead unless the test is ABOUT time passing: this also
+ * fakes requestAnimationFrame, which stalls MapLibre.
+ */
+export async function freezeClock(page: Page, at: keyof typeof CLOCK_OFFSETS) {
+	await page.clock.install({ time: clockTime(at) });
+}
+
+/**
+ * Put the page a month BEFORE the eclipse, leaving every timer and animation frame real.
+ *
+ * 2026-08-12 is now in the past, and the app is honest about that: past greatest eclipse by more than
+ * three hours, Countdown renders its `past` branch with no `.units`/`.cap`, and B6 swaps the `.count`
+ * row for a single "it's over" line. Any spec that reads those elements is asserting the pre-eclipse
+ * page and has to say so — otherwise it passed only for as long as the date held, which is exactly how
+ * this suite broke the morning after.
+ *
+ * `setFixedTime`, not `install`: it moves Date.now and nothing else, so the maps still animate and the
+ * geocoder's debounce still fires. The trade-off is that the clock does not advance — a countdown pinned
+ * this way never ticks, which is why the two ticking specs use `freezeClock` + `tickSecond` instead.
+ */
+export async function pinBeforeEclipse(page: Page) {
+	await page.clock.setFixedTime(clockTime('T-30d'));
+}
+
+/** Advance a `freezeClock`ed page by one second, firing the 1 Hz `now` store interval exactly once. */
+export async function tickSecond(page: Page) {
+	await page.clock.runFor(1000);
+}
+
+/**
+ * Which pre-eclipse clock a shared page opens on: `pinned` for groups that only READ the countdown,
+ * `frozen` for the one that watches it tick (and drives it with `tickSecond`).
+ */
+export type ClockMode = 'pinned' | 'frozen';
+
+async function applyClock(page: Page, clock?: ClockMode) {
+	if (clock === 'pinned') await pinBeforeEclipse(page);
+	else if (clock === 'frozen') await freezeClock(page, 'T-30d');
 }
 
 /**

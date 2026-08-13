@@ -1,4 +1,4 @@
-import { test, expect, freezeClock, countdownDigits, localeUrl } from './fixtures';
+import { test, expect, freezeClock, countdownDigits, localeUrl, tickSecond } from './fixtures';
 
 test.describe('countdown', () => {
 	test('shows days, hours, minutes and seconds a month out', async ({ page }) => {
@@ -31,11 +31,15 @@ test.describe('countdown', () => {
 
 	test('keeps the digits from jittering as they tick', async ({ page }) => {
 		// Tabular figures: a proportional font would make the whole row shuffle every second.
+		// Frozen a month out and stepped by hand: on the real clock this read an empty countdown from
+		// 2026-08-12 onward, and the tick it waited for was a race against a real second.
+		await freezeClock(page, 'T-30d');
 		await page.goto(localeUrl());
 		const seconds = page.locator('section.cd .units .u').last().locator('.n');
 		const before = await seconds.boundingBox();
 		const text = await seconds.innerText();
-		await expect(seconds).not.toHaveText(text, { timeout: 3000 });
+		await tickSecond(page);
+		await expect(seconds).not.toHaveText(text);
 		const after = await seconds.boundingBox();
 		expect(Math.abs(after!.width - before!.width)).toBeLessThan(1);
 		expect(after!.x).toBeCloseTo(before!.x, 0);

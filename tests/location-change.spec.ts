@@ -1,4 +1,4 @@
-import { test, expect, localeUrl, mapReady, byName, PHOTON, GUESSED_CITY } from './fixtures';
+import { test, expect, localeUrl, mapReady, byName, PHOTON, GUESSED_CITY, pinBeforeEclipse } from './fixtures';
 
 /**
  * Changing an *existing* location, as opposed to setting one for the first time.
@@ -42,6 +42,11 @@ async function changeTo(page: import('@playwright/test').Page, query: string) {
 }
 
 test.describe('changing the location @webgl', () => {
+	// `snapshot` reads B6's `.count` countdown row, which the app replaces with a plain "it's over" line
+	// once the eclipse has passed — so every test here needs the page a reader met before 2026-08-12.
+	// Pinned, not frozen: these drive real maps, and faking requestAnimationFrame would stall them.
+	test.beforeEach(async ({ page }) => pinBeforeEclipse(page));
+
 	test('updates every location-dependent section, not just the verdict', async ({
 		page,
 		locatedPage,

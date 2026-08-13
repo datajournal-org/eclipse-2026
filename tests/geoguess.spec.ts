@@ -1,4 +1,14 @@
-import { test, expect, localeUrl, BASE, GUESSED_CITY, SHOWCASE_CITY, openLocationDialog } from './fixtures';
+import {
+	test,
+	expect,
+	localeUrl,
+	BASE,
+	GUESSED_CITY,
+	SHOWCASE_CITY,
+	openLocationDialog,
+	freezeClock,
+	tickSecond
+} from './fixtures';
 
 /**
  * The landing state. This file replaces `state-a.spec.ts`: there is no "no location chosen" state in a
@@ -88,9 +98,13 @@ test.describe('landing on a guessed place', () => {
 	});
 
 	test('counts down once per second', async ({ page }) => {
+		// One fake second, stepped by hand: on the real clock this waited for a tick that stopped coming
+		// when the eclipse passed and the countdown went to its `past` branch.
+		await freezeClock(page, 'T-30d');
 		await page.goto(localeUrl());
 		const seconds = page.locator('section.cd .units .u').last().locator('.n');
 		const first = await seconds.innerText();
-		await expect(seconds).not.toHaveText(first, { timeout: 3000 });
+		await tickSecond(page);
+		await expect(seconds).not.toHaveText(first);
 	});
 });

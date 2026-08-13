@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { test, expect, byName, localeUrl, openSharedLocatedPage } from './fixtures';
+import { test, expect, byName, localeUrl, openSharedLocatedPage, tickSecond, pinBeforeEclipse } from './fixtures';
 import { REFERENCE } from './fixtures';
 
 const OVIEDO = byName('Oviedo');
@@ -11,7 +11,10 @@ test.describe('B6 checklist', () => {
 	let page: Page;
 
 	test.beforeAll(async ({ browser }) => {
-		page = await openSharedLocatedPage(browser, OVIEDO);
+		// `frozen`, not the real clock: B6 swaps its `.count` countdown row for a single "it's over" line
+		// once the eclipse has passed, so every test below reads a page that no longer exists in August
+		// 2026. Frozen rather than pinned because 'counts down to the local maximum' watches it tick.
+		page = await openSharedLocatedPage(browser, OVIEDO, undefined, 'frozen');
 	});
 	test.afterAll(async () => page.context().close());
 
@@ -44,7 +47,10 @@ test.describe('B6 checklist', () => {
 
 		const seconds = count.locator('b').last();
 		const before = await seconds.innerText();
-		await expect(seconds).not.toHaveText(before, { timeout: 3000 });
+		// Drive the clock rather than waiting on the wall clock: one fake second fires the 1 Hz `now`
+		// store exactly once, so this asserts the countdown FOLLOWS time instead of racing a real tick.
+		await tickSecond(page);
+		await expect(seconds).not.toHaveText(before);
 	});
 
 	test('downloads a calendar entry for the local maximum', async () => {
@@ -90,6 +96,7 @@ test.describe('B6 checklist', () => {
 	test('is already local on a plain load, because the place is guessed', async ({ page: freshPage }) => {
 		// This used to assert the bare "state A" list — no countdown, no calendar — for readers who had
 		// picked no place. That state is gone: the app guesses one, so B6 arrives in its located form.
+		await pinBeforeEclipse(freshPage); // `.count` is the pre-eclipse row — see fixtures
 		await freshPage.goto(localeUrl());
 		await expect(freshPage.locator('section.b6 .checks li').nth(1)).toContainText('Hast du freie Sicht nach Westen?');
 		await expect(freshPage.locator('section.b6 .count')).toBeVisible();
