@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { ECLIPSE_DATE, TIMELINE_START, TIMELINE_END, FRAME_STEP_MS, SKY_PALETTE } from './config';
+import {
+	ECLIPSE_DATE,
+	TIMELINE_START,
+	TIMELINE_END,
+	FRAME_STEP_MS,
+	SKY_PALETTE,
+	DONATE_URL,
+	donateUrl
+} from './config';
 import { hexToRgb } from './brand';
+import { LOCALES } from './i18n';
 
 describe('ECLIPSE_DATE', () => {
 	it('is the 2026-08-12 eclipse', () => {
@@ -40,6 +49,24 @@ describe('animation window', () => {
 		const greatest = Date.parse('2026-08-12T17:45:46Z');
 		expect(greatest - TIMELINE_START.getTime()).toBeGreaterThan(30 * 60 * 1000);
 		expect(TIMELINE_END.getTime() - greatest).toBeGreaterThan(30 * 60 * 1000);
+	});
+});
+
+describe('donateUrl', () => {
+	it('tags the payment link with this project and the page language', () => {
+		expect(donateUrl('de')).toBe(`${DONATE_URL}?client_reference_id=eclipse-2026-de`);
+	});
+
+	it('stays within what Stripe accepts, for every locale we ship', () => {
+		// Stripe allows alphanumerics, hyphens and underscores up to 200 characters — and DROPS an
+		// invalid client_reference_id silently, leaving a working payment page with no attribution and
+		// nothing to notice. A locale tag that is not URL-plain (say `sr@latin`) has to fail here
+		// instead, which is the whole point of walking LOCALES rather than pinning one string.
+		for (const l of LOCALES) {
+			const id = new URL(donateUrl(l)).searchParams.get('client_reference_id');
+			expect(id, l).toMatch(/^[A-Za-z0-9_-]{1,200}$/);
+			expect(id, l).toBe(`eclipse-2026-${l}`);
+		}
 	});
 });
 

@@ -2,8 +2,8 @@
      the location CTA on purpose — it is a request, not a feature — but on the same visual system (card,
      accent button). Always present, located or not. -->
 <script lang="ts">
-	import { t } from '$lib/i18n';
-	import { DONATE_URL } from '$lib/config';
+	import { t, locale } from '$lib/i18n';
+	import { donateUrl } from '$lib/config';
 </script>
 
 <!-- eslint-disable svelte/no-navigation-without-resolve --
@@ -13,7 +13,7 @@
 	<div class="card">
 		<div class="glyph" aria-hidden="true">☕</div>
 		<p>{$t('donate.text')}</p>
-		<a class="tip" href={DONATE_URL} target="_blank" rel="noopener noreferrer">
+		<a class="tip" href={donateUrl($locale)} target="_blank" rel="noopener noreferrer">
 			{$t('donate.button')}
 		</a>
 	</div>

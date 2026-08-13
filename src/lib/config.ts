@@ -28,6 +28,18 @@ export const IMPRINT_URL = 'https://datajournal.org/impressum';
 export const DONATE_URL = 'https://donate.stripe.com/00w6oJ3EMfca6J35Jb1ck00';
 
 /**
+ * The same payment link is shared across datajournal.org projects, so it carries where the reader came
+ * from: `client_reference_id` rides on the Checkout Session and arrives in the `checkout.session.completed`
+ * webhook, which is what makes a donation attributable at all. (UTM codes would NOT — Stripe only echoes
+ * those into a post-payment redirect URL, and this link has no redirect.)
+ *
+ * Stripe accepts alphanumerics, hyphens and underscores, up to 200 characters, and SILENTLY DROPS an
+ * invalid value while the payment page keeps working — a dot or a slash here would cost the attribution
+ * with nothing to notice. Hence the plain `eclipse-2026-<lang>` shape, pinned in tests/donate.spec.ts.
+ */
+export const donateUrl = (locale: string) => `${DONATE_URL}?client_reference_id=eclipse-2026-${locale}`;
+
+/**
  * Where a locale's message catalogue lives, so the footer can send a reader straight to the file that
  * holds the words they are reading. Points at `main` rather than a commit: the invitation is to improve
  * the current translation, not to inspect the deployed one.
